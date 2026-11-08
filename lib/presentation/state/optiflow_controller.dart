@@ -5,6 +5,7 @@ import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
 import '../../data/datasources/demo_data.dart';
 import '../../domain/entities/models.dart';
+import '../models/ui_models.dart';
 
 class OptiFlowController extends ChangeNotifier {
   OptiFlowController({AppDependencies? dependencies}) : deps = dependencies ?? AppDependencies();
@@ -17,9 +18,9 @@ class OptiFlowController extends ChangeNotifier {
   String? error;
 
   PatientSession? session;
-  List<AppointmentUi> appointments = DemoData.appointments();
-  List<OrderUi> orders = DemoData.orders();
-  List<HistoryEntry> history = List.of(DemoData.history);
+  List<AppointmentUi> appointments = PatientDemo.appointments();
+  List<OrderUi> orders = PatientDemo.orders();
+  List<HistoryEntry> history = List.of(PatientDemo.history);
   PrescriptionUi prescription = PrescriptionUi.demo('Valentina Silva');
   List<OpticalStore> stores = const [];
   bool patientLoading = true;
@@ -34,7 +35,7 @@ class OptiFlowController extends ChangeNotifier {
   String? searchError;
 
   int bookingStep = 1;
-  List<StoreOption> bookingStores = DemoData.demoStores;
+  List<StoreOption> bookingStores = PatientDemo.stores;
   int selectedStoreIndex = 0;
   List<SlotOption> slots = const [];
   DateTime weekStart = _monday(DateTime.now());
@@ -147,9 +148,9 @@ class OptiFlowController extends ChangeNotifier {
   Future<void> logout() async {
     session = null;
     await deps.clearSession();
-    appointments = DemoData.appointments();
-    orders = DemoData.orders();
-    history = List.of(DemoData.history);
+    appointments = PatientDemo.appointments();
+    orders = PatientDemo.orders();
+    history = List.of(PatientDemo.history);
     prescription = PrescriptionUi.demo('Valentina Silva');
     notifyListeners();
   }
@@ -251,14 +252,14 @@ class OptiFlowController extends ChangeNotifier {
       );
     }).toList()
       ..sort((a, b) => a.time.compareTo(b.time));
-    appointments = (mapped.isEmpty ? DemoData.appointments() : mapped)
+    appointments = (mapped.isEmpty ? PatientDemo.appointments() : mapped)
         .map((a) => _cancelled.contains(a.id) ? a.copyWith(status: AppointmentStatus.cancelled) : a)
         .toList();
     final name = displayName;
     orders = apiOrders.map(_orderUi).toList();
-    if (orders.isEmpty) orders = DemoData.orders();
+    if (orders.isEmpty) orders = PatientDemo.orders();
     history = records.map(_history).toList();
-    if (history.isEmpty) history = List.of(DemoData.history);
+    if (history.isEmpty) history = List.of(PatientDemo.history);
     prescription = _prescription(records, name) ?? PrescriptionUi.demo(name);
     patientLoading = false;
     notifyListeners();
@@ -392,7 +393,7 @@ class OptiFlowController extends ChangeNotifier {
       ];
       bookingDemo = false;
     } else {
-      bookingStores = DemoData.demoStores;
+      bookingStores = PatientDemo.stores;
       bookingDemo = true;
     }
     final index = bookingStores.indexWhere((s) => s.id != null && s.id == storeId);

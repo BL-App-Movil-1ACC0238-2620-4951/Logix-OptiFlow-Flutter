@@ -1,5 +1,3 @@
-import '../../domain/entities/models.dart';
-
 enum AgendaStatus { waiting, confirmed, pending, pickup, done }
 
 enum ProductionStage {
@@ -283,27 +281,4 @@ abstract final class DemoData {
   ];
 
   static const reportBars = [0.45, 0.65, 0.53, 0.80, 0.72, 1.0, 0.87];
-
-  static const demoStores = <StoreOption>[
-    StoreOption(id: null, name: 'Providencia', address: 'Av. Providencia 1240', distance: '0,8 km', availability: 'Disponible hoy', availableToday: true),
-    StoreOption(id: null, name: 'Las Condes', address: 'Av. Apoquindo 3472', distance: '3,2 km', availability: 'Disponible mañana', availableToday: false),
-    StoreOption(id: null, name: 'Óptima Markitos', address: 'Av. San Marcos 1240', distance: '1,4 km', availability: 'Disponible hoy', availableToday: true),
-    StoreOption(id: null, name: 'Dolores', address: 'Av. Hormigas 3472', distance: '3,6 km', availability: 'Disponible mañana', availableToday: false),
-  ];
-
-  static List<AppointmentUi> appointments() => const [
-        AppointmentUi(id: 'demo-1', day: '24', month: 'JUN', monthName: 'Junio', weekday: 'Martes', time: '10:30', endTime: '11:15', title: 'Evaluación visual', storeName: 'Óptica Visión Norte', storeAddress: 'Av. Providencia 1240', professional: 'Dra. Fernanda Soto', status: AppointmentStatus.confirmed, isPast: false, fromApi: false),
-        AppointmentUi(id: 'demo-2', day: '30', month: 'JUN', monthName: 'Junio', weekday: 'Lunes', time: '16:00', endTime: '16:45', title: 'Control de lentes', storeName: 'Óptica Visión Norte', storeAddress: 'Av. Providencia 1240', professional: 'Dr. Matías Araya', status: AppointmentStatus.pending, isPast: false, fromApi: false),
-        AppointmentUi(id: 'demo-3', day: '12', month: 'MAR', monthName: 'Marzo', weekday: 'Miércoles', time: '09:30', endTime: '10:15', title: 'Evaluación visual', storeName: 'Óptica Visión Norte', storeAddress: 'Av. Providencia 1240', professional: 'Dra. Fernanda Soto', status: AppointmentStatus.confirmed, isPast: true, fromApi: false),
-      ];
-
-  static List<OrderUi> orders() => const [
-        OrderUi(id: 'demo-order', code: 'OF-2481', title: 'Lentes ópticos + montura', dateLabel: '14 jun', step: 2, estimate: '26 y 28 de junio', product: 'Montura Nova N-24 · Azul', productDetail: 'Lentes monofocales con antirreflejo', pickup: 'Óptica Visión Norte · Providencia', history: ['14 jun · 12:24', '14 jun · 12:26'], fromApi: false),
-        OrderUi(id: 'demo-order-2', code: 'OF-2210', title: 'Lentes de sol graduados', dateLabel: '02 mar', step: 4, estimate: '5 de marzo', product: 'Havana Sun · Dorado', productDetail: 'Lentes solares polarizados', pickup: 'Óptica Visión Norte · Providencia', history: ['2 mar · 10:02', '2 mar · 10:05'], fromApi: false),
-      ];
-
-  static const history = <HistoryEntry>[
-    HistoryEntry(date: '12 MAR 2025', title: 'Evaluación visual', summary: 'Miopía leve estable', professional: 'Dra. Fernanda Soto'),
-    HistoryEntry(date: '08 SEP 2024', title: 'Control de lentes', summary: 'Sin cambios relevantes', professional: 'Dr. Matías Araya'),
-  ];
 }

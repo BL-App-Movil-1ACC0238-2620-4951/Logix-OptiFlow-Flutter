@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../domain/entities/models.dart';
+import '../../models/ui_models.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
