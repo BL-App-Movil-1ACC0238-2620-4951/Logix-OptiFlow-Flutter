@@ -139,19 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Container(
-            height: 92,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.deepNavy, borderRadius: BorderRadius.circular(16)),
-            child: Row(
-              children: [
-                const Icon(Icons.map_outlined, color: AppColors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('${stores.length} ópticas cerca de ti', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.white))),
-                Text('Mapa', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.skyTint)),
-              ],
-            ),
-          ),
+          _MapPreview(count: stores.length),
           const SizedBox(height: 22),
           Row(
             children: [
@@ -194,4 +182,90 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
+}
+
+class _MapPreview extends StatelessWidget {
+  const _MapPreview({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 144,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFD9E5FB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.skyTint),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Stack(
+            children: [
+              const Positioned.fill(child: CustomPaint(painter: _MapHatchPainter())),
+              Positioned(left: width * 0.18, top: 28, child: const _MapPin()),
+              Positioned(left: width * 0.62, top: 36, child: const _MapPin()),
+              Positioned(left: width * 0.40, top: 78, child: const _MapPin()),
+              Positioned(
+                left: 14,
+                bottom: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2))],
+                  ),
+                  child: Text(
+                    '$count ópticas cerca de ti',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MapPin extends StatelessWidget {
+  const _MapPin();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.patientHeader,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.white, width: 2),
+        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 2))],
+      ),
+      child: const Icon(Icons.location_on, size: 15, color: AppColors.white),
+    );
+  }
+}
+
+class _MapHatchPainter extends CustomPainter {
+  const _MapHatchPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFE7EEFD)
+      ..strokeWidth = 14;
+    const step = 34.0;
+    for (var x = -size.height; x < size.width + size.height; x += step) {
+      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
