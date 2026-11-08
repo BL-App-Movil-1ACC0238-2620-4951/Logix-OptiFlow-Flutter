@@ -170,32 +170,60 @@ class HistoryScreen extends StatelessWidget {
   }
 }
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.staff = false});
   final bool staff;
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool reminders = true;
-  bool promos = false;
-  bool biometrics = false;
-
-  @override
   Widget build(BuildContext context) {
+    final app = context.watch<OptiFlowController>();
     return PatientScaffold(
       tab: PatientTab.profile,
-      topBar: LightTopBar(title: widget.staff ? 'Configuración y permisos' : 'Configuración', onBack: () => context.pop()),
+      topBar: LightTopBar(title: 'Configuración', onBack: () => context.pop()),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          SwitchListTile(value: reminders, onChanged: (v) => setState(() => reminders = v), title: const Text('Recordatorios de cita'), subtitle: const Text('Avisos antes de tu evaluación')),
-          SwitchListTile(value: promos, onChanged: (v) => setState(() => promos = v), title: const Text('Ofertas y novedades'), subtitle: const Text('Promociones de monturas')),
-          SwitchListTile(value: biometrics, onChanged: (v) => setState(() => biometrics = v), title: const Text('Bloqueo de la app'), subtitle: const Text('Pedir confirmación al abrir')),
-          const SizedBox(height: 12),
-          Text('OptiFlow Flutter · misma API que la app Android.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+          Text('Preferencias', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _Menu(
+                  icon: Icons.notifications_none,
+                  title: 'Notificaciones',
+                  subtitle: 'Citas, pedidos y recordatorios',
+                  onTap: () => context.push(staff ? '/s/alerts' : '/p/notifications'),
+                ),
+                const Divider(height: 1, color: AppColors.lavender),
+                SwitchListTile(
+                  value: app.settings.controlReminders,
+                  onChanged: app.setControlReminders,
+                  title: Text('Recordatorios de control', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                  subtitle: const Text('Avisos preventivos de salud visual'),
+                ),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.lock_outline, title: 'Privacidad y seguridad', onTap: () {}),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.help_outline, title: 'Ayuda y documentación', onTap: () {}),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text('Aplicación', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _Menu(icon: Icons.language, title: 'Idioma', subtitle: 'Español', onTap: () {}),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.description_outlined, title: 'Términos y privacidad', onTap: () {}),
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
+          Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
         ],
       ),
     );

@@ -28,6 +28,8 @@ class AppDependencies {
     clearSession = ClearSession(sessionRepository);
     loadReadNotifications = LoadReadNotifications(sessionRepository);
     saveReadNotifications = SaveReadNotifications(sessionRepository);
+    loadSettings = LoadAppSettings(sessionRepository);
+    saveSettings = SaveAppSettings(sessionRepository);
     getStores = GetOpticalStores(stores);
     searchStores = SearchOpticalStores(stores);
     getAvailability = GetStoreAvailability(stores);
@@ -56,6 +58,8 @@ class AppDependencies {
   late final ClearSession clearSession;
   late final LoadReadNotifications loadReadNotifications;
   late final SaveReadNotifications saveReadNotifications;
+  late final LoadAppSettings loadSettings;
+  late final SaveAppSettings saveSettings;
   late final GetOpticalStores getStores;
   late final SearchOpticalStores searchStores;
   late final GetStoreAvailability getAvailability;

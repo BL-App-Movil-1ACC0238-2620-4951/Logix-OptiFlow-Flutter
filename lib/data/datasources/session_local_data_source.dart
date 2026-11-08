@@ -9,6 +9,7 @@ class SessionLocalDataSource {
   static const emailKey = 'patient_email';
   static const phoneKey = 'patient_phone';
   static const readNotificationsKey = 'read_notifications';
+  static const controlRemindersKey = 'settings_control_reminders';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -55,5 +56,15 @@ class SessionLocalDataSource {
   Future<void> saveNotificationIds(Set<String> ids) async {
     final prefs = await _prefs;
     await prefs.setStringList(readNotificationsKey, ids.toList());
+  }
+
+  Future<AppSettings> readSettings() async {
+    final prefs = await _prefs;
+    return AppSettings(controlReminders: prefs.getBool(controlRemindersKey) ?? false);
+  }
+
+  Future<void> saveSettings(AppSettings settings) async {
+    final prefs = await _prefs;
+    await prefs.setBool(controlRemindersKey, settings.controlReminders);
   }
 }

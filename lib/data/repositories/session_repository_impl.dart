@@ -21,4 +21,10 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<void> saveNotificationIds(Set<String> ids) => _local.saveNotificationIds(ids);
+
+  @override
+  Future<AppSettings> readSettings() => _local.readSettings();
+
+  @override
+  Future<void> saveSettings(AppSettings settings) => _local.saveSettings(settings);
 }
