@@ -2,14 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/di/dependencies.dart';
+import '../../core/errors/api_exception.dart';
 import '../../data/datasources/demo_data.dart';
-import '../../core/network/optiflow_api.dart';
 import '../../domain/entities/models.dart';
 
 class OptiFlowController extends ChangeNotifier {
-  OptiFlowController({OptiFlowApi? api}) : api = api ?? OptiFlowApi();
+  OptiFlowController({AppDependencies? dependencies}) : deps = dependencies ?? AppDependencies();
 
-  final OptiFlowApi api;
+  final AppDependencies deps;
   static const minPassword = 8;
 
   bool bootstrapped = false;
@@ -200,7 +201,7 @@ class OptiFlowController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await _saveSession(await api.login(email: email.trim(), password: password));
+      await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
       await refreshPatient();
     } on ApiException catch (e) {
       error = e.message;
@@ -222,8 +223,8 @@ class OptiFlowController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await api.register(name: name.trim(), email: email.trim(), phone: phone.trim(), password: password);
-      await _saveSession(await api.login(email: email.trim(), password: password));
+      await deps.registerPatient(name: name.trim(), email: email.trim(), phone: phone.trim(), password: password);
+      await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
       await refreshPatient();
     } on ApiException catch (e) {
       error = e.message;
@@ -244,17 +245,17 @@ class OptiFlowController extends ChangeNotifier {
     List<Map<String, dynamic>> apiOrders = const [];
     List<Map<String, dynamic>> records = const [];
     try {
-      loadedStores = await api.listStores();
+      loadedStores = await deps.getStores();
     } catch (_) {}
     if (current != null) {
       try {
-        apiAppointments = await api.appointments(current.patientId);
+        apiAppointments = await deps.getAppointments(current.patientId);
       } catch (_) {}
       try {
-        apiOrders = await api.workOrders(current.patientId);
+        apiOrders = await deps.getWorkOrders(current.patientId);
       } catch (_) {}
       try {
-        records = await api.clinicalRecords(current.patientId);
+        records = await deps.getClinicalRecords(current.patientId);
       } catch (_) {}
     }
     stores = loadedStores;
@@ -361,11 +362,11 @@ class OptiFlowController extends ChangeNotifier {
     try {
       final name = searchQuery.trim().isEmpty ? null : searchQuery.trim();
       if (minRating != null) {
-        final result = await api.searchStores(name: name, minRating: minRating);
+        final result = await deps.searchStores(name: name, minRating: minRating);
         stores = result.stores;
         searchMessage = result.stores.isEmpty ? result.message : null;
       } else {
-        stores = await api.listStores(name: name);
+        stores = await deps.getStores(name: name);
       }
     } on ApiException catch (e) {
       searchError = e.message;
@@ -398,7 +399,7 @@ class OptiFlowController extends ChangeNotifier {
     List<OpticalStore> loaded = stores;
     if (loaded.isEmpty) {
       try {
-        loaded = await api.listStores();
+        loaded = await deps.getStores();
         stores = loaded;
       } catch (_) {}
     }
@@ -442,7 +443,7 @@ class OptiFlowController extends ChangeNotifier {
     List<TimeSlot> apiSlots = const [];
     if (store.id != null) {
       try {
-        apiSlots = await api.availability(store.id!);
+        apiSlots = await deps.getAvailability(store.id!);
       } catch (_) {}
     }
     if (apiSlots.isEmpty) {
@@ -527,7 +528,7 @@ class OptiFlowController extends ChangeNotifier {
     bookingError = null;
     notifyListeners();
     try {
-      await api.book(patientId: session!.patientId, opticalStoreId: store.id!, timeSlotId: slot.id!);
+      await deps.bookAppointment(patientId: session!.patientId, opticalStoreId: store.id!, timeSlotId: slot.id!);
       bookingStep = 4;
       await refreshPatient();
       return true;

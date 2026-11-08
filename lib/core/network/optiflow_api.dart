@@ -3,17 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../domain/entities/models.dart';
+import '../errors/api_exception.dart';
 
-class ApiException implements Exception {
-  ApiException(this.message, {this.statusCode});
-  final String message;
-  final int? statusCode;
-
-  @override
-  String toString() => message;
-}
-
-/// Cliente del backend Search & Booking (el mismo que usa la app Android).
+/// Cliente HTTP del backend. La app lo usa solo desde los repositorios.
 class OptiFlowApi {
   OptiFlowApi({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
