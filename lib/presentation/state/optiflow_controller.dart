@@ -321,6 +321,13 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> markNotificationRead(String id) async {
+    if (readNotificationIds.contains(id)) return;
+    readNotificationIds = {...readNotificationIds, id};
+    await deps.saveReadNotifications(readNotificationIds);
+    notifyListeners();
+  }
+
   Future<void> searchStores() async {
     searchLoading = true;
     searchError = null;

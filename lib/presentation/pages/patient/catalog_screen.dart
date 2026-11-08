@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../domain/entities/frame.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
@@ -15,96 +16,302 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  String filter = 'Todos';
+  int filter = 0;
+  String query = '';
 
   @override
   Widget build(BuildContext context) {
-    final frames = context.watch<OptiFlowController>().frames.where((f) => filter == 'Todos' || f.category == filter).toList();
+    final frames = context.watch<OptiFlowController>().frames.where((frame) {
+      final matches = switch (filter) {
+        1 => frame.category == 'SOLAR',
+        2 => frame.category == 'OFTÁLMICO',
+        3 => false,
+        _ => true,
+      };
+      final text = query.trim().toLowerCase();
+      return matches && (text.isEmpty || frame.name.toLowerCase().contains(text));
+    }).toList();
     return PatientScaffold(
       tab: PatientTab.search,
-      topBar: LightTopBar(title: 'Explorar monturas', onBack: () => context.pop()),
-      body: Column(
+      topBar: LightTopBar(
+        title: 'Explorar Monturas',
+        onBack: () => context.canPop() ? context.pop() : context.go('/p/home'),
+        trailing: IconButton(onPressed: () => context.push('/p/notifications'), icon: const Icon(Icons.notifications_none_rounded, color: AppColors.patientHeader)),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 6,
-                children: [
-                  for (final label in const ['Todos', 'OFTÁLMICO', 'SOLAR'])
-                    ChoiceChip(
-                      label: Text(label, style: const TextStyle(fontSize: 11)),
-                      selected: filter == label,
-                      onSelected: (_) => setState(() => filter = label),
-                    ),
-                ],
-              ),
+          TextField(
+            onChanged: (value) => setState(() => query = value),
+            decoration: InputDecoration(
+              hintText: 'Buscar armazón, estilo...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: AppColors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF9AA8C7))),
             ),
           ),
-          Expanded(
-            child: GridView.builder(
-        padding: const EdgeInsets.all(20),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.68),
-        itemCount: frames.length,
-        itemBuilder: (context, index) {
-          final frame = frames[index];
-          return AppCard(
-            padding: const EdgeInsets.all(8),
-            onTap: () => context.push('/p/frame/${frame.id}'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 20),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset(frame.image, width: double.infinity, fit: BoxFit.cover))),
-                const SizedBox(height: 8),
-                Text(frame.category, style: GoogleFonts.inter(fontSize: 11, color: AppColors.warmGray)),
-                Text(frame.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
-                Text('\$${frame.price}.00', style: GoogleFonts.inter(color: AppColors.teal700)),
+                for (var i = 0; i < 4; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _Filter(['Todos', 'Solar', 'Oftálmico', 'Contacto'][i], filter == i, () => setState(() => filter = i)),
+                ],
               ],
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: AppColors.infoBanner, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.skyTint)),
+            child: Row(
+              children: [
+                const IconTile(icon: Icons.star_outline, background: AppColors.white, color: AppColors.electric, size: 42, iconSize: 22),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Encuentra tu estilo', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                      Text('Selecciona una montura y te mostraremos qué ópticas cercanas la tienen.', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500, height: 1.35)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 20),
+          if (frames.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text('No hay monturas en esta categoría por ahora.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+            ),
+          for (var i = 0; i < frames.length; i += 2) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _CatalogCard(frames[i])),
+                const SizedBox(width: 16),
+                Expanded(child: i + 1 < frames.length ? _CatalogCard(frames[i + 1]) : const SizedBox()),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
         ],
       ),
     );
   }
 }
 
-class FrameDetailScreen extends StatelessWidget {
+class _Filter extends StatelessWidget {
+  const _Filter(this.label, this.selected, this.onTap);
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.patientHeader : AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF9AA8C7)),
+        ),
+        child: Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: selected ? AppColors.white : AppColors.deepNavy)),
+      ),
+    );
+  }
+}
+
+class _CatalogCard extends StatelessWidget {
+  const _CatalogCard(this.frame);
+  final FrameItem frame;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(8),
+      onTap: () => context.push('/p/frame/${frame.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset(frame.image, height: 116, width: double.infinity, fit: BoxFit.cover)),
+          const SizedBox(height: 14),
+          Text(frame.category, style: GoogleFonts.inter(fontSize: 11, color: AppColors.electric)),
+          const SizedBox(height: 4),
+          Text(frame.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+          const SizedBox(height: 4),
+          Text('\$${frame.price}', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.teal700)),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class FrameDetailScreen extends StatefulWidget {
   const FrameDetailScreen({super.key, required this.id});
   final String id;
 
   @override
+  State<FrameDetailScreen> createState() => _FrameDetailScreenState();
+}
+
+class _FrameDetailScreenState extends State<FrameDetailScreen> {
+  bool favorite = false;
+
+  @override
   Widget build(BuildContext context) {
-    final frame = context.watch<OptiFlowController>().frameById(id);
+    final frame = context.watch<OptiFlowController>().frameById(widget.id);
     return PatientScaffold(
       tab: PatientTab.search,
-      topBar: LightTopBar(title: frame.name, onBack: () => context.pop()),
+      topBar: LightTopBar(
+        title: 'Detalles de montura',
+        onBack: () => context.pop(),
+        trailing: IconButton(
+          onPressed: () => setState(() => favorite = !favorite),
+          icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: AppColors.patientHeader),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.asset(frame.image, height: 240, width: double.infinity, fit: BoxFit.cover)),
-          const SizedBox(height: 16),
-          Text(frame.category, style: GoogleFonts.inter(color: AppColors.warmGray, letterSpacing: 1)),
-          Text(frame.name, style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-          Text(frame.description, style: GoogleFonts.inter(color: AppColors.slate500)),
-          const SizedBox(height: 8),
-          Text('\$${frame.price}.00', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.teal700)),
-          Text('${frame.stock} en stock · calibre ${frame.size}', style: GoogleFonts.inter(color: AppColors.slate500)),
-          const SizedBox(height: 16),
-          Text('Características', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, children: [for (final feature in frame.features) Chip(label: Text(feature))]),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: 220,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(frame.image, fit: BoxFit.cover),
+                  Positioned(
+                    left: 14,
+                    top: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: AppColors.emerald50, borderRadius: BorderRadius.circular(20)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_outline, size: 14, color: AppColors.emerald600),
+                          const SizedBox(width: 4),
+                          Text('DISPONIBLE HOY', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.emerald600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.patientHeader.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+                      child: Text('1 de 3', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
-          Text('Colores', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, children: [for (final color in frame.colors) Chip(label: Text(color))]),
+          AppCard(
+            padding: const EdgeInsets.fromLTRB(17, 16, 17, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${frame.category} · UNISEX', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                const SizedBox(height: 6),
+                Text(frame.name, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF111827))),
+                const SizedBox(height: 10),
+                Text(frame.description, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                const SizedBox(height: 18),
+                Text(frame.fromPrice, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.electric)),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const IconTile(icon: Icons.inventory_2_outlined, background: AppColors.emerald50, color: AppColors.emerald600, size: 30, iconSize: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('En stock · ${frame.stock} unidades', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.emerald600)),
+                          Text('Disponible para prueba y reserva inmediata', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.skyTint),
+                const SizedBox(height: 12),
+                Text('Características principales', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (var i = 0; i < frame.features.length; i++)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(color: AppColors.skyTint, borderRadius: BorderRadius.circular(20)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(i == 0 ? Icons.diamond_outlined : Icons.eco_outlined, size: 14, color: AppColors.navyBlue),
+                            const SizedBox(width: 4),
+                            Text(frame.features[i], style: GoogleFonts.inter(fontSize: 12, color: AppColors.navyBlue)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
-          SolidButton(label: 'Probar en AR', icon: Icons.photo_camera_outlined, onPressed: () => context.push('/p/tryon/${frame.id}')),
+          InkWell(
+            onTap: () => context.go('/p/search'),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: AppColors.infoBanner, borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                children: [
+                  const IconTile(icon: Icons.place_outlined, background: AppColors.white, color: AppColors.navyBlue),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Disponible en 3 ópticas cercanas', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        Text('La más cercana está a 0,8 km de ti.', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          SolidButton(label: 'Ver ópticas con disponibilidad', icon: Icons.place_outlined, onPressed: () => context.push('/p/book')),
           const SizedBox(height: 10),
-          SolidButton(label: 'Buscar dónde está', background: AppColors.white, foreground: AppColors.electric, border: AppColors.skyTint, onPressed: () => context.go('/p/search')),
+          SolidButton(
+            label: 'Probar en AR',
+            icon: Icons.photo_camera_outlined,
+            background: AppColors.white,
+            foreground: AppColors.electric,
+            border: AppColors.skyTint,
+            onPressed: () => context.push('/p/tryon/${frame.id}'),
+          ),
         ],
       ),
     );

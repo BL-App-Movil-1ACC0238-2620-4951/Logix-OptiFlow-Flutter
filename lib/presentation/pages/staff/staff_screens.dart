@@ -318,57 +318,150 @@ class StaffPatientsScreen extends StatefulWidget {
 
 class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
   String query = '';
+  int filter = 0;
+  static const tints = [AppColors.lavender, Color(0xFFDBEAFE), Color(0xFFF3F4FF), Color(0xFFE0E7FF)];
 
   @override
   Widget build(BuildContext context) {
-    final patients = context.watch<OptiFlowController>().staffPatients.where((p) {
+    final patients = context.watch<OptiFlowController>().staffPatients.where((patient) {
       final q = query.trim().toLowerCase();
-      return q.isEmpty || p.fullName.toLowerCase().contains(q) || p.rut.contains(q);
+      return q.isEmpty || patient.fullName.toLowerCase().contains(q) || patient.rut.contains(q) || patient.phone.contains(q);
     }).toList();
     return StaffScaffold(
       tab: StaffTab.patients,
       topBar: StaffTopBar(
-        title: 'Expedientes de pacientes',
-        subtitle: 'Fichas optométricas, recetas y seguimientos al día.',
-        trailing: IconButton(onPressed: () => context.push('/s/patients/new'), icon: const Icon(Icons.person_add_alt_1, color: AppColors.white)),
+        title: 'Pacientes',
+        trailing: IconButton(onPressed: () => context.push('/s/patients/new'), icon: const Icon(Icons.add, color: AppColors.white)),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Expedientes de pacientes', style: GoogleFonts.inter(fontSize: 18, color: AppColors.white)),
+                const SizedBox(height: 8),
+                Text('Fichas optométricas, recetas y seguimientos al día.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
+                const SizedBox(height: 22),
+                const Row(
+                  children: [
+                    Expanded(child: _HeroStat('1.248', 'Total pacientes')),
+                    Expanded(child: _HeroStat('34', 'Nuevos este mes', valueColor: Color(0xFF34D399))),
+                    Expanded(child: _HeroStat('890', 'Con ficha vigente')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           TextField(
             onChanged: (value) => setState(() => query = value),
             decoration: InputDecoration(
-              hintText: 'Buscar nombre o RUT',
+              hintText: 'Buscar por nombre, RUT o teléfono',
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: AppColors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.staffBorder)),
             ),
           ),
           const SizedBox(height: 12),
-          for (final patient in patients) ...[
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _StaffChip(['Todos (1.248)', 'En atención (1)', 'En taller (12)'][i], filter == i, () => setState(() => filter = i)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 26),
+          Row(
+            children: [
+              Expanded(child: Text('Pacientes recientes', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
+              Text('Ordenar por fecha', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (var index = 0; index < patients.length; index++) ...[
             AppCard(
-              onTap: () => context.push('/s/patient/${patient.id}'),
+              onTap: () => context.push('/s/patient/${patients[index].id}'),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  CircleAvatar(backgroundColor: AppColors.staffChip, child: Text(patient.initials, style: const TextStyle(color: AppColors.staffHeader, fontSize: 12))),
-                  const SizedBox(width: 12),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: tints[index % tints.length], borderRadius: BorderRadius.circular(16)),
+                    child: Text(patients[index].initials, style: GoogleFonts.inter(fontSize: 14, color: AppColors.electric)),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(patient.fullName, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                        Text(patient.note, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                        Text(patients[index].name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                        Text(patients[index].rut, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                        Text(patients[index].note, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right),
+                  const Icon(Icons.chevron_right, color: AppColors.staffInk),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
           ],
+          const SizedBox(height: 8),
+          SolidButton(label: 'Nuevo paciente', icon: Icons.add, onPressed: () => context.push('/s/patients/new')),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  const _HeroStat(this.value, this.label, {this.valueColor = AppColors.white});
+  final String value;
+  final String label;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: GoogleFonts.inter(fontSize: 18, color: valueColor)),
+        const SizedBox(height: 4),
+        Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate300)),
+      ],
+    );
+  }
+}
+
+class _StaffChip extends StatelessWidget {
+  const _StaffChip(this.label, this.selected, this.onTap);
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.staffAccent : AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppColors.staffAccent : AppColors.lavender),
+        ),
+        child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
       ),
     );
   }
@@ -383,49 +476,216 @@ class StaffInventoryScreen extends StatefulWidget {
 
 class _StaffInventoryScreenState extends State<StaffInventoryScreen> {
   String query = '';
+  int category = 0;
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final products = context.read<OptiFlowController>().products.where((p) {
-      final q = query.toLowerCase();
-      return q.isEmpty || p.name.toLowerCase().contains(q) || p.sku.toLowerCase().contains(q);
-    }).toList();
+    final all = app.products;
+    final stockTotal = all.fold<int>(0, (sum, product) => sum + app.stockOf(product));
+    final q = query.trim().toLowerCase();
+    final products = category == 0
+        ? all.where((product) => q.isEmpty || product.name.toLowerCase().contains(q) || product.sku.toLowerCase().contains(q)).toList()
+        : all.where((_) => false).toList();
     return StaffScaffold(
       tab: StaffTab.inventory,
-      topBar: const StaffTopBar(title: 'Catálogo y taller óptico', subtitle: 'Referencias, lentes en laboratorio y pedidos.'),
+      topBar: StaffTopBar(
+        title: 'Inventario',
+        trailing: IconButton(onPressed: () => context.push('/s/scanner'), icon: const Icon(Icons.qr_code_scanner, color: AppColors.white)),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
-          TextField(
-            onChanged: (value) => setState(() => query = value),
-            decoration: InputDecoration(hintText: 'Buscar modelo, SKU o marca', prefixIcon: const Icon(Icons.search), filled: true, fillColor: AppColors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14))),
+          Container(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('CONTROL DE STOCK · ACTUALIZADO HOY', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate300, letterSpacing: 1)),
+                      const SizedBox(height: 8),
+                      Text('Catálogo y taller óptico', style: GoogleFonts.inter(fontSize: 18, color: AppColors.white)),
+                      const SizedBox(height: 6),
+                      Text('Referencias, lentes en laboratorio y pedidos.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.grid_view, color: Color(0xFFB7C4FF), size: 44),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          if (products.isEmpty) const Text('Sin modelos en esta categoría.'),
-          for (final product in products) ...[
-            AppCard(
-              onTap: () => context.push('/s/product/${product.id}'),
-              child: Row(
-                children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset(product.image, width: 64, height: 64, fit: BoxFit.cover)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(product.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                        Text('${product.sku} · ${product.detail}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
-                        Text('${app.stockOf(product)} disp. · ${product.tag}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffGreen)),
-                      ],
-                    ),
+          Row(
+            children: [
+              Expanded(child: _InvStat(Icons.remove_red_eye_outlined, '${300 + stockTotal + 29}', 'En stock', '8 por reponer', null)),
+              const SizedBox(width: 14),
+              Expanded(child: _InvStat(Icons.work_outline, '12', 'En taller / lab', '3 con entrega hoy', () => context.push('/s/production'))),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  onChanged: (value) => setState(() => query = value),
+                  style: GoogleFonts.inter(color: AppColors.white),
+                  cursorColor: AppColors.white,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar modelo, SKU o marca',
+                    hintStyle: GoogleFonts.inter(color: AppColors.white.withValues(alpha: 0.9), fontSize: 14),
+                    prefixIcon: const Icon(Icons.filter_list, color: AppColors.white, size: 18),
+                    suffixIcon: const Icon(Icons.search, color: AppColors.white, size: 18),
+                    filled: true,
+                    fillColor: AppColors.staffAccent,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                   ),
-                ],
+                ),
               ),
+              const SizedBox(width: 8),
+              Material(
+                color: AppColors.staffAccent,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () => context.push('/s/scanner'),
+                  borderRadius: BorderRadius.circular(14),
+                  child: const SizedBox(width: 48, height: 48, child: Icon(Icons.qr_code_scanner, color: AppColors.white)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < 4; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _StaffChip(['Armazones', 'Gafas de sol', 'Lentes de contacto', 'Cristales'][i], category == i, () => setState(() => category = i)),
+                ],
+              ],
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 26),
+          Text('Catálogo en vitrina · ${products.length} modelos', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          const SizedBox(height: 12),
+          if (products.isEmpty) Text('Sin modelos en esta categoría.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+          for (var i = 0; i < products.length; i += 2) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _ProductCard(products[i], app.stockOf(products[i]))),
+                const SizedBox(width: 14),
+                Expanded(child: i + 1 < products.length ? _ProductCard(products[i + 1], app.stockOf(products[i + 1])) : const SizedBox()),
+              ],
+            ),
+            const SizedBox(height: 14),
           ],
+          const SizedBox(height: 8),
+          Text('Acciones rápidas', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _Quick(Icons.add, 'Ingresar stock', () => context.push('/s/movement')),
+              const SizedBox(width: 10),
+              _Quick(Icons.chevron_right, 'Traslado', () => context.push('/s/stock/rb5154')),
+              const SizedBox(width: 10),
+              _Quick(Icons.check, 'Auditoría', () => context.push('/s/stock/rb5154')),
+              const SizedBox(width: 10),
+              _Quick(Icons.description_outlined, 'Órdenes', () => context.push('/s/production')),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _InvStat extends StatelessWidget {
+  const _InvStat(this.icon, this.value, this.title, this.subtitle, this.onTap);
+  final IconData icon;
+  final String value;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.staffAccent),
+          const SizedBox(height: 10),
+          Text(value, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          Text(title, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffInk)),
+          Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard(this.product, this.available);
+  final ProductItem product;
+  final int available;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: () => context.push('/s/product/${product.id}'),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset(product.image, height: 92, width: double.infinity, fit: BoxFit.cover)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(20)),
+            child: Text(product.tag, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
+          ),
+          const SizedBox(height: 8),
+          Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
+          const SizedBox(height: 4),
+          Text(product.detail, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: Text(product.price, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.staffInk))),
+              Text('$available disp.', style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffGreen)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Quick extends StatelessWidget {
+  const _Quick(this.icon, this.label, this.onTap);
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        child: Column(
+          children: [
+            Icon(icon, size: 22, color: AppColors.staffInk),
+            const SizedBox(height: 7),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffInk)),
+          ],
+        ),
       ),
     );
   }

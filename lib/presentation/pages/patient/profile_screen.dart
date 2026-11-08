@@ -143,30 +143,100 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final history = context.watch<OptiFlowController>().history;
+    final latest = history.isEmpty ? '12 de marzo de 2025' : _prettyDate(history.first.date);
     return PatientScaffold(
       tab: PatientTab.profile,
       topBar: LightTopBar(title: 'Historial clínico', onBack: () => context.pop()),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          for (final entry in history) ...[
-            AppCard(
-              child: Column(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            decoration: BoxDecoration(color: AppColors.navyBlue, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Color(0x3300135B), blurRadius: 12, offset: Offset(0, 6))]),
+            child: Row(
+              children: [
+                IconTile(icon: Icons.remove_red_eye_outlined, background: AppColors.white.withValues(alpha: 0.15), color: AppColors.white, size: 48, iconSize: 22),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Último control', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.75))),
+                      Text(latest, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.white)),
+                      Text('Próximo control recomendado en 9 meses', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text('Atenciones', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 16),
+          for (var index = 0; index < history.length; index++)
+            InkWell(
+              onTap: () => context.push('/p/prescription'),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entry.date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.4)),
-                  const SizedBox(height: 4),
-                  Text(entry.title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                  Text(entry.summary, style: GoogleFonts.inter(color: AppColors.slate600)),
-                  Text(entry.professional, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  SizedBox(
+                    width: 16,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          margin: const EdgeInsets.only(top: 2),
+                          decoration: BoxDecoration(color: AppColors.electric, shape: BoxShape.circle, border: Border.all(color: AppColors.white, width: 2)),
+                        ),
+                        Container(width: 2, height: index == history.length - 1 ? 84 : 118, color: AppColors.lavender),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(history[index].date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.5)),
+                        const SizedBox(height: 6),
+                        Text(history[index].title, style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        const SizedBox(height: 6),
+                        Text(history[index].summary, style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+                        const SizedBox(height: 14),
+                        Text(history[index].professional, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.deepNavy, size: 20),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-          ],
         ],
       ),
     );
+  }
+
+  String _prettyDate(String upper) {
+    const months = {
+      'ENE': 'enero',
+      'FEB': 'febrero',
+      'MAR': 'marzo',
+      'ABR': 'abril',
+      'MAY': 'mayo',
+      'JUN': 'junio',
+      'JUL': 'julio',
+      'AGO': 'agosto',
+      'SEP': 'septiembre',
+      'SET': 'septiembre',
+      'OCT': 'octubre',
+      'NOV': 'noviembre',
+      'DIC': 'diciembre',
+    };
+    final parts = upper.split(' ');
+    if (parts.length != 3) return upper;
+    final day = int.tryParse(parts[0])?.toString() ?? parts[0];
+    return '$day de ${months[parts[1]] ?? parts[1].toLowerCase()} de ${parts[2]}';
   }
 }
 
