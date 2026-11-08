@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
@@ -127,18 +126,8 @@ class OptiFlowController extends ChangeNotifier {
   int get unreadCount => notifications.where((n) => !readNotificationIds.contains(n.id)).length;
 
   Future<void> bootstrap() async {
-    final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('patient_id');
-    if (id != null) {
-      session = PatientSession(
-        patientId: id,
-        token: prefs.getString('token'),
-        name: prefs.getString('patient_name') ?? '',
-        email: prefs.getString('patient_email') ?? '',
-        phone: prefs.getString('patient_phone') ?? '',
-      );
-    }
-    readNotificationIds = prefs.getStringList('read_notifications')?.toSet() ?? {};
+    session = await deps.loadSession();
+    readNotificationIds = await deps.loadReadNotifications();
     bootstrapped = true;
     notifyListeners();
     if (session?.hasToken == true) {
@@ -151,27 +140,13 @@ class OptiFlowController extends ChangeNotifier {
 
   Future<void> _saveSession(PatientSession value) async {
     session = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('patient_id', value.patientId);
-    await prefs.setString('patient_name', value.name);
-    await prefs.setString('patient_email', value.email);
-    await prefs.setString('patient_phone', value.phone);
-    if (value.hasToken) {
-      await prefs.setString('token', value.token!);
-    } else {
-      await prefs.remove('token');
-    }
+    await deps.saveSession(value);
     notifyListeners();
   }
 
   Future<void> logout() async {
     session = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('patient_id');
-    await prefs.remove('token');
-    await prefs.remove('patient_name');
-    await prefs.remove('patient_email');
-    await prefs.remove('patient_phone');
+    await deps.clearSession();
     appointments = DemoData.appointments();
     orders = DemoData.orders();
     history = List.of(DemoData.history);
@@ -349,8 +324,7 @@ class OptiFlowController extends ChangeNotifier {
 
   Future<void> markNotificationsRead() async {
     readNotificationIds = notifications.map((n) => n.id).toSet();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('read_notifications', readNotificationIds.toList());
+    await deps.saveReadNotifications(readNotificationIds);
     notifyListeners();
   }
 
