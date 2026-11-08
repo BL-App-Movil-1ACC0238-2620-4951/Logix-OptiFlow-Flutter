@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+
+/// Paleta tomada del cliente Android (Compose) de OptiFlow.
+abstract final class AppColors {
+  static const lavender = Color(0xFFDFE4FF);
+  static const navyBlue = Color(0xFF1E3D79);
+  static const periwinkle = Color(0xFFF4F5FF);
+  static const electric = Color(0xFF0013C1);
+  static const skyTint = Color(0xFFD8E8FF);
+  static const deepNavy = Color(0xFF1B3162);
+  static const white = Color(0xFFFFFFFF);
+  static const mintWhite = Color(0xFFF9FFFE);
+  static const navy75 = Color(0xFF1D3C75);
+  static const patientHeader = Color(0xFF1E1B72);
+  static const screenBg = Color(0xFFECF1FD);
+  static const headerTitle = Color(0xFFE6EEFF);
+  static const cardBorder = Color(0xFFDFE4FF);
+  static const slate500 = Color(0xFF64748B);
+  static const slate400 = Color(0xFF94A3B8);
+  static const slate300 = Color(0xFFCBD5E1);
+  static const slate600 = Color(0xFF475569);
+  static const slate700 = Color(0xFF334155);
+  static const slate200 = Color(0xFFE2E8F0);
+  static const teal700 = Color(0xFF0E7490);
+  static const emerald50 = Color(0xFFECFDF5);
+  static const emerald600 = Color(0xFF059669);
+  static const warmGray = Color(0xFFA19B95);
+  static const wellnessBg = Color(0xFFD1DDFA);
+  static const wellnessIcon = Color(0xFF7EA0F1);
+  static const navInactive = Color(0xB31D3C75);
+  static const infoBanner = Color(0xFFD4E0FA);
+  static const loginGradientTop = Color(0xFFC5D8F5);
+  static const brand = Color(0xFF00135B);
+  static const tagline = Color(0xFF39588F);
+  static const subtitle = Color(0xFF365692);
+  static const cardSurface = Color(0xFFFDFDFD);
+  static const errorRed = Color(0xFFDC2626);
+  static const errorBg = Color(0xFFFEE2E2);
+  static const ctaNavy = Color(0xFF1C3C78);
+  static const staffHeader = Color(0xFF1B2361);
+  static const staffInk = Color(0xFF0B1C30);
+  static const staffMuted = Color(0xFF495F80);
+  static const staffBorder = Color(0xFFE5E7EB);
+  static const staffChip = Color(0xFFDCE9FF);
+  static const staffAccent = Color(0xFF1E50E2);
+  static const staffField = Color(0xFFF8FAFC);
+  static const staffGreen = Color(0xFF10B981);
+  static const staffBlue50 = Color(0xFFEFF6FF);
+  static const backChip = Color(0xFFE4E9FB);
+}
