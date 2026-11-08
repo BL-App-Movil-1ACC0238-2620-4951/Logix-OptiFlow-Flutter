@@ -444,13 +444,15 @@ class SolidButton extends StatelessWidget {
 }
 
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.onTap, this.color = AppColors.white, this.radius = 16});
+  const AppCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.onTap, this.color = AppColors.white, this.radius = 16, this.borderColor, this.borderWidth = 1});
 
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
   final Color color;
   final double radius;
+  final Color? borderColor;
+  final double borderWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +460,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.8)),
+        border: Border.all(color: borderColor ?? AppColors.cardBorder.withValues(alpha: 0.8), width: borderWidth),
         boxShadow: const [BoxShadow(color: Color(0x1400135B), blurRadius: 16, offset: Offset(0, 6))],
       ),
       child: Padding(padding: padding, child: child),

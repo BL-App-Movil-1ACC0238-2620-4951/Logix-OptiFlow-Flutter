@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
+import 'search/catalog_prompt.dart';
+import 'search/store_result_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -22,8 +24,6 @@ class _SearchScreenState extends State<SearchScreen> {
   int _chip = 0;
 
   static const _chips = ['Todas', 'Abiertas', 'Mejor valoradas', '4.5+', '4.0+'];
-  static const _distances = ['0,8 km', '1,4 km', '2,1 km', '3,2 km'];
-  static const _slots = ['Hoy · 10:30', 'Hoy · 12:00', 'Mañana · 09:00', 'Mañana · 11:30'];
 
   @override
   void initState() {
@@ -76,37 +76,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          InkWell(
-            onTap: () => context.push('/p/catalog'),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.infoBanner, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.skyTint)),
-              child: Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(12)),
-                    child: Text('?', style: GoogleFonts.poppins(fontSize: 24, color: AppColors.deepNavy)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('¿YA SABES QUÉ TE GUSTA?', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.electric)),
-                        Text('Busca por montura', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                        Text('Elige un modelo y descubre dónde está disponible.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.slate500),
-                ],
-              ),
-            ),
-          ),
+          CatalogPrompt(onTap: () => context.push('/p/catalog')),
           const SizedBox(height: 16),
           SizedBox(
             height: 36,
@@ -154,29 +124,8 @@ class _SearchScreenState extends State<SearchScreen> {
           if (!app.searchLoading && stores.isEmpty)
             Text(app.searchMessage ?? 'No encontramos ópticas con ese filtro.', style: GoogleFonts.inter(color: AppColors.slate500)),
           for (var i = 0; i < stores.length; i++) ...[
-            AppCard(
-              onTap: () => context.push('/p/book?storeId=${stores[i].id}'),
-              child: Row(
-                children: [
-                  const IconTile(icon: Icons.storefront_outlined, size: 48),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(stores[i].name, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                        Text(stores[i].address, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                        const SizedBox(height: 4),
-                        Text('${(stores[i].rating ?? 0).toStringAsFixed(1)} · ${_distances[i % _distances.length]} · ${_slots[i % _slots.length]}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                        Text('Examen visual · Lentes · Monturas', maxLines: 1, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.slate400),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            StoreResultCard(store: stores[i], index: i),
+            const SizedBox(height: 14),
           ],
         ],
       ),
