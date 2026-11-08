@@ -4,27 +4,31 @@ import '../../domain/entities/production_order.dart';
 import '../../domain/entities/staff_alert.dart';
 import '../../domain/entities/staff_patient.dart';
 import '../../domain/repositories/staff_repository.dart';
-import '../datasources/demo_data.dart';
+import '../datasources/staff_local_data_source.dart';
 
 class StaffRepositoryImpl implements StaffRepository {
-  @override
-  List<StaffPatient> patients() => DemoData.staffPatients;
+  StaffRepositoryImpl([StaffLocalDataSource? local]) : _local = local ?? StaffLocalDataSource();
+
+  final StaffLocalDataSource _local;
 
   @override
-  List<AgendaItem> agenda() => DemoData.agenda;
+  List<StaffPatient> patients() => StaffLocalDataSource.patients;
 
   @override
-  List<ProductItem> products() => DemoData.products;
+  List<AgendaItem> agenda() => StaffLocalDataSource.agenda;
 
   @override
-  ProductItem product(String id) => DemoData.product(id);
+  List<ProductItem> products() => StaffLocalDataSource.products;
 
   @override
-  List<ProductionOrder> productionOrders() => DemoData.productionOrders;
+  ProductItem product(String id) => _local.product(id);
 
   @override
-  List<StaffAlert> alerts() => DemoData.alerts;
+  List<ProductionOrder> productionOrders() => StaffLocalDataSource.productionOrders;
 
   @override
-  List<double> reportBars() => DemoData.reportBars;
+  List<StaffAlert> alerts() => StaffLocalDataSource.alerts;
+
+  @override
+  List<double> reportBars() => StaffLocalDataSource.reportBars;
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
 import '../../domain/entities/models.dart';
+import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
 
 class OptiFlowController extends ChangeNotifier {
@@ -238,7 +238,7 @@ class OptiFlowController extends ChangeNotifier {
     final now = DateTime.now();
     final mapped = apiAppointments.map((appt) {
       final store = byId[appt.opticalStoreId];
-      return _appointmentUi(
+      return PatientViewMapper.appointment(
         id: appt.id,
         start: appt.start,
         end: appt.end,
@@ -255,11 +255,11 @@ class OptiFlowController extends ChangeNotifier {
         .map((a) => _cancelled.contains(a.id) ? a.copyWith(status: AppointmentStatus.cancelled) : a)
         .toList();
     final name = displayName;
-    orders = apiOrders.map(_orderUi).toList();
+    orders = apiOrders.map(PatientViewMapper.order).toList();
     if (orders.isEmpty) orders = PatientDemo.orders();
-    history = records.map(_history).toList();
+    history = records.map(PatientViewMapper.history).toList();
     if (history.isEmpty) history = List.of(PatientDemo.history);
-    prescription = _prescription(records, name) ?? PrescriptionUi.demo(name);
+    prescription = PatientViewMapper.prescription(records, name) ?? PrescriptionUi.demo(name);
     patientLoading = false;
     notifyListeners();
   }
@@ -272,36 +272,21 @@ class OptiFlowController extends ChangeNotifier {
     required DateTime date,
     required String time,
   }) {
-    final end = _plusMinutes(time, 45);
-    String cap(String value) => value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
     appointments = [
       for (final item in appointments)
         if (item.id == id)
-          item.copyWith(
+          PatientViewMapper.reschedule(
+            item,
             title: title,
             storeName: storeName,
             storeAddress: storeAddress,
-            day: DateFormat('d', 'es').format(date),
-            month: DateFormat('MMM', 'es').format(date).replaceAll('.', '').toUpperCase(),
-            monthName: cap(DateFormat('MMMM', 'es').format(date)),
-            weekday: cap(DateFormat('EEEE', 'es').format(date)),
+            date: date,
             time: time,
-            endTime: end,
-            status: AppointmentStatus.pending,
-            isPast: date.isBefore(DateTime.now()),
           )
         else
           item,
     ];
     notifyListeners();
-  }
-
-  static String _plusMinutes(String hhmm, int minutes) {
-    final parts = hhmm.split(':');
-    final total = int.parse(parts[0]) * 60 + int.parse(parts[1]) + minutes;
-    final h = (total ~/ 60).toString().padLeft(2, '0');
-    final m = (total % 60).toString().padLeft(2, '0');
-    return '$h:$m';
   }
 
   void cancelAppointment(String id) {
@@ -424,14 +409,7 @@ class OptiFlowController extends ChangeNotifier {
       slots = _demoSlots();
       bookingDemo = true;
     } else {
-      slots = [
-        for (final slot in apiSlots)
-          SlotOption(
-            id: slot.id,
-            date: DateTime(slot.start.year, slot.start.month, slot.start.day),
-            time: DateFormat('HH:mm').format(slot.start),
-          ),
-      ];
+      slots = [for (final slot in apiSlots) PatientViewMapper.slot(slot)];
     }
     selectedDate = slots.isEmpty ? null : slots.map((s) => s.date).reduce((a, b) => a.isBefore(b) ? a : b);
     weekStart = _monday(selectedDate ?? DateTime.now());
@@ -596,106 +574,5 @@ class OptiFlowController extends ChangeNotifier {
       for (var offset = 0; offset < 5; offset++)
         for (final time in times) SlotOption(id: null, date: monday.add(Duration(days: offset)), time: time),
     ];
-  }
-
-  AppointmentUi _appointmentUi({
-    required String id,
-    required DateTime start,
-    required DateTime end,
-    required String title,
-    required String storeName,
-    required String storeAddress,
-    required AppointmentStatus status,
-    required bool isPast,
-    required bool fromApi,
-  }) {
-    String cap(String value) => value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
-    return AppointmentUi(
-      id: id,
-      day: DateFormat('d', 'es').format(start),
-      month: DateFormat('MMM', 'es').format(start).replaceAll('.', '').toUpperCase(),
-      monthName: cap(DateFormat('MMMM', 'es').format(start)),
-      weekday: cap(DateFormat('EEEE', 'es').format(start)),
-      time: DateFormat('HH:mm').format(start),
-      endTime: DateFormat('HH:mm').format(end),
-      title: title,
-      storeName: storeName,
-      storeAddress: storeAddress,
-      professional: 'Dra. Fernanda Soto',
-      status: status,
-      isPast: isPast,
-      fromApi: fromApi,
-    );
-  }
-
-  OrderUi _orderUi(WorkOrder order) {
-    final status = order.status.toUpperCase();
-    final step = switch (status) {
-      'PENDING' => 1,
-      'IN_WORKSHOP' || 'QUALITY_CONTROL' || 'IN_PRODUCTION' || 'PRODUCTION' => 2,
-      'READY_FOR_DELIVERY' || 'READY' => 3,
-      'DELIVERED' => 4,
-      _ => 0,
-    };
-    final id = order.id;
-    return OrderUi(
-      id: id,
-      code: 'OF-${id.substring(0, id.length < 4 ? id.length : 4).toUpperCase()}',
-      title: 'Lentes ópticos + montura',
-      dateLabel: DateFormat('d MMM', 'es').format(order.createdAt ?? DateTime.now()),
-      step: step,
-      estimate: order.estimatedDelivery ?? 'por confirmar',
-      product: 'Montura Nova N-24 · Azul',
-      productDetail: order.lensSpecification ?? 'Lentes monofocales con antirreflejo',
-      pickup: 'Óptica Visión Norte · Providencia',
-      history: const [],
-      fromApi: true,
-    );
-  }
-
-  HistoryEntry _history(ClinicalRecord record) {
-    final when = record.examinationDate?.toLocal();
-    return HistoryEntry(
-      date: when == null ? '—' : DateFormat('dd MMM yyyy', 'es').format(when).toUpperCase().replaceAll('.', ''),
-      title: 'Evaluación visual',
-      summary: record.observations ?? 'Sin observaciones',
-      professional: 'Dra. Fernanda Soto',
-    );
-  }
-
-  PrescriptionUi? _prescription(List<ClinicalRecord> records, String name) {
-    ClinicalRecord? chosen;
-    for (final record in records) {
-      if (record.prescription == null) continue;
-      final date = record.examinationDate;
-      if (chosen == null || (date != null && (chosen.examinationDate == null || date.isAfter(chosen.examinationDate!)))) {
-        chosen = record;
-      }
-    }
-    final values = chosen?.prescription;
-    if (values == null) return null;
-    String fmt(num? value, {bool plus = false}) {
-      if (value == null) return '—';
-      final text = value.toStringAsFixed(2);
-      if (plus && value > 0) return '+$text';
-      return text.replaceAll('-', '−');
-    }
-
-    final date = chosen?.examinationDate?.toLocal() ?? DateTime.now();
-    final treatment = values.treatment?.trim() ?? '';
-    return PrescriptionUi.demo(name).copyWith(
-      patientName: name,
-      date: DateFormat('dd/MM/yyyy').format(date),
-      issuedLabel: 'Emitida el ${DateFormat('d MMM yyyy', 'es').format(date)}',
-      sphereOd: fmt(values.sphereOd),
-      cylinderOd: fmt(values.cylinderOd),
-      axisOd: values.axisOd == null ? '—' : '${values.axisOd}°',
-      additionOd: fmt(values.addition, plus: true),
-      sphereOi: fmt(values.sphereOs),
-      cylinderOi: fmt(values.cylinderOs),
-      axisOi: values.axisOs == null ? '—' : '${values.axisOs}°',
-      additionOi: fmt(values.addition, plus: true),
-      observations: treatment.isEmpty ? null : values.treatment,
-    );
   }
 }

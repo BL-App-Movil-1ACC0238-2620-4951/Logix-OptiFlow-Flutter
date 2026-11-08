@@ -1,92 +1,11 @@
-import '../../domain/entities/models.dart';
+import '../../domain/entities/agenda_item.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/entities/production_order.dart';
+import '../../domain/entities/staff_alert.dart';
+import '../../domain/entities/staff_patient.dart';
 
-abstract final class DemoData {
-  static const frames = <FrameItem>[
-    FrameItem(
-      id: 'verona',
-      name: 'Verona Classic',
-      category: 'OFTÁLMICO',
-      price: 120,
-      fromPrice: 'Desde \$92.90',
-      image: 'assets/images/img_frame_verona.png',
-      description: 'Montura ligera · Atigrado',
-      stock: 4,
-      features: ['Acetato premium', 'Ligera'],
-      colors: ['Azul marino', 'Cristal', 'Carey'],
-      size: 52,
-    ),
-    FrameItem(
-      id: 'havana',
-      name: 'Havana Sun',
-      category: 'SOLAR',
-      price: 145,
-      fromPrice: 'Desde \$145.00',
-      image: 'assets/images/img_frame_havana.png',
-      description: 'Montura solar · Dorado',
-      stock: 6,
-      features: ['Protección UV400', 'Metal'],
-      colors: ['Dorado', 'Negro'],
-      size: 54,
-    ),
-    FrameItem(
-      id: 'sienna',
-      name: 'Sienna Gold',
-      category: 'SOLAR',
-      price: 180,
-      fromPrice: 'Desde \$180.00',
-      image: 'assets/images/img_frame_sienna.jpg',
-      description: 'Montura redonda · Negro y dorado',
-      stock: 3,
-      features: ['Polarizado', 'Metal'],
-      colors: ['Negro', 'Dorado'],
-      size: 50,
-    ),
-    FrameItem(
-      id: 'roma',
-      name: 'Roma Black',
-      category: 'OFTÁLMICO',
-      price: 110,
-      fromPrice: 'Desde \$110.00',
-      image: 'assets/images/img_frame_roma.jpg',
-      description: 'Montura cuadrada · Negro',
-      stock: 8,
-      features: ['Acetato premium', 'Resistente'],
-      colors: ['Negro', 'Carey'],
-      size: 52,
-    ),
-    FrameItem(
-      id: 'amber',
-      name: 'Amber Vintage',
-      category: 'OFTÁLMICO',
-      price: 135,
-      fromPrice: 'Desde \$135.00',
-      image: 'assets/images/img_frame_amber.jpg',
-      description: 'Montura vintage · Ámbar',
-      stock: 5,
-      features: ['Acetato premium', 'Ligera'],
-      colors: ['Ámbar', 'Carey'],
-      size: 50,
-    ),
-    FrameItem(
-      id: 'pacific',
-      name: 'Pacific Blue',
-      category: 'SOLAR',
-      price: 160,
-      fromPrice: 'Desde \$160.00',
-      image: 'assets/images/img_frame_pacific.jpg',
-      description: 'Montura deportiva · Espejado azul',
-      stock: 7,
-      features: ['Espejado', 'Polarizado'],
-      colors: ['Azul', 'Plata'],
-      size: 56,
-    ),
-  ];
-
-  static const catalogGrid = ['sienna', 'roma', 'amber', 'pacific', 'roma', 'pacific', 'sienna'];
-
-  static FrameItem frame(String id) => frames.firstWhere((f) => f.id == id, orElse: () => frames.first);
-
-  static const staffPatients = <StaffPatient>[
+class StaffLocalDataSource {
+  static const patients = <StaffPatient>[
     StaffPatient(id: 'vs', initials: 'VS', name: 'Valentina Silva', fullName: 'Valentina Silva Morales', rut: '18.234.567-8', note: 'Control hoy · 10:30', phone: '+56 9 8412 9043', lastVisit: '24 jun 2024', ficha: 'OPT-2024-849', age: 28),
     StaffPatient(id: 'mg', initials: 'MG', name: 'María González', fullName: 'María González Pérez', rut: '12.345.678-9', note: 'Último control · 12 jun', phone: '+56 9 7781 2201', lastVisit: '12 jun 2024', ficha: 'OPT-2024-612', age: 41),
     StaffPatient(id: 'tf', initials: 'TF', name: 'Tomás Fuentes', fullName: 'Tomás Fuentes Ríos', rut: '20.481.292-1', note: 'Nuevo paciente', phone: '+56 9 6620 4419', lastVisit: '—', ficha: 'OPT-2024-901', age: 23),
@@ -113,7 +32,7 @@ abstract final class DemoData {
     ProductItem(id: 'vo5282', name: 'VO5282B Cat-Eye', sku: 'VO5282B', code: 'VO-5282-53-17', detail: 'Borgoña · Acetato fino', price: '\$138.000', tag: 'Última unidad', available: 1, image: 'assets/images/img_inv_vogue.png', category: 'Armazones', size: '53-17-140', location: 'Cajón Taller', supplier: 'Vogue Eyewear'),
   ];
 
-  static ProductItem product(String id) => products.firstWhere((p) => p.id == id, orElse: () => products.first);
+  ProductItem product(String id) => products.firstWhere((item) => item.id == id, orElse: () => products.first);
 
   static const productionOrders = <ProductionOrder>[
     ProductionOrder(code: 'OT-2048', patient: 'Valentina Silva', detail: 'Nova N-24 · Monofocal 1.60', stage: ProductionStage.inWorkshop, due: 'Entrega 28 jun'),
