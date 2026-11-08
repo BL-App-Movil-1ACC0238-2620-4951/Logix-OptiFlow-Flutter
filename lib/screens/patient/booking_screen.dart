@@ -62,7 +62,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 if (app.bookingStep == 1) _Stores(app: app),
                 if (app.bookingStep == 2) _Calendar(app: app),
                 if (app.bookingStep == 3) _Confirm(app: app),
-                if (app.bookingStep == 4) _Done(app: app),
+                if (app.bookingStep == 4) const _Done(),
               ],
             ),
     );
@@ -235,8 +235,7 @@ class _Confirm extends StatelessWidget {
 }
 
 class _Done extends StatelessWidget {
-  const _Done({required this.app});
-  final OptiFlowController app;
+  const _Done();
 
   @override
   Widget build(BuildContext context) {

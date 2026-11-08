@@ -22,32 +22,32 @@ class _CatalogScreenState extends State<CatalogScreen> {
     return PatientScaffold(
       tab: PatientTab.search,
       topBar: LightTopBar(title: 'Explorar monturas', onBack: () => context.pop()),
-      body: GridView.builder(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 6,
+                children: [
+                  for (final label in const ['Todos', 'OFTÁLMICO', 'SOLAR'])
+                    ChoiceChip(
+                      label: Text(label, style: const TextStyle(fontSize: 11)),
+                      selected: filter == label,
+                      onSelected: (_) => setState(() => filter = label),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
         padding: const EdgeInsets.all(20),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.68),
-        itemCount: frames.length + 1,
+        itemCount: frames.length,
         itemBuilder: (context, index) {
-          if (index == 0) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Colección', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final label in const ['Todos', 'OFTÁLMICO', 'SOLAR'])
-                      ChoiceChip(
-                        label: Text(label, style: const TextStyle(fontSize: 11)),
-                        selected: filter == label,
-                        onSelected: (_) => setState(() => filter = label),
-                      ),
-                  ],
-                ),
-              ],
-            );
-          }
-          final frame = frames[index - 1];
+          final frame = frames[index];
           return AppCard(
             padding: const EdgeInsets.all(8),
             onTap: () => context.push('/p/frame/${frame.id}'),
@@ -63,6 +63,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
             ),
           );
         },
+            ),
+          ),
+        ],
       ),
     );
   }

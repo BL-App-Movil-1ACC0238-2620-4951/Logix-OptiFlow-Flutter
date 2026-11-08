@@ -427,7 +427,7 @@ class OptiFlowController extends ChangeNotifier {
   void shiftWeek(int weeks) {
     weekStart = weekStart.add(Duration(days: 7 * weeks));
     final days = List.generate(5, (i) => weekStart.add(Duration(days: i)));
-    selectedDate = days.cast<DateTime?>().firstWhere((d) => slots.any((s) => _sameDay(s.date, d!)), orElse: () => days.first);
+    selectedDate = days.firstWhere(hasSlots, orElse: () => days.first);
     selectedSlot = null;
     notifyListeners();
   }
@@ -667,6 +667,8 @@ class OptiFlowController extends ChangeNotifier {
     final date = chosenDate?.toLocal() ?? DateTime.now();
     return PrescriptionUi.demo(name).copyWith(
       patientName: name,
+      date: DateFormat('dd/MM/yyyy').format(date),
+      issuedLabel: 'Emitida el ${DateFormat('d MMM yyyy', 'es').format(date)}',
       sphereOd: fmt(chosen['sphereOD']),
       cylinderOd: fmt(chosen['cylinderOD']),
       axisOd: chosen['axisOD'] == null ? '—' : '${chosen['axisOD']}°',

@@ -288,11 +288,13 @@ class PrescriptionUi {
     String? pupillaryDistance,
     String? observations,
     String? patientName,
+    String? date,
+    String? issuedLabel,
   }) {
     return PrescriptionUi(
       patientName: patientName ?? this.patientName,
-      date: date,
-      issuedLabel: issuedLabel,
+      date: date ?? this.date,
+      issuedLabel: issuedLabel ?? this.issuedLabel,
       sphereOd: sphereOd ?? this.sphereOd,
       cylinderOd: cylinderOd ?? this.cylinderOd,
       axisOd: axisOd ?? this.axisOd,
