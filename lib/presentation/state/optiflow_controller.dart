@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/demo_data.dart';
-import '../data/optiflow_api.dart';
-import '../models/models.dart';
+import '../../data/datasources/demo_data.dart';
+import '../../core/network/optiflow_api.dart';
+import '../../domain/entities/models.dart';
 
 class OptiFlowController extends ChangeNotifier {
   OptiFlowController({OptiFlowApi? api}) : api = api ?? OptiFlowApi();

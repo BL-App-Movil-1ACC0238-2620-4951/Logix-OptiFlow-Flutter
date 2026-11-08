@@ -1,4 +1,4 @@
-import '../models/models.dart';
+import '../../domain/entities/models.dart';
 
 enum AgendaStatus { waiting, confirmed, pending, pickup, done }
 

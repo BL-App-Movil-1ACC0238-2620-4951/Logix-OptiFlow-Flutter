@@ -3,18 +3,18 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'screens/auth_screen.dart';
-import 'screens/patient/appointments_screen.dart';
-import 'screens/patient/booking_screen.dart';
-import 'screens/patient/catalog_screen.dart';
-import 'screens/patient/extra_screens.dart';
-import 'screens/patient/home_screen.dart';
-import 'screens/patient/orders_screen.dart';
-import 'screens/patient/profile_screen.dart';
-import 'screens/patient/search_screen.dart';
-import 'screens/staff/staff_screens.dart';
-import 'state/optiflow_controller.dart';
-import 'theme/app_colors.dart';
+import 'presentation/pages/auth/auth_screen.dart';
+import 'presentation/pages/patient/appointments_screen.dart';
+import 'presentation/pages/patient/booking_screen.dart';
+import 'presentation/pages/patient/catalog_screen.dart';
+import 'presentation/pages/patient/extra_screens.dart';
+import 'presentation/pages/patient/home_screen.dart';
+import 'presentation/pages/patient/orders_screen.dart';
+import 'presentation/pages/patient/profile_screen.dart';
+import 'presentation/pages/patient/search_screen.dart';
+import 'presentation/pages/staff/staff_screens.dart';
+import 'presentation/state/optiflow_controller.dart';
+import 'core/theme/app_colors.dart';
 
 class OptiFlowApp extends StatefulWidget {
   const OptiFlowApp({super.key});

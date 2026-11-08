@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/models.dart';
+import '../../../domain/entities/models.dart';
 import '../../state/optiflow_controller.dart';
-import '../../theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
 
 class NotificationsScreen extends StatefulWidget {

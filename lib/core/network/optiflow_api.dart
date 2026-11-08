@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../models/models.dart';
+import '../../domain/entities/models.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});

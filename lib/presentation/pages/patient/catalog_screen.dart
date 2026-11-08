@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../data/demo_data.dart';
-import '../../theme/app_colors.dart';
+import '../../../data/datasources/demo_data.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
 
 class CatalogScreen extends StatefulWidget {

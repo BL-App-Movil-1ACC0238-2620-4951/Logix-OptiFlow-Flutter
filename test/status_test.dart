@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logix_optiflow/models/models.dart';
+import 'package:logix_optiflow/domain/entities/models.dart';
 
 void main() {
   test('mapea estados de cita del backend', () {
