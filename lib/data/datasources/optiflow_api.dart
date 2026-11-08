@@ -2,8 +2,13 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../../domain/entities/models.dart';
-import '../errors/api_exception.dart';
+import '../models/appointment_dto.dart';
+import '../models/clinical_record_dto.dart';
+import '../models/optical_store_dto.dart';
+import '../models/patient_dto.dart';
+import '../models/time_slot_dto.dart';
+import '../models/work_order_dto.dart';
+import '../../core/errors/api_exception.dart';
 
 /// Cliente HTTP del backend. La app lo usa solo desde los repositorios.
 class OptiFlowApi {
@@ -21,12 +26,12 @@ class OptiFlowApi {
 
   static String _normalize(String raw) => raw.endsWith('/') ? raw : '$raw/';
 
-  Future<List<OpticalStore>> listStores({String? name, String? address}) async {
+  Future<List<OpticalStoreDto>> listStores({String? name, String? address}) async {
     final json = await _get('optical-stores', {'name': name, 'address': address});
     return _stores(json);
   }
 
-  Future<({List<OpticalStore> stores, String? message})> searchStores({
+  Future<StoreSearchDto> searchStores({
     String? name,
     String? address,
     double? minRating,
@@ -36,23 +41,19 @@ class OptiFlowApi {
       'address': address,
       'minRating': minRating?.toString(),
     });
-    if (json is Map) {
-      return (stores: _stores(json), message: json['message'] as String?);
-    }
-    return (stores: _stores(json), message: null);
+    return StoreSearchDto(
+      stores: _stores(json),
+      message: json is Map ? json['message'] as String? : null,
+    );
   }
 
-  Future<List<TimeSlot>> availability(String storeId) async {
+  Future<List<TimeSlotDto>> availability(String storeId) async {
     final json = await _get('optical-stores/$storeId/availability');
     final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];
-    return list
-        .whereType<Map>()
-        .map((e) => TimeSlot.fromJson(Map<String, dynamic>.from(e)))
-        .where((s) => s.status.toUpperCase() == 'AVAILABLE')
-        .toList();
+    return list.whereType<Map>().map((e) => TimeSlotDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
-  Future<PatientSession> register({
+  Future<PatientDto> register({
     required String name,
     required String email,
     required String phone,
@@ -64,29 +65,20 @@ class OptiFlowApi {
       'phone': phone,
       'password': password,
     });
-    final map = Map<String, dynamic>.from(json as Map);
-    return PatientSession(
-      patientId: '${map['id']}',
-      name: '${map['name'] ?? name}',
-      email: '${map['email'] ?? email}',
-      phone: '${map['phone'] ?? phone}',
+    return PatientDto.fromRegister(
+      Map<String, dynamic>.from(json as Map),
+      name: name,
+      email: email,
+      phone: phone,
     );
   }
 
-  Future<PatientSession> login({required String email, required String password}) async {
+  Future<PatientDto> login({required String email, required String password}) async {
     final json = await _send('POST', 'login', {'email': email, 'password': password});
-    final map = Map<String, dynamic>.from(json as Map);
-    final patient = Map<String, dynamic>.from(map['patient'] as Map? ?? const {});
-    return PatientSession(
-      patientId: '${patient['id']}',
-      token: '${map['token'] ?? ''}',
-      name: '${patient['name'] ?? ''}',
-      email: '${patient['email'] ?? email}',
-      phone: '${patient['phone'] ?? ''}',
-    );
+    return PatientDto.fromLogin(Map<String, dynamic>.from(json as Map), email: email);
   }
 
-  Future<Appointment> book({
+  Future<AppointmentDto> book({
     required String patientId,
     required String opticalStoreId,
     required String timeSlotId,
@@ -96,30 +88,30 @@ class OptiFlowApi {
       'opticalStoreId': opticalStoreId,
       'timeSlotId': timeSlotId,
     });
-    return Appointment.fromJson(Map<String, dynamic>.from(json as Map));
+    return AppointmentDto.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
-  Future<List<Appointment>> appointments(String patientId) async {
+  Future<List<AppointmentDto>> appointments(String patientId) async {
     final json = await _get('patients/$patientId/appointments');
     final list = json is List ? json : (json is Map ? json['value'] as List? : null) ?? const [];
-    return list.whereType<Map>().map((e) => Appointment.fromJson(Map<String, dynamic>.from(e))).toList();
+    return list.whereType<Map>().map((e) => AppointmentDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
-  Future<List<Map<String, dynamic>>> workOrders(String patientId) async {
+  Future<List<WorkOrderDto>> workOrders(String patientId) async {
     final json = await _get('patients/$patientId/work-orders');
     final list = json is List ? json : const [];
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list.whereType<Map>().map((e) => WorkOrderDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
-  Future<List<Map<String, dynamic>>> clinicalRecords(String patientId) async {
+  Future<List<ClinicalRecordDto>> clinicalRecords(String patientId) async {
     final json = await _get('patients/$patientId/clinical-records');
     final list = json is List ? json : const [];
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list.whereType<Map>().map((e) => ClinicalRecordDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
-  List<OpticalStore> _stores(Object? json) {
+  List<OpticalStoreDto> _stores(Object? json) {
     final list = json is Map ? (json['opticalStores'] as List?) ?? const [] : json is List ? json : const [];
-    return list.whereType<Map>().map((e) => OpticalStore.fromJson(Map<String, dynamic>.from(e))).toList();
+    return list.whereType<Map>().map((e) => OpticalStoreDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
   Future<Object?> _get(String path, [Map<String, String?>? query]) async {

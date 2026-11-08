@@ -1,4 +1,4 @@
-import '../../core/network/optiflow_api.dart';
+import '../datasources/optiflow_api.dart';
 import '../../domain/entities/models.dart';
 import '../../domain/repositories/patient_repository.dart';
 
@@ -8,8 +8,9 @@ class PatientRepositoryImpl implements PatientRepository {
   final OptiFlowApi _api;
 
   @override
-  Future<PatientSession> login({required String email, required String password}) {
-    return _api.login(email: email, password: password);
+  Future<PatientSession> login({required String email, required String password}) async {
+    final dto = await _api.login(email: email, password: password);
+    return dto.toEntity();
   }
 
   @override
@@ -18,7 +19,8 @@ class PatientRepositoryImpl implements PatientRepository {
     required String email,
     required String phone,
     required String password,
-  }) {
-    return _api.register(name: name, email: email, phone: phone, password: password);
+  }) async {
+    final dto = await _api.register(name: name, email: email, phone: phone, password: password);
+    return dto.toEntity();
   }
 }

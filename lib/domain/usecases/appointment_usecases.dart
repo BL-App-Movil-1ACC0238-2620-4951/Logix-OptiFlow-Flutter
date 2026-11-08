@@ -32,7 +32,7 @@ class GetPatientWorkOrders {
 
   final AppointmentRepository _appointments;
 
-  Future<List<Map<String, dynamic>>> call(String patientId) => _appointments.workOrders(patientId);
+  Future<List<WorkOrder>> call(String patientId) => _appointments.workOrders(patientId);
 }
 
 class GetPatientClinicalRecords {
@@ -40,5 +40,5 @@ class GetPatientClinicalRecords {
 
   final AppointmentRepository _appointments;
 
-  Future<List<Map<String, dynamic>>> call(String patientId) => _appointments.clinicalRecords(patientId);
+  Future<List<ClinicalRecord>> call(String patientId) => _appointments.clinicalRecords(patientId);
 }

@@ -9,7 +9,7 @@ abstract class AppointmentRepository {
     required String timeSlotId,
   });
 
-  Future<List<Map<String, dynamic>>> workOrders(String patientId);
+  Future<List<WorkOrder>> workOrders(String patientId);
 
-  Future<List<Map<String, dynamic>>> clinicalRecords(String patientId);
+  Future<List<ClinicalRecord>> clinicalRecords(String patientId);
 }

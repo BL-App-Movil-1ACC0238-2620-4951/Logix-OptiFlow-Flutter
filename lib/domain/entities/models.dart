@@ -42,17 +42,6 @@ class OpticalStore {
   final String phone;
   final double? rating;
   final String status;
-
-  factory OpticalStore.fromJson(Map<String, dynamic> json) {
-    return OpticalStore(
-      id: '${json['id']}',
-      name: '${json['name'] ?? 'Óptica'}',
-      address: '${json['address'] ?? ''}',
-      phone: '${json['phone'] ?? ''}',
-      rating: (json['rating'] as num?)?.toDouble(),
-      status: '${json['status'] ?? ''}',
-    );
-  }
 }
 
 class TimeSlot {
@@ -69,16 +58,6 @@ class TimeSlot {
   final DateTime start;
   final DateTime end;
   final String status;
-
-  factory TimeSlot.fromJson(Map<String, dynamic> json) {
-    return TimeSlot(
-      id: '${json['id']}',
-      opticalStoreId: '${json['opticalStoreId']}',
-      start: DateTime.parse('${json['startDateTime']}').toLocal(),
-      end: DateTime.parse('${json['endDateTime']}').toLocal(),
-      status: '${json['status'] ?? ''}',
-    );
-  }
 }
 
 class Appointment {
@@ -99,18 +78,56 @@ class Appointment {
   final String status;
   final DateTime start;
   final DateTime end;
+}
 
-  factory Appointment.fromJson(Map<String, dynamic> json) {
-    return Appointment(
-      id: '${json['id']}',
-      patientId: '${json['patientId']}',
-      opticalStoreId: '${json['opticalStoreId']}',
-      timeSlotId: '${json['timeSlotId']}',
-      status: '${json['status'] ?? 'PENDING'}',
-      start: DateTime.parse('${json['startDateTime']}').toLocal(),
-      end: DateTime.parse('${json['endDateTime']}').toLocal(),
-    );
-  }
+class WorkOrder {
+  const WorkOrder({
+    required this.id,
+    required this.status,
+    this.createdAt,
+    this.estimatedDelivery,
+    this.lensSpecification,
+  });
+
+  final String id;
+  final String status;
+  final DateTime? createdAt;
+  final String? estimatedDelivery;
+  final String? lensSpecification;
+}
+
+class PrescriptionValues {
+  const PrescriptionValues({
+    this.sphereOd,
+    this.cylinderOd,
+    this.axisOd,
+    this.addition,
+    this.sphereOs,
+    this.cylinderOs,
+    this.axisOs,
+    this.treatment,
+  });
+
+  final num? sphereOd;
+  final num? cylinderOd;
+  final num? axisOd;
+  final num? addition;
+  final num? sphereOs;
+  final num? cylinderOs;
+  final num? axisOs;
+  final String? treatment;
+}
+
+class ClinicalRecord {
+  const ClinicalRecord({
+    this.examinationDate,
+    this.observations,
+    this.prescription,
+  });
+
+  final DateTime? examinationDate;
+  final String? observations;
+  final PrescriptionValues? prescription;
 }
 
 enum AppointmentStatus { confirmed, pending, cancelled }

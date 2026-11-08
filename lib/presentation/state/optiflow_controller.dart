@@ -242,8 +242,8 @@ class OptiFlowController extends ChangeNotifier {
     final current = session;
     List<OpticalStore> loadedStores = const [];
     List<Appointment> apiAppointments = const [];
-    List<Map<String, dynamic>> apiOrders = const [];
-    List<Map<String, dynamic>> records = const [];
+    List<WorkOrder> apiOrders = const [];
+    List<ClinicalRecord> records = const [];
     try {
       loadedStores = await deps.getStores();
     } catch (_) {}
@@ -645,8 +645,8 @@ class OptiFlowController extends ChangeNotifier {
     );
   }
 
-  OrderUi _orderUi(Map<String, dynamic> dto) {
-    final status = '${dto['status'] ?? ''}'.toUpperCase();
+  OrderUi _orderUi(WorkOrder order) {
+    final status = order.status.toUpperCase();
     final step = switch (status) {
       'PENDING' => 1,
       'IN_WORKSHOP' || 'QUALITY_CONTROL' || 'IN_PRODUCTION' || 'PRODUCTION' => 2,
@@ -654,71 +654,65 @@ class OptiFlowController extends ChangeNotifier {
       'DELIVERED' => 4,
       _ => 0,
     };
-    final id = '${dto['id']}';
-    final lenses = dto['lenses'];
-    var detail = 'Lentes monofocales con antirreflejo';
-    if (lenses is List && lenses.isNotEmpty && lenses.first is Map) {
-      detail = '${(lenses.first as Map)['specifications'] ?? detail}';
-    }
+    final id = order.id;
     return OrderUi(
       id: id,
       code: 'OF-${id.substring(0, id.length < 4 ? id.length : 4).toUpperCase()}',
       title: 'Lentes ópticos + montura',
-      dateLabel: DateFormat('d MMM', 'es').format(DateTime.tryParse('${dto['createdAt']}')?.toLocal() ?? DateTime.now()),
+      dateLabel: DateFormat('d MMM', 'es').format(order.createdAt ?? DateTime.now()),
       step: step,
-      estimate: '${dto['estimatedDeliveryDate'] ?? 'por confirmar'}',
+      estimate: order.estimatedDelivery ?? 'por confirmar',
       product: 'Montura Nova N-24 · Azul',
-      productDetail: detail,
+      productDetail: order.lensSpecification ?? 'Lentes monofocales con antirreflejo',
       pickup: 'Óptica Visión Norte · Providencia',
       history: const [],
       fromApi: true,
     );
   }
 
-  HistoryEntry _history(Map<String, dynamic> dto) {
-    final when = DateTime.tryParse('${dto['examinationDate']}')?.toLocal();
+  HistoryEntry _history(ClinicalRecord record) {
+    final when = record.examinationDate?.toLocal();
     return HistoryEntry(
       date: when == null ? '—' : DateFormat('dd MMM yyyy', 'es').format(when).toUpperCase().replaceAll('.', ''),
       title: 'Evaluación visual',
-      summary: '${dto['observations'] ?? 'Sin observaciones'}',
+      summary: record.observations ?? 'Sin observaciones',
       professional: 'Dra. Fernanda Soto',
     );
   }
 
-  PrescriptionUi? _prescription(List<Map<String, dynamic>> records, String name) {
-    Map<String, dynamic>? chosen;
-    DateTime? chosenDate;
+  PrescriptionUi? _prescription(List<ClinicalRecord> records, String name) {
+    ClinicalRecord? chosen;
     for (final record in records) {
-      final rx = record['prescription'];
-      if (rx is! Map) continue;
-      final date = DateTime.tryParse('${record['examinationDate']}');
-      if (chosen == null || (date != null && (chosenDate == null || date.isAfter(chosenDate)))) {
-        chosen = Map<String, dynamic>.from(rx);
-        chosenDate = date;
+      if (record.prescription == null) continue;
+      final date = record.examinationDate;
+      if (chosen == null || (date != null && (chosen.examinationDate == null || date.isAfter(chosen.examinationDate!)))) {
+        chosen = record;
       }
     }
-    if (chosen == null) return null;
-    String fmt(Object? value, {bool plus = false}) {
-      if (value is! num) return '—';
+    final values = chosen?.prescription;
+    if (values == null) return null;
+    String fmt(num? value, {bool plus = false}) {
+      if (value == null) return '—';
       final text = value.toStringAsFixed(2);
       if (plus && value > 0) return '+$text';
       return text.replaceAll('-', '−');
     }
 
-    final date = chosenDate?.toLocal() ?? DateTime.now();
+    final date = chosen?.examinationDate?.toLocal() ?? DateTime.now();
+    final treatment = values.treatment?.trim() ?? '';
     return PrescriptionUi.demo(name).copyWith(
       patientName: name,
       date: DateFormat('dd/MM/yyyy').format(date),
       issuedLabel: 'Emitida el ${DateFormat('d MMM yyyy', 'es').format(date)}',
-      sphereOd: fmt(chosen['sphereOD']),
-      cylinderOd: fmt(chosen['cylinderOD']),
-      axisOd: chosen['axisOD'] == null ? '—' : '${chosen['axisOD']}°',
-      additionOd: fmt(chosen['addition'], plus: true),
-      sphereOi: fmt(chosen['sphereOS']),
-      cylinderOi: fmt(chosen['cylinderOS']),
-      axisOi: chosen['axisOS'] == null ? '—' : '${chosen['axisOS']}°',
-      additionOi: fmt(chosen['addition'], plus: true),
-      observations: '${chosen['treatment'] ?? ''}'.trim().isEmpty ? null : '${chosen['treatment']}',
+      sphereOd: fmt(values.sphereOd),
+      cylinderOd: fmt(values.cylinderOd),
+      axisOd: values.axisOd == null ? '—' : '${values.axisOd}°',
+      additionOd: fmt(values.addition, plus: true),
+      sphereOi: fmt(values.sphereOs),
+      cylinderOi: fmt(values.cylinderOs),
+      axisOi: values.axisOs == null ? '—' : '${values.axisOs}°',
+      additionOi: fmt(values.addition, plus: true),
+      observations: treatment.isEmpty ? null : values.treatment,
     );
   }
 }
