@@ -241,11 +241,12 @@ class _TabButton extends StatelessWidget {
 }
 
 class DarkTopBar extends StatelessWidget {
-  const DarkTopBar({super.key, required this.title, this.onBack, this.trailing});
+  const DarkTopBar({super.key, required this.title, this.onBack, this.trailing, this.below});
 
   final String title;
   final VoidCallback? onBack;
   final Widget? trailing;
+  final Widget? below;
 
   @override
   Widget build(BuildContext context) {
@@ -253,28 +254,33 @@ class DarkTopBar extends StatelessWidget {
       color: AppColors.patientHeader,
       child: SafeArea(
         bottom: false,
-        child: SizedBox(
-          height: 68,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                if (onBack != null) ...[
-                  _BackButton(onTap: onBack!, light: true),
-                  const SizedBox(width: 16),
-                ],
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.white, letterSpacing: -0.5),
-                  ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 68,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    if (onBack != null) ...[
+                      _BackButton(onTap: onBack!, light: true),
+                      const SizedBox(width: 16),
+                    ],
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.white, letterSpacing: -0.5),
+                      ),
+                    ),
+                    if (trailing != null) trailing!,
+                  ],
                 ),
-                if (trailing != null) trailing!,
-              ],
+              ),
             ),
-          ),
+            if (below != null) below!,
+          ],
         ),
       ),
     );

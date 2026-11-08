@@ -288,6 +288,46 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void rescheduleAppointment({
+    required String id,
+    required String title,
+    required String storeName,
+    required String storeAddress,
+    required DateTime date,
+    required String time,
+  }) {
+    final end = _plusMinutes(time, 45);
+    String cap(String value) => value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
+    appointments = [
+      for (final item in appointments)
+        if (item.id == id)
+          item.copyWith(
+            title: title,
+            storeName: storeName,
+            storeAddress: storeAddress,
+            day: DateFormat('d', 'es').format(date),
+            month: DateFormat('MMM', 'es').format(date).replaceAll('.', '').toUpperCase(),
+            monthName: cap(DateFormat('MMMM', 'es').format(date)),
+            weekday: cap(DateFormat('EEEE', 'es').format(date)),
+            time: time,
+            endTime: end,
+            status: AppointmentStatus.pending,
+            isPast: date.isBefore(DateTime.now()),
+          )
+        else
+          item,
+    ];
+    notifyListeners();
+  }
+
+  static String _plusMinutes(String hhmm, int minutes) {
+    final parts = hhmm.split(':');
+    final total = int.parse(parts[0]) * 60 + int.parse(parts[1]) + minutes;
+    final h = (total ~/ 60).toString().padLeft(2, '0');
+    final m = (total % 60).toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   void cancelAppointment(String id) {
     _cancelled.add(id);
     appointments = [for (final a in appointments) if (a.id == id) a.copyWith(status: AppointmentStatus.cancelled) else a];

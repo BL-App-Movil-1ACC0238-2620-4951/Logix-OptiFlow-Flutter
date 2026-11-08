@@ -172,20 +172,33 @@ class AppointmentUi {
   final bool isPast;
   final bool fromApi;
 
-  AppointmentUi copyWith({AppointmentStatus? status}) => AppointmentUi(
+  AppointmentUi copyWith({
+    AppointmentStatus? status,
+    String? day,
+    String? month,
+    String? monthName,
+    String? weekday,
+    String? time,
+    String? endTime,
+    String? title,
+    String? storeName,
+    String? storeAddress,
+    bool? isPast,
+  }) =>
+      AppointmentUi(
         id: id,
-        day: day,
-        month: month,
-        monthName: monthName,
-        weekday: weekday,
-        time: time,
-        endTime: endTime,
-        title: title,
-        storeName: storeName,
-        storeAddress: storeAddress,
+        day: day ?? this.day,
+        month: month ?? this.month,
+        monthName: monthName ?? this.monthName,
+        weekday: weekday ?? this.weekday,
+        time: time ?? this.time,
+        endTime: endTime ?? this.endTime,
+        title: title ?? this.title,
+        storeName: storeName ?? this.storeName,
+        storeAddress: storeAddress ?? this.storeAddress,
         professional: professional,
         status: status ?? this.status,
-        isPast: isPast,
+        isPast: isPast ?? this.isPast,
         fromApi: fromApi,
       );
 }
