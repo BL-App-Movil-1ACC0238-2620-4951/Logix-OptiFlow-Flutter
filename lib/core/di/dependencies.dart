@@ -1,13 +1,17 @@
 import '../../data/datasources/optiflow_api.dart';
 import '../../data/datasources/session_local_data_source.dart';
 import '../../data/repositories/appointment_repository_impl.dart';
+import '../../data/repositories/catalog_repository_impl.dart';
 import '../../data/repositories/patient_repository_impl.dart';
 import '../../data/repositories/session_repository_impl.dart';
+import '../../data/repositories/staff_repository_impl.dart';
 import '../../data/repositories/store_repository_impl.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../../domain/usecases/appointment_usecases.dart';
 import '../../domain/usecases/auth_usecases.dart';
+import '../../domain/usecases/catalog_usecases.dart';
 import '../../domain/usecases/session_usecases.dart';
+import '../../domain/usecases/staff_usecases.dart';
 import '../../domain/usecases/store_usecases.dart';
 
 /// Composition root: API, repositories and use cases.
@@ -31,6 +35,17 @@ class AppDependencies {
     bookAppointment = BookAppointment(appointments);
     getWorkOrders = GetPatientWorkOrders(appointments);
     getClinicalRecords = GetPatientClinicalRecords(appointments);
+    final catalog = CatalogRepositoryImpl();
+    final staff = StaffRepositoryImpl();
+    getFrames = GetFrames(catalog);
+    getFrame = GetFrame(catalog);
+    getStaffPatients = GetStaffPatients(staff);
+    getAgenda = GetAgenda(staff);
+    getProducts = GetProducts(staff);
+    getProduct = GetProduct(staff);
+    getProductionOrders = GetProductionOrders(staff);
+    getStaffAlerts = GetStaffAlerts(staff);
+    getReportBars = GetReportBars(staff);
   }
 
   final OptiFlowApi api;
@@ -48,4 +63,13 @@ class AppDependencies {
   late final BookAppointment bookAppointment;
   late final GetPatientWorkOrders getWorkOrders;
   late final GetPatientClinicalRecords getClinicalRecords;
+  late final GetFrames getFrames;
+  late final GetFrame getFrame;
+  late final GetStaffPatients getStaffPatients;
+  late final GetAgenda getAgenda;
+  late final GetProducts getProducts;
+  late final GetProduct getProduct;
+  late final GetProductionOrders getProductionOrders;
+  late final GetStaffAlerts getStaffAlerts;
+  late final GetReportBars getReportBars;
 }

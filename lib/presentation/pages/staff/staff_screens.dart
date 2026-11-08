@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/datasources/demo_data.dart';
+import '../../../domain/entities/models.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
@@ -13,7 +13,7 @@ class StaffDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final next = DemoData.agenda.first;
+    final next = context.read<OptiFlowController>().agenda.first;
     return StaffScaffold(
       tab: StaffTab.home,
       topBar: Container(
@@ -116,7 +116,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final items = DemoData.agenda.where((item) {
+    final items = context.read<OptiFlowController>().agenda.where((item) {
       return switch (filter) {
         1 => item.status == AgendaStatus.waiting,
         2 => item.status == AgendaStatus.confirmed,
@@ -269,7 +269,7 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final products = DemoData.products.where((p) {
+    final products = context.read<OptiFlowController>().products.where((p) {
       final q = query.toLowerCase();
       return q.isEmpty || p.name.toLowerCase().contains(q) || p.sku.toLowerCase().contains(q);
     }).toList();
@@ -646,7 +646,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final orders = DemoData.productionOrders.where((o) => o.stage == stage).toList();
+    final orders = context.read<OptiFlowController>().productionOrders.where((o) => o.stage == stage).toList();
     return StaffScaffold(
       tab: StaffTab.more,
       topBar: StaffTopBar(title: 'Producción', onBack: () => context.pop()),
@@ -662,7 +662,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text('${item.label} (${DemoData.productionOrders.where((o) => o.stage == item).length})'),
+                      label: Text('${item.label} (${context.read<OptiFlowController>().productionOrders.where((o) => o.stage == item).length})'),
                       selected: stage == item,
                       onSelected: (_) => setState(() => stage = item),
                     ),
@@ -804,7 +804,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final product = DemoData.product(id);
+    final product = context.read<OptiFlowController>().productById(id);
     final stock = context.watch<OptiFlowController>().stockOf(product);
     return StaffScaffold(
       tab: StaffTab.inventory,
@@ -834,7 +834,7 @@ class StockManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final product = DemoData.product(id);
+    final product = context.read<OptiFlowController>().productById(id);
     final app = context.watch<OptiFlowController>();
     final stock = app.stockOf(product);
     return StaffScaffold(
@@ -926,7 +926,7 @@ class AlertsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          for (final alert in DemoData.alerts)
+          for (final alert in context.read<OptiFlowController>().alerts)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: AppCard(
@@ -980,7 +980,7 @@ class ReportsScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                for (final bar in DemoData.reportBars)
+                for (final bar in context.read<OptiFlowController>().reportBars)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),

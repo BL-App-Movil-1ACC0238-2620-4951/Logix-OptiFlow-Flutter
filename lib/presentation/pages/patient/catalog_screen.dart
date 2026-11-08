@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
-import '../../../data/datasources/demo_data.dart';
+import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
 
@@ -18,7 +19,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final frames = DemoData.frames.where((f) => filter == 'Todos' || f.category == filter).toList();
+    final frames = context.watch<OptiFlowController>().frames.where((f) => filter == 'Todos' || f.category == filter).toList();
     return PatientScaffold(
       tab: PatientTab.search,
       topBar: LightTopBar(title: 'Explorar monturas', onBack: () => context.pop()),
@@ -77,7 +78,7 @@ class FrameDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frame = DemoData.frame(id);
+    final frame = context.watch<OptiFlowController>().frameById(id);
     return PatientScaffold(
       tab: PatientTab.search,
       topBar: LightTopBar(title: frame.name, onBack: () => context.pop()),
@@ -116,7 +117,7 @@ class TryOnScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frame = DemoData.frame(id);
+    final frame = context.watch<OptiFlowController>().frameById(id);
     return PatientScaffold(
       tab: PatientTab.search,
       background: const Color(0xFF101428),

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/datasources/demo_data.dart';
 import '../../../domain/entities/models.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
@@ -271,7 +270,7 @@ class _FrameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frame = DemoData.frame(frameId);
+    final frame = context.watch<OptiFlowController>().frameById(frameId);
     return AppCard(
       onTap: () => context.push('/p/frame/$frameId'),
       padding: const EdgeInsets.all(8),

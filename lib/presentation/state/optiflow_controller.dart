@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
-import '../../data/datasources/demo_data.dart';
 import '../../domain/entities/models.dart';
 import '../models/ui_models.dart';
 
@@ -46,7 +45,7 @@ class OptiFlowController extends ChangeNotifier {
   String? bookingError;
   bool bookingDemo = true;
 
-  List<StaffPatient> staffPatients = List.of(DemoData.staffPatients);
+  late List<StaffPatient> staffPatients = List.of(deps.getStaffPatients());
   final Map<String, int> stockDelta = {};
   int clinicalStage = 1;
 
@@ -522,6 +521,15 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   bool hasSlots(DateTime date) => slots.any((s) => _sameDay(s.date, date));
+
+  List<FrameItem> get frames => deps.getFrames();
+  FrameItem frameById(String id) => deps.getFrame(id);
+  List<AgendaItem> get agenda => deps.getAgenda();
+  List<ProductItem> get products => deps.getProducts();
+  ProductItem productById(String id) => deps.getProduct(id);
+  List<ProductionOrder> get productionOrders => deps.getProductionOrders();
+  List<StaffAlert> get alerts => deps.getStaffAlerts();
+  List<double> get reportBars => deps.getReportBars();
 
   void addStaffPatient({required String name, required String phone, required String rut, required String reason}) {
     final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
