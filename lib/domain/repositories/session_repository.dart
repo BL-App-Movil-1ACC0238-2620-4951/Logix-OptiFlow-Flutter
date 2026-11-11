@@ -10,4 +10,8 @@ abstract class SessionRepository {
   Future<Set<String>> readNotificationIds();
 
   Future<void> saveNotificationIds(Set<String> ids);
+
+  Future<AppSettings> readSettings();
+
+  Future<void> saveSettings(AppSettings settings);
 }

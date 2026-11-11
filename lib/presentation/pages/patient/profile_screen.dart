@@ -143,59 +143,157 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final history = context.watch<OptiFlowController>().history;
+    final latest = history.isEmpty ? '12 de marzo de 2025' : _prettyDate(history.first.date);
     return PatientScaffold(
       tab: PatientTab.profile,
       topBar: LightTopBar(title: 'Historial clínico', onBack: () => context.pop()),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          for (final entry in history) ...[
-            AppCard(
-              child: Column(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            decoration: BoxDecoration(color: AppColors.navyBlue, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Color(0x3300135B), blurRadius: 12, offset: Offset(0, 6))]),
+            child: Row(
+              children: [
+                IconTile(icon: Icons.remove_red_eye_outlined, background: AppColors.white.withValues(alpha: 0.15), color: AppColors.white, size: 48, iconSize: 22),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Último control', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.75))),
+                      Text(latest, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.white)),
+                      Text('Próximo control recomendado en 9 meses', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text('Atenciones', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 16),
+          for (var index = 0; index < history.length; index++)
+            InkWell(
+              onTap: () => context.push('/p/prescription'),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entry.date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.4)),
-                  const SizedBox(height: 4),
-                  Text(entry.title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                  Text(entry.summary, style: GoogleFonts.inter(color: AppColors.slate600)),
-                  Text(entry.professional, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  SizedBox(
+                    width: 16,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          margin: const EdgeInsets.only(top: 2),
+                          decoration: BoxDecoration(color: AppColors.electric, shape: BoxShape.circle, border: Border.all(color: AppColors.white, width: 2)),
+                        ),
+                        Container(width: 2, height: index == history.length - 1 ? 84 : 118, color: AppColors.lavender),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(history[index].date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.5)),
+                        const SizedBox(height: 6),
+                        Text(history[index].title, style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        const SizedBox(height: 6),
+                        Text(history[index].summary, style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+                        const SizedBox(height: 14),
+                        Text(history[index].professional, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.deepNavy, size: 20),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-          ],
         ],
       ),
     );
   }
+
+  String _prettyDate(String upper) {
+    const months = {
+      'ENE': 'enero',
+      'FEB': 'febrero',
+      'MAR': 'marzo',
+      'ABR': 'abril',
+      'MAY': 'mayo',
+      'JUN': 'junio',
+      'JUL': 'julio',
+      'AGO': 'agosto',
+      'SEP': 'septiembre',
+      'SET': 'septiembre',
+      'OCT': 'octubre',
+      'NOV': 'noviembre',
+      'DIC': 'diciembre',
+    };
+    final parts = upper.split(' ');
+    if (parts.length != 3) return upper;
+    final day = int.tryParse(parts[0])?.toString() ?? parts[0];
+    return '$day de ${months[parts[1]] ?? parts[1].toLowerCase()} de ${parts[2]}';
+  }
 }
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.staff = false});
   final bool staff;
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool reminders = true;
-  bool promos = false;
-  bool biometrics = false;
-
-  @override
   Widget build(BuildContext context) {
+    final app = context.watch<OptiFlowController>();
     return PatientScaffold(
       tab: PatientTab.profile,
-      topBar: LightTopBar(title: widget.staff ? 'Configuración y permisos' : 'Configuración', onBack: () => context.pop()),
+      topBar: LightTopBar(title: 'Configuración', onBack: () => context.pop()),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          SwitchListTile(value: reminders, onChanged: (v) => setState(() => reminders = v), title: const Text('Recordatorios de cita'), subtitle: const Text('Avisos antes de tu evaluación')),
-          SwitchListTile(value: promos, onChanged: (v) => setState(() => promos = v), title: const Text('Ofertas y novedades'), subtitle: const Text('Promociones de monturas')),
-          SwitchListTile(value: biometrics, onChanged: (v) => setState(() => biometrics = v), title: const Text('Bloqueo de la app'), subtitle: const Text('Pedir confirmación al abrir')),
-          const SizedBox(height: 12),
-          Text('OptiFlow Flutter · misma API que la app Android.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+          Text('Preferencias', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _Menu(
+                  icon: Icons.notifications_none,
+                  title: 'Notificaciones',
+                  subtitle: 'Citas, pedidos y recordatorios',
+                  onTap: () => context.push(staff ? '/s/alerts' : '/p/notifications'),
+                ),
+                const Divider(height: 1, color: AppColors.lavender),
+                SwitchListTile(
+                  value: app.settings.controlReminders,
+                  onChanged: app.setControlReminders,
+                  title: Text('Recordatorios de control', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                  subtitle: const Text('Avisos preventivos de salud visual'),
+                ),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.lock_outline, title: 'Privacidad y seguridad', onTap: () {}),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.help_outline, title: 'Ayuda y documentación', onTap: () {}),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text('Aplicación', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _Menu(icon: Icons.language, title: 'Idioma', subtitle: 'Español', onTap: () {}),
+                const Divider(height: 1, color: AppColors.lavender),
+                _Menu(icon: Icons.description_outlined, title: 'Términos y privacidad', onTap: () {}),
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
+          Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
         ],
       ),
     );

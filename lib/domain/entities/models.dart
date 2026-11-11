@@ -1,4 +1,5 @@
 export 'agenda_item.dart';
+export 'app_settings.dart';
 export 'appointment.dart';
 export 'clinical_record.dart';
 export 'frame.dart';

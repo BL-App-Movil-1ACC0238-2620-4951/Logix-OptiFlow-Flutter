@@ -40,3 +40,19 @@ class SaveReadNotifications {
 
   Future<void> call(Set<String> ids) => _sessions.saveNotificationIds(ids);
 }
+
+class LoadAppSettings {
+  const LoadAppSettings(this._sessions);
+
+  final SessionRepository _sessions;
+
+  Future<AppSettings> call() => _sessions.readSettings();
+}
+
+class SaveAppSettings {
+  const SaveAppSettings(this._sessions);
+
+  final SessionRepository _sessions;
+
+  Future<void> call(AppSettings settings) => _sessions.saveSettings(settings);
+}

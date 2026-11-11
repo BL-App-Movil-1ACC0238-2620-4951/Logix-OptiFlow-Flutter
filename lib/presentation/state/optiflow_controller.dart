@@ -26,6 +26,7 @@ class OptiFlowController extends ChangeNotifier {
 
   final Set<String> _cancelled = {};
   Set<String> readNotificationIds = {};
+  AppSettings settings = const AppSettings();
 
   String searchQuery = '';
   double? minRating;
@@ -128,6 +129,7 @@ class OptiFlowController extends ChangeNotifier {
   Future<void> bootstrap() async {
     session = await deps.loadSession();
     readNotificationIds = await deps.loadReadNotifications();
+    settings = await deps.loadSettings();
     bootstrapped = true;
     notifyListeners();
     if (session?.hasToken == true) {
@@ -136,6 +138,12 @@ class OptiFlowController extends ChangeNotifier {
       patientLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> setControlReminders(bool value) async {
+    settings = settings.copyWith(controlReminders: value);
+    await deps.saveSettings(settings);
+    notifyListeners();
   }
 
   Future<void> _saveSession(PatientSession value) async {
@@ -309,6 +317,13 @@ class OptiFlowController extends ChangeNotifier {
 
   Future<void> markNotificationsRead() async {
     readNotificationIds = notifications.map((n) => n.id).toSet();
+    await deps.saveReadNotifications(readNotificationIds);
+    notifyListeners();
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    if (readNotificationIds.contains(id)) return;
+    readNotificationIds = {...readNotificationIds, id};
     await deps.saveReadNotifications(readNotificationIds);
     notifyListeners();
   }

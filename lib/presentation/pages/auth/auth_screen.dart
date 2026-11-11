@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
+import 'auth_fields.dart';
+import 'auth_switch.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -100,27 +102,27 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 4),
                     Text('Elige cómo usarás la plataforma para preparar tu espacio.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.subtitle)),
                     const SizedBox(height: 14),
-                    _ModeSwitch(
+                    AuthModeSwitch(
                       register: register,
                       onChanged: (value) => setState(() => register = value),
                     ),
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        Expanded(child: _RoleCard(letter: 'P', title: 'Paciente', description: 'Mis citas, receta y monturas', selected: !clinical, onTap: () => setState(() => clinical = false))),
+                        Expanded(child: AuthRoleCard(letter: 'P', title: 'Paciente', description: 'Mis citas, receta y monturas', selected: !clinical, onTap: () => setState(() => clinical = false))),
                         const SizedBox(width: 12),
-                        Expanded(child: _RoleCard(letter: 'C', title: 'Personal clínico', description: 'Catálogo, agenda y pacientes', selected: clinical, onTap: () => setState(() => clinical = true))),
+                        Expanded(child: AuthRoleCard(letter: 'C', title: 'Personal clínico', description: 'Catálogo, agenda y pacientes', selected: clinical, onTap: () => setState(() => clinical = true))),
                       ],
                     ),
                     const SizedBox(height: 18),
                     if (register) ...[
-                      _Field(label: 'Nombre completo', controller: name, hint: 'Nombre'),
+                      AuthField(label: 'Nombre completo', controller: name, hint: 'Nombre'),
                       const SizedBox(height: 14),
                     ],
-                    _Field(label: 'Correo electrónico', controller: email, hint: 'correo@gmail.com', keyboard: TextInputType.emailAddress),
+                    AuthField(label: 'Correo electrónico', controller: email, hint: 'correo@gmail.com', keyboard: TextInputType.emailAddress, fillColor: register ? const Color(0xFFEEF2FD) : AppColors.mintWhite),
                     if (register && !clinical) ...[
                       const SizedBox(height: 14),
-                      _Field(label: 'Teléfono', controller: phone, hint: '999 888 777', keyboard: TextInputType.phone),
+                      AuthField(label: 'Teléfono', controller: phone, hint: '999 888 777', keyboard: TextInputType.phone),
                     ],
                     const SizedBox(height: 14),
                     Row(
@@ -133,7 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    _Field(
+                    AuthField(
                       controller: password,
                       hint: 'Mínimo ${OptiFlowController.minPassword} caracteres',
                       obscure: obscure,
@@ -144,40 +146,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     if (register) ...[
                       const SizedBox(height: 12),
-                      InkWell(
-                        onTap: () => setState(() => terms = !terms),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              margin: const EdgeInsets.only(top: 2),
-                              decoration: BoxDecoration(
-                                color: terms ? AppColors.electric : AppColors.white,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: terms ? AppColors.electric : AppColors.deepNavy, width: 1.5),
-                              ),
-                              child: terms ? const Icon(Icons.check, size: 12, color: AppColors.white) : null,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppColors.slate500, height: 1.4),
-                                  children: const [
-                                    TextSpan(text: 'Acepto los '),
-                                    TextSpan(text: 'Términos de Servicio', style: TextStyle(color: AppColors.electric, fontWeight: FontWeight.w600)),
-                                    TextSpan(text: ' y la '),
-                                    TextSpan(text: 'Política de Privacidad', style: TextStyle(color: AppColors.electric, fontWeight: FontWeight.w600)),
-                                    TextSpan(text: ' de OptiFlow.'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      AuthTermsRow(accepted: terms, onToggle: () => setState(() => terms = !terms)),
                     ],
                     const SizedBox(height: 16),
                     SolidButton(
@@ -202,125 +171,6 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ModeSwitch extends StatelessWidget {
-  const _ModeSwitch({required this.register, required this.onChanged});
-  final bool register;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.periwinkle,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.skyTint.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        children: [
-          _chip('Iniciar sesión', !register, () => onChanged(false)),
-          _chip('Registrarme', register, () => onChanged(true)),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(String label, bool selected, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: selected ? AppColors.white : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-          child: Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppColors.deepNavy : AppColors.slate500)),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  const _RoleCard({required this.letter, required this.title, required this.description, required this.selected, required this.onTap});
-  final String letter;
-  final String title;
-  final String description;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.periwinkle : AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? AppColors.electric : AppColors.slate200, width: selected ? 2 : 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: selected ? AppColors.lavender : AppColors.periwinkle, borderRadius: BorderRadius.circular(12)),
-              child: Text(letter, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: selected ? AppColors.electric : AppColors.navyBlue)),
-            ),
-            const SizedBox(height: 8),
-            Text(title, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? AppColors.deepNavy : AppColors.slate700)),
-            Text(description, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: selected ? AppColors.slate500 : AppColors.slate400)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({this.label, required this.controller, required this.hint, this.keyboard, this.obscure = false, this.trailing});
-
-  final String? label;
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType? keyboard;
-  final bool obscure;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (label != null) ...[
-          Text(label!, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-          const SizedBox(height: 6),
-        ],
-        TextField(
-          controller: controller,
-          keyboardType: keyboard,
-          obscureText: obscure,
-          style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.deepNavy),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate500),
-            filled: true,
-            fillColor: AppColors.mintWhite,
-            isDense: true,
-            suffixIcon: trailing,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.skyTint)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.electric)),
-          ),
-        ),
-      ],
     );
   }
 }
