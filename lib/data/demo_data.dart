@@ -149,57 +149,6 @@ class StaffAlert {
   final String action;
 }
 
-class StaffMemberItem {
-  const StaffMemberItem({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.role,
-    this.active = true,
-  });
-
-  final String id;
-  final String name;
-  final String email;
-  final String role;
-  final bool active;
-
-  String get initials {
-    final parts = name.split(' ').where((p) => p.isNotEmpty).take(2);
-    return parts.map((p) => p[0].toUpperCase()).join();
-  }
-
-  StaffMemberItem copyWith({String? role, bool? active}) => StaffMemberItem(
-        id: id,
-        name: name,
-        email: email,
-        role: role ?? this.role,
-        active: active ?? this.active,
-      );
-}
-
-class SupplierItem {
-  const SupplierItem({
-    required this.id,
-    required this.name,
-    this.contact,
-  });
-
-  final String id;
-  final String name;
-  final String? contact;
-}
-
-class ScheduleSlot {
-  const ScheduleSlot({
-    required this.time,
-    required this.available,
-  });
-
-  final String time;
-  final bool available;
-}
-
 abstract final class DemoData {
   static const frames = <FrameItem>[
     FrameItem(
@@ -356,19 +305,5 @@ abstract final class DemoData {
   static const history = <HistoryEntry>[
     HistoryEntry(date: '12 MAR 2025', title: 'Evaluación visual', summary: 'Miopía leve estable', professional: 'Dra. Fernanda Soto'),
     HistoryEntry(date: '08 SEP 2024', title: 'Control de lentes', summary: 'Sin cambios relevantes', professional: 'Dr. Matías Araya'),
-  ];
-
-  static const staffMembers = <StaffMemberItem>[
-    StaffMemberItem(id: 'sm1', name: 'Dra. Fernanda Soto', email: 'fernanda.soto@optiflow.com', role: 'Optometrista'),
-    StaffMemberItem(id: 'sm2', name: 'Dr. Matías Araya', email: 'matias.araya@optiflow.com', role: 'Optometrista'),
-    StaffMemberItem(id: 'sm3', name: 'Carlos Ramos', email: 'carlos.ramos@optiflow.com', role: 'Técnico de taller'),
-    StaffMemberItem(id: 'sm4', name: 'Andrea Valenzuela', email: 'andrea.v@optiflow.com', role: 'Asesora de óptica'),
-  ];
-
-  static const suppliers = <SupplierItem>[
-    SupplierItem(id: 'sup1', name: 'EssilorLuxottica', contact: 'ventas@luxottica.com · +56 2 2345 6789'),
-    SupplierItem(id: 'sup2', name: 'Safilo Group', contact: 'contacto@safilo.com · +56 9 8765 4321'),
-    SupplierItem(id: 'sup3', name: 'Marchon Eyewear', contact: 'pedidos@marchon.com'),
-    SupplierItem(id: 'sup4', name: 'Laboratorio Óptico Visión Tech', contact: 'taller@visiontech.cl · +56 9 1234 5678'),
   ];
 }

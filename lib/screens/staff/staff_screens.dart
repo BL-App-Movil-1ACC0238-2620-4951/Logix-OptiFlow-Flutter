@@ -269,21 +269,13 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final products = app.customProducts.where((p) {
+    final products = DemoData.products.where((p) {
       final q = query.toLowerCase();
       return q.isEmpty || p.name.toLowerCase().contains(q) || p.sku.toLowerCase().contains(q);
     }).toList();
     return StaffScaffold(
       tab: StaffTab.inventory,
-      topBar: StaffTopBar(
-        title: 'Catálogo y taller óptico',
-        subtitle: 'Referencias, lentes en laboratorio y pedidos.',
-        trailing: IconButton(
-          icon: const Icon(Icons.add, color: AppColors.white),
-          tooltip: 'Nueva montura',
-          onPressed: () => context.push('/s/inventory/new'),
-        ),
-      ),
+      topBar: const StaffTopBar(title: 'Catálogo y taller óptico', subtitle: 'Referencias, lentes en laboratorio y pedidos.'),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -345,17 +337,14 @@ class StaffMoreScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          Text('Administración y Gestión', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          Text('Gestión', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
           const SizedBox(height: 8),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _Tool(Icons.groups_outlined, 'Personal', 'Gestión de equipo y roles', () => context.push('/s/admin/staff')),
-                _Tool(Icons.local_shipping_outlined, 'Proveedores', 'Laboratorios y fabricantes', () => context.push('/s/admin/suppliers')),
-                _Tool(Icons.access_time_rounded, 'Horarios de atención', 'Apertura y gestión de turnos', () => context.push('/s/admin/schedule')),
-                _Tool(Icons.notifications_none, 'Alertas', 'Inventario y producción', () => context.push('/s/alerts'), badge: '3'),
-                _Tool(Icons.bar_chart, 'Reportes', 'Métricas mensuales y exportación', () => context.push('/s/reports')),
+                _Tool(Icons.notifications_none, 'Alertas', null, () => context.push('/s/alerts'), badge: '3'),
+                _Tool(Icons.bar_chart, 'Reportes', null, () => context.push('/s/reports')),
                 _Tool(Icons.settings_outlined, 'Configuración y permisos', null, () => context.push('/p/settings?staff=true')),
                 _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
                 _Tool(Icons.person_outline, 'Vista paciente', 'Cambiar de experiencia', () => context.go('/p/home')),
@@ -701,298 +690,49 @@ class _ProductionScreenState extends State<ProductionScreen> {
   }
 }
 
-class QuotePatientPickerScreen extends StatefulWidget {
-  const QuotePatientPickerScreen({super.key});
-
-  @override
-  State<QuotePatientPickerScreen> createState() => _QuotePatientPickerScreenState();
-}
-
-class _QuotePatientPickerScreenState extends State<QuotePatientPickerScreen> {
-  String query = '';
+class QuoteScreen extends StatelessWidget {
+  const QuoteScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final patients = context.watch<OptiFlowController>().staffPatients.where((p) {
-      final q = query.trim().toLowerCase();
-      return q.isEmpty || p.fullName.toLowerCase().contains(q) || p.phone.contains(q);
-    }).toList();
-
-    return StaffScaffold(
-      tab: StaffTab.more,
-      topBar: StaffTopBar(title: 'Nueva cotización', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('¿Para qué paciente es la cotización?', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          const SizedBox(height: 4),
-          Text('Selecciona un paciente para cargar su ficha y receta.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-          const SizedBox(height: 14),
-          TextField(
-            onChanged: (v) => setState(() => query = v),
-            decoration: InputDecoration(
-              hintText: 'Buscar por nombre o teléfono',
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: AppColors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (patients.isEmpty) Text('No hay pacientes que coincidan.', style: GoogleFonts.inter(color: AppColors.slate400)),
-          for (final patient in patients) ...[
-            AppCard(
-              onTap: () => context.push('/s/quote/${patient.id}'),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.staffChip,
-                    child: Text(patient.initials, style: const TextStyle(color: AppColors.staffHeader, fontSize: 13, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(patient.fullName, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                        Text(patient.phone.isNotEmpty ? patient.phone : patient.note, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.slate400),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class QuoteScreen extends StatefulWidget {
-  const QuoteScreen({super.key, this.patientId});
-  final String? patientId;
-
-  @override
-  State<QuoteScreen> createState() => _QuoteScreenState();
-}
-
-class _QuoteScreenState extends State<QuoteScreen> {
-  int selectedFrameIndex = 0;
-  int selectedLensIndex = 0;
-  bool antiReflective = true;
-  bool blueFilter = true;
-
-  static const lensOptions = [
-    ('Monofocal Orgánico 1.56', 45000),
-    ('Monofocal Alto Índice 1.60', 89000),
-    ('Progresivo Digital HD', 145000),
-    ('Bifocal Ejecutivo', 65000),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final patient = widget.patientId != null ? app.staffPatient(widget.patientId!) : app.staffPatients.firstOrNull;
-    final products = app.customProducts;
-    final frame = products.isNotEmpty ? products[selectedFrameIndex % products.length] : null;
-    final framePrice = frame != null ? (int.tryParse(frame.price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 145000) : 145000;
-    final lensPrice = lensOptions[selectedLensIndex].$2;
-    final treatmentsPrice = (antiReflective ? 20000 : 0) + (blueFilter ? 25000 : 0);
-    final total = framePrice + lensPrice + treatmentsPrice;
-
     return StaffScaffold(
       tab: StaffTab.more,
       topBar: StaffTopBar(title: 'Cotización', onBack: () => context.pop()),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (patient != null) ...[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(16)),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.staffChip,
-                    child: Text(patient.initials, style: const TextStyle(color: AppColors.staffHeader, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('PACIENTE', style: GoogleFonts.inter(fontSize: 10, letterSpacing: 1, color: AppColors.staffAccent)),
-                        Text(patient.fullName, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                        Text('Receta vigente · OD −1.25 / OI −1.00', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          Text('1. Seleccionar Montura', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          const Text('Productos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          for (var i = 0; i < products.length; i++) ...[
-            AppCard(
-              color: selectedFrameIndex == i ? const Color(0xFFEFF6FF) : AppColors.white,
-              onTap: () => setState(() => selectedFrameIndex = i),
-              child: Row(
-                children: [
-                  Icon(selectedFrameIndex == i ? Icons.radio_button_checked : Icons.radio_button_off, color: AppColors.staffAccent),
-                  const SizedBox(width: 10),
-                  ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset(products[i].image, width: 48, height: 48, fit: BoxFit.cover)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(products[i].name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                        Text('${products[i].sku} · ${products[i].detail}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                      ],
-                    ),
-                  ),
-                  Text(products[i].price, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 14),
-          Text('2. Tipo de Cristales', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          const AppCard(child: ListTile(contentPadding: EdgeInsets.zero, title: Text('Clubmaster Classic Carey'), subtitle: Text('Montura'), trailing: Text('\$145.000'))),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < lensOptions.length; i++)
-                ChoiceChip(
-                  label: Text('${lensOptions[i].$1} (\$${lensOptions[i].$2})'),
-                  selected: selectedLensIndex == i,
-                  onSelected: (_) => setState(() => selectedLensIndex = i),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text('3. Tratamientos adicionales', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            value: antiReflective,
-            onChanged: (v) => setState(() => antiReflective = v ?? false),
-            title: const Text('Tratamiento Antirreflejo (+ \$20.000)'),
-          ),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            value: blueFilter,
-            onChanged: (v) => setState(() => blueFilter = v ?? false),
-            title: const Text('Filtro de Luz Azul / Fatiga Digital (+ \$25.000)'),
-          ),
-          const SizedBox(height: 14),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (frame != null) ...[
-                  Text('Montura: ${frame.name} (${frame.price})', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.staffInk)),
-                  const SizedBox(height: 4),
-                ],
-                Text('Cristales: ${lensOptions[selectedLensIndex].$1}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                const Divider(height: 16),
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Total estimado', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
-                        Text('\$$total CLP', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.staffHeader)),
-                      ],
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.receipt_long_outlined, size: 36, color: AppColors.staffAccent),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          const AppCard(child: ListTile(contentPadding: EdgeInsets.zero, title: Text('Monofocal 1.60 AR'), subtitle: Text('Cristales'), trailing: Text('\$89.000'))),
+          const SizedBox(height: 8),
+          AppCard(onTap: () => context.push('/s/scanner'), child: const ListTile(contentPadding: EdgeInsets.zero, leading: Icon(Icons.add), title: Text('Agregar montura o lente'), subtitle: Text('Busca en el catálogo o escanea'))),
           const SizedBox(height: 16),
-          SolidButton(
-            label: 'Continuar a venta',
-            onPressed: () => context.push('/s/sale?patientId=${patient?.id ?? ""}'),
-          ),
+          const AppCard(child: Row(children: [Text('Total', style: TextStyle(fontSize: 16)), Spacer(), Text('\$234.000', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))])),
+          const SizedBox(height: 16),
+          SolidButton(label: 'Continuar a venta', onPressed: () => context.push('/s/sale')),
         ],
       ),
     );
   }
 }
 
-class ConfirmSaleScreen extends StatefulWidget {
-  const ConfirmSaleScreen({super.key, this.patientId});
-  final String? patientId;
-
-  @override
-  State<ConfirmSaleScreen> createState() => _ConfirmSaleScreenState();
-}
-
-class _ConfirmSaleScreenState extends State<ConfirmSaleScreen> {
-  String paymentMethod = 'Tarjeta';
-  static const methods = ['Tarjeta', 'Efectivo', 'Transferencia / Yape'];
+class ConfirmSaleScreen extends StatelessWidget {
+  const ConfirmSaleScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final patient = widget.patientId != null && widget.patientId!.isNotEmpty
-        ? app.staffPatient(widget.patientId!)
-        : app.staffPatients.firstOrNull;
-
     return StaffScaffold(
       tab: StaffTab.more,
       topBar: StaffTopBar(title: 'Confirmar venta', onBack: () => context.pop()),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Resumen de la Venta', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Paciente: ${patient?.fullName ?? "Valentina Silva Morales"}', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                const SizedBox(height: 4),
-                Text('RUT: ${patient?.rut ?? "18.234.567-8"} · Tel: ${patient?.phone ?? "+56 9 8412 9043"}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                const Divider(height: 20),
-                const Text('• Montura Ray-Ban Clubmaster (\$145.000)'),
-                const Text('• Cristales Monofocales 1.60 AR (\$89.000)'),
-                const Text('• Filtro Luz Azul (\$25.000)'),
-                const Divider(height: 20),
-                Row(
-                  children: [
-                    const Text('Total a cobrar:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const Spacer(),
-                    Text('\$259.000 CLP', style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.staffHeader)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Método de pago', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          const Text('Resumen', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final m in methods)
-                ChoiceChip(
-                  label: Text(m),
-                  selected: paymentMethod == m,
-                  onSelected: (_) => setState(() => paymentMethod = m),
-                ),
-            ],
-          ),
-          const SizedBox(height: 20),
+          const AppCard(child: Text('Paciente: Valentina Silva\nClubmaster + monofocal 1.60\nEntrega estimada: 28 de junio\n\nTotal \$234.000')),
+          const SizedBox(height: 16),
           SolidButton(label: 'Registrar pago', onPressed: () => context.push('/s/sale/done')),
         ],
       ),
