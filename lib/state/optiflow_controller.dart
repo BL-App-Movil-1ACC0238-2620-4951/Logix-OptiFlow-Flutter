@@ -46,8 +46,22 @@ class OptiFlowController extends ChangeNotifier {
   bool bookingDemo = true;
 
   List<StaffPatient> staffPatients = List.of(DemoData.staffPatients);
+  List<StaffMemberItem> staffMembers = List.of(DemoData.staffMembers);
+  List<SupplierItem> suppliers = List.of(DemoData.suppliers);
+  List<ProductItem> customProducts = List.of(DemoData.products);
   final Map<String, int> stockDelta = {};
   int clinicalStage = 1;
+
+  List<ScheduleSlot> dayScheduleSlots = [
+    const ScheduleSlot(time: '09:00–09:30', available: true),
+    const ScheduleSlot(time: '09:30–10:00', available: false),
+    const ScheduleSlot(time: '10:00–10:30', available: true),
+    const ScheduleSlot(time: '10:30–11:00', available: true),
+    const ScheduleSlot(time: '11:00–11:30', available: false),
+    const ScheduleSlot(time: '11:30–12:00', available: true),
+    const ScheduleSlot(time: '12:00–12:30', available: true),
+    const ScheduleSlot(time: '12:30–13:00', available: true),
+  ];
 
   String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : 'Valentina Silva';
   String get firstName => displayName.split(' ').first;
@@ -556,6 +570,98 @@ class OptiFlowController extends ChangeNotifier {
 
   StaffPatient staffPatient(String id) {
     return staffPatients.firstWhere((p) => p.id == id, orElse: () => staffPatients.first);
+  }
+
+  void addStaffMember({required String name, required String email, required String role}) {
+    final newMember = StaffMemberItem(
+      id: 'sm-${DateTime.now().millisecondsSinceEpoch}',
+      name: name.trim(),
+      email: email.trim(),
+      role: role,
+      active: true,
+    );
+    staffMembers = [newMember, ...staffMembers];
+    notifyListeners();
+  }
+
+  void updateStaffMemberRole(String id, String newRole) {
+    staffMembers = [
+      for (final m in staffMembers)
+        if (m.id == id) m.copyWith(role: newRole) else m,
+    ];
+    notifyListeners();
+  }
+
+  void toggleStaffMemberStatus(String id) {
+    staffMembers = [
+      for (final m in staffMembers)
+        if (m.id == id) m.copyWith(active: !m.active) else m,
+    ];
+    notifyListeners();
+  }
+
+  void addSupplier({required String name, String? contact}) {
+    final newSupplier = SupplierItem(
+      id: 'sup-${DateTime.now().millisecondsSinceEpoch}',
+      name: name.trim(),
+      contact: contact?.trim().isNotEmpty == true ? contact!.trim() : null,
+    );
+    suppliers = [newSupplier, ...suppliers];
+    notifyListeners();
+  }
+
+  void addNewFrame({
+    required String sku,
+    required String name,
+    required String price,
+    String? material,
+    String? shape,
+    String? color,
+    int initialStock = 5,
+    String? supplier,
+  }) {
+    final detail = [if (color != null && color.isNotEmpty) color, if (material != null && material.isNotEmpty) material].join(' · ');
+    final cleanPrice = price.startsWith('\$') ? price : '\$$price';
+    final newProd = ProductItem(
+      id: sku.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
+      name: name,
+      sku: sku,
+      code: sku,
+      detail: detail.isEmpty ? 'Montura oftálmica' : detail,
+      price: cleanPrice,
+      tag: 'Nuevo',
+      available: initialStock,
+      image: 'assets/images/img_inv_clubmaster.png',
+      category: 'Armazones',
+      size: '52-18-140',
+      location: 'Vitrina Centro',
+      supplier: supplier ?? 'EssilorLuxottica',
+    );
+    customProducts = [newProd, ...customProducts];
+    notifyListeners();
+  }
+
+  void openScheduleSlots({required String from, required String to, required int durationMinutes}) {
+    try {
+      final fromParts = from.split(':').map(int.parse).toList();
+      final toParts = to.split(':').map(int.parse).toList();
+      var curMin = fromParts[0] * 60 + fromParts[1];
+      final endMin = toParts[0] * 60 + toParts[1];
+      final newSlots = <ScheduleSlot>[];
+      while (curMin + durationMinutes <= endMin) {
+        final startH = (curMin ~/ 60).toString().padLeft(2, '0');
+        final startM = (curMin % 60).toString().padLeft(2, '0');
+        final nextMin = curMin + durationMinutes;
+        final endH = (nextMin ~/ 60).toString().padLeft(2, '0');
+        final endM = (nextMin % 60).toString().padLeft(2, '0');
+        newSlots.add(ScheduleSlot(time: '$startH:$startM–$endH:$endM', available: true));
+        curMin = nextMin;
+      }
+      if (newSlots.isNotEmpty) {
+        dayScheduleSlots = newSlots;
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 
   static DateTime _monday(DateTime date) {

@@ -43,6 +43,43 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E3D79), Color(0xFF0013C1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [BoxShadow(color: Color(0x330013C1), blurRadius: 14, offset: Offset(0, 4))],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.star_rounded, color: Colors.amber, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('PUNTOS OPTIFLOW', style: GoogleFonts.inter(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: AppColors.skyTint)),
+                      Text('240 Puntos acumulados', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.white)),
+                      Text('+100 puntos en tu próximo cumpleaños', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 22),
           Text('Mi salud visual', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
           const SizedBox(height: 8),
@@ -52,7 +89,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 _Menu(icon: Icons.favorite_border, title: 'Historial clínico', subtitle: 'Controles y antecedentes', onTap: () => context.push('/p/history')),
                 const Divider(height: 1, color: AppColors.lavender),
-                _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: '1 receta disponible', onTap: () => context.push('/p/prescription')),
+                _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: 'Recetas registradas y activas', onTap: () => context.push('/p/prescriptions')),
               ],
             ),
           ),
@@ -63,6 +100,8 @@ class ProfileScreen extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
+                _Menu(icon: Icons.shopping_bag_outlined, title: 'Mis compras', subtitle: 'Historial de lentes y armazones', onTap: () => context.push('/p/purchases')),
+                const Divider(height: 1, color: AppColors.lavender),
                 _Menu(icon: Icons.settings_outlined, title: 'Configuración', onTap: () => context.push('/p/settings')),
                 const Divider(height: 1, color: AppColors.lavender),
                 _Menu(icon: Icons.help_outline, title: 'Ayuda y soporte', onTap: () => context.push('/p/settings')),
