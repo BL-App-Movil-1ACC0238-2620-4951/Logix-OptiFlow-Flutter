@@ -37,6 +37,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _submit() async {
     final app = context.read<OptiFlowController>();
+    if (app.busy) return;
     final message = app.validateAuth(
       register: register,
       clinical: clinical,
@@ -50,11 +51,6 @@ class _AuthScreenState extends State<AuthScreen> {
       showAppMessage(context, message);
       return;
     }
-    if (clinical) {
-      if (!mounted) return;
-      context.go('/s/home');
-      return;
-    }
     if (register) {
       await app.register(name: name.text, email: email.text, phone: phone.text, password: password.text);
     } else {
@@ -65,7 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
       showAppMessage(context, app.error!);
       return;
     }
-    if (app.session?.hasToken == true) context.go('/p/home');
+    if (app.session?.isAuthenticated == true) context.go(app.homeRoute);
   }
 
   @override
@@ -159,7 +155,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
-                          'El personal clínico entra en modo demostración. El backend todavía no tiene cuentas de staff.',
+                          'Ingresa con tu cuenta de personal. Las cuentas y los permisos los asigna el administrador de la óptica.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500),
                         ),

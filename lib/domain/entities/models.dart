@@ -10,4 +10,5 @@ export 'production_order.dart';
 export 'staff_alert.dart';
 export 'staff_patient.dart';
 export 'time_slot.dart';
+export 'user_role.dart';
 export 'work_order.dart';

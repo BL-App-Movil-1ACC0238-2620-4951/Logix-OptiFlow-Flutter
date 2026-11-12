@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../core/di/dependencies.dart';
@@ -5,9 +7,12 @@ import '../../core/errors/api_exception.dart';
 import '../../domain/entities/models.dart';
 import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
+import '../navigation/route_access.dart';
 
 class OptiFlowController extends ChangeNotifier {
-  OptiFlowController({AppDependencies? dependencies}) : deps = dependencies ?? AppDependencies();
+  OptiFlowController({AppDependencies? dependencies}) : deps = dependencies ?? AppDependencies() {
+    deps.api.onUnauthorized = () { unawaited(logout()); };
+  }
 
   final AppDependencies deps;
   static const minPassword = 8;
@@ -17,6 +22,9 @@ class OptiFlowController extends ChangeNotifier {
   String? error;
 
   PatientSession? session;
+  Future<void>? _bootstrapFuture;
+  String get homeRoute => homePath(session);
+  bool canOpen(String path) => canAccessPath(session, path);
   List<AppointmentUi> appointments = PatientDemo.appointments();
   List<OrderUi> orders = PatientDemo.orders();
   List<HistoryEntry> history = List.of(PatientDemo.history);
@@ -126,14 +134,21 @@ class OptiFlowController extends ChangeNotifier {
 
   int get unreadCount => notifications.where((n) => !readNotificationIds.contains(n.id)).length;
 
-  Future<void> bootstrap() async {
+  Future<void> bootstrap() => _bootstrapFuture ??= _bootstrap();
+
+  Future<void> _bootstrap() async {
     session = await deps.loadSession();
+    if (session != null && !session!.isAuthenticated) {
+      session = null;
+      await deps.clearSession();
+    }
+    deps.api.token = session?.token;
     readNotificationIds = await deps.loadReadNotifications();
     settings = await deps.loadSettings();
     bootstrapped = true;
     notifyListeners();
-    if (session?.hasToken == true) {
-      await refreshPatient();
+    if (session?.isPatient == true) {
+      unawaited(refreshPatient());
     } else {
       patientLoading = false;
       notifyListeners();
@@ -147,19 +162,29 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> _saveSession(PatientSession value) async {
-    session = value;
     await deps.saveSession(value);
+    deps.api.token = value.token;
+    session = value;
     notifyListeners();
   }
 
   Future<void> logout() async {
     session = null;
-    await deps.clearSession();
+    deps.api.token = null;
+    _cancelled.clear();
+    readNotificationIds = {};
+    selectedSlot = null;
+    bookingStep = 1;
+    stockDelta.clear();
+    staffPatients = List.of(deps.getStaffPatients());
     appointments = PatientDemo.appointments();
     orders = PatientDemo.orders();
     history = List.of(PatientDemo.history);
     prescription = PrescriptionUi.demo('Valentina Silva');
+    patientLoading = false;
     notifyListeners();
+    await deps.clearSession();
+    await deps.saveReadNotifications({});
   }
 
   String? validateAuth({
@@ -171,6 +196,7 @@ class OptiFlowController extends ChangeNotifier {
     required String password,
     required bool terms,
   }) {
+    if (register && clinical) return 'Las cuentas del personal las crea el administrador de la óptica.';
     if (register && name.trim().isEmpty) return 'Ingresa tu nombre completo.';
     if (!email.contains('@')) return 'Ingresa un correo válido.';
     if (register && !clinical && phone.trim().isEmpty) return 'Ingresa tu teléfono.';
@@ -180,12 +206,13 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> login({required String email, required String password}) async {
+    if (busy) return;
     busy = true;
     error = null;
     notifyListeners();
     try {
       await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
-      await refreshPatient();
+      if (session?.isPatient == true) unawaited(refreshPatient());
     } on ApiException catch (e) {
       error = e.message;
     } catch (e) {
@@ -202,13 +229,14 @@ class OptiFlowController extends ChangeNotifier {
     required String phone,
     required String password,
   }) async {
+    if (busy) return;
     busy = true;
     error = null;
     notifyListeners();
     try {
       await deps.registerPatient(name: name.trim(), email: email.trim(), phone: phone.trim(), password: password);
       await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
-      await refreshPatient();
+      if (session?.isPatient == true) unawaited(refreshPatient());
     } on ApiException catch (e) {
       error = e.message;
     } catch (e) {
@@ -220,9 +248,10 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> refreshPatient() async {
+    final current = session;
+    if (current?.isAuthenticated != true || !current!.isPatient) return;
     patientLoading = true;
     notifyListeners();
-    final current = session;
     List<OpticalStore> loadedStores = const [];
     List<Appointment> apiAppointments = const [];
     List<WorkOrder> apiOrders = const [];
@@ -241,6 +270,8 @@ class OptiFlowController extends ChangeNotifier {
         records = await deps.getClinicalRecords(current.patientId);
       } catch (_) {}
     }
+    // Ignore responses from a request started before logout/account switching.
+    if (!identical(session, current)) return;
     stores = loadedStores;
     final byId = {for (final store in loadedStores) store.id: store};
     final now = DateTime.now();

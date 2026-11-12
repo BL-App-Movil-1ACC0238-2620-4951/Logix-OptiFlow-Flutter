@@ -7,6 +7,9 @@ class PatientDto {
     required this.email,
     required this.phone,
     this.token,
+    this.role = UserRole.patient,
+    this.expiresAt,
+    this.opticalStoreId,
   });
 
   final String id;
@@ -14,6 +17,9 @@ class PatientDto {
   final String email;
   final String phone;
   final String? token;
+  final UserRole role;
+  final DateTime? expiresAt;
+  final String? opticalStoreId;
 
   factory PatientDto.fromRegister(
     Map<String, dynamic> json, {
@@ -29,15 +35,27 @@ class PatientDto {
     );
   }
 
-  factory PatientDto.fromLogin(Map<String, dynamic> json, {required String email}) {
-    final patient = Map<String, dynamic>.from(json['patient'] as Map? ?? const {});
-    final token = '${json['token'] ?? ''}';
+  factory PatientDto.fromLogin(
+    Map<String, dynamic> json, {
+    required String email,
+    Map<String, dynamic> profile = const {},
+  }) {
+    final id = json['userId'] as String?;
+    final token = json['token'] as String?;
+    final role = UserRole.fromApi(json['role'] as String?);
+    if (id == null || id.trim().isEmpty || token == null || token.trim().isEmpty || role == null) {
+      throw const FormatException('Respuesta de autenticación inválida.');
+    }
+    final expiresAt = json['expiresAt'] == null ? null : DateTime.parse(json['expiresAt'] as String);
     return PatientDto(
-      id: '${patient['id']}',
-      name: '${patient['name'] ?? ''}',
-      email: '${patient['email'] ?? email}',
-      phone: '${patient['phone'] ?? ''}',
+      id: id,
+      name: '${profile['name'] ?? ''}',
+      email: '${profile['email'] ?? email}',
+      phone: '${profile['phone'] ?? ''}',
       token: token,
+      role: role,
+      expiresAt: expiresAt,
+      opticalStoreId: profile['opticalStoreId'] as String?,
     );
   }
 
@@ -48,6 +66,9 @@ class PatientDto {
       name: name,
       email: email,
       phone: phone,
+      role: role,
+      expiresAt: expiresAt,
+      opticalStoreId: opticalStoreId,
     );
   }
 }

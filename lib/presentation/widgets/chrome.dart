@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../state/optiflow_controller.dart';
 
 enum PatientTab { home, search, appointments, orders, profile }
 
@@ -171,6 +173,7 @@ class StaffBottomBar extends StatelessWidget {
               child: Row(
                 children: [
                   for (final tab in StaffTab.values)
+                    if (context.watch<OptiFlowController>().canOpen(tab.path))
                     Expanded(
                       child: _TabButton(
                         label: tab.label,

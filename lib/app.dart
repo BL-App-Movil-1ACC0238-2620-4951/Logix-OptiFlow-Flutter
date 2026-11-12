@@ -14,6 +14,7 @@ import 'presentation/pages/patient/profile_screen.dart';
 import 'presentation/pages/patient/search_screen.dart';
 import 'presentation/pages/staff/staff_screens.dart';
 import 'presentation/state/optiflow_controller.dart';
+import 'presentation/navigation/route_access.dart';
 import 'core/theme/app_colors.dart';
 
 class OptiFlowApp extends StatefulWidget {
@@ -26,6 +27,12 @@ class OptiFlowApp extends StatefulWidget {
 class _OptiFlowAppState extends State<OptiFlowApp> {
   late final GoRouter _router = GoRouter(
     initialLocation: '/',
+    refreshListenable: context.read<OptiFlowController>(),
+    redirect: (context, state) async {
+      final app = context.read<OptiFlowController>();
+      await app.bootstrap();
+      return routeRedirect(app.session, state.uri);
+    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const _BootScreen()),
       GoRoute(path: '/auth', builder: (_, __) => const AuthScreen()),
@@ -53,6 +60,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
         builder: (_, state) => SettingsScreen(staff: state.uri.queryParameters['staff'] == 'true'),
       ),
       GoRoute(path: '/s/home', builder: (_, __) => const StaffDashboardScreen()),
+      GoRoute(path: '/s/settings', builder: (_, __) => const SettingsScreen(staff: true)),
       GoRoute(path: '/s/agenda', builder: (_, __) => const StaffAgendaScreen()),
       GoRoute(path: '/s/patients', builder: (_, __) => const StaffPatientsScreen()),
       GoRoute(path: '/s/inventory', builder: (_, __) => const StaffInventoryScreen()),
@@ -77,6 +85,12 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
   );
 
   @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final text = GoogleFonts.plusJakartaSansTextTheme();
     return MaterialApp.router(
@@ -94,24 +108,8 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
   }
 }
 
-class _BootScreen extends StatefulWidget {
+class _BootScreen extends StatelessWidget {
   const _BootScreen();
-
-  @override
-  State<_BootScreen> createState() => _BootScreenState();
-}
-
-class _BootScreenState extends State<_BootScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final app = context.read<OptiFlowController>();
-      if (!app.bootstrapped) await app.bootstrap();
-      if (!mounted) return;
-      context.go(app.session?.hasToken == true ? '/p/home' : '/auth');
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
