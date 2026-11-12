@@ -42,7 +42,7 @@ class AppDependencies {
     getClinicalRecords = GetPatientClinicalRecords(appointments);
     final catalog = CatalogRepositoryImpl(this.api);
     final inventory = InventoryRepositoryImpl(this.api);
-    final staff = StaffRepositoryImpl();
+    final staff = StaffRepositoryImpl(this.api);
     getFrames = GetFrames(catalog);
     getFrame = GetFrame(catalog);
     updateFramePrice = UpdateFramePrice(catalog);
@@ -51,6 +51,10 @@ class AppDependencies {
     getStockMovements = GetStockMovements(inventory);
     replenishStock = ReplenishStock(inventory);
     getStaffPatients = GetStaffPatients(staff);
+    getStaffPatient = GetStaffPatient(staff);
+    registerPatientByStaff = RegisterPatientByStaff(staff);
+    getPatientsWithRecords = GetPatientsWithRecords(staff);
+    getStaffOrders = GetStaffOrders(staff);
     getAgenda = GetAgenda(staff);
     getProducts = GetProducts(staff);
     getProduct = GetProduct(staff);
@@ -85,6 +89,10 @@ class AppDependencies {
   late final GetStockMovements getStockMovements;
   late final ReplenishStock replenishStock;
   late final GetStaffPatients getStaffPatients;
+  late final GetStaffPatient getStaffPatient;
+  late final RegisterPatientByStaff registerPatientByStaff;
+  late final GetPatientsWithRecords getPatientsWithRecords;
+  late final GetStaffOrders getStaffOrders;
   late final GetAgenda getAgenda;
   late final GetProducts getProducts;
   late final GetProduct getProduct;

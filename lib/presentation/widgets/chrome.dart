@@ -97,11 +97,13 @@ class StaffScaffold extends StatelessWidget {
     required this.tab,
     required this.topBar,
     required this.body,
+    this.showBottomBar = true,
   });
 
   final StaffTab? tab;
   final Widget topBar;
   final Widget body;
+  final bool showBottomBar;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +113,7 @@ class StaffScaffold extends StatelessWidget {
         children: [
           topBar,
           Expanded(child: body),
-          StaffBottomBar(selected: tab),
+          if (showBottomBar) StaffBottomBar(selected: tab),
         ],
       ),
     );

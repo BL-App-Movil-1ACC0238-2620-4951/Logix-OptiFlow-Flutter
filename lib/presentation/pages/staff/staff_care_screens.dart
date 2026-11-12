@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import '../../../domain/entities/store_time.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/production_order.dart';
@@ -10,204 +13,135 @@ import '../../widgets/chrome.dart';
 
 class NewPatientScreen extends StatefulWidget {
   const NewPatientScreen({super.key});
-
   @override
   State<NewPatientScreen> createState() => _NewPatientScreenState();
 }
 
 class _NewPatientScreenState extends State<NewPatientScreen> {
   final name = TextEditingController();
+  final email = TextEditingController();
   final phone = TextEditingController();
-  final rut = TextEditingController();
-  int reason = 0;
-
-  static const reasons = [
-    (Icons.remove_red_eye_outlined, 'Primera consulta'),
-    (Icons.calendar_today_outlined, 'Control anual'),
-    (Icons.grid_view, 'Cambio de cristales'),
-    (Icons.help_outline, 'Molestia visual'),
-  ];
-
+  final dni = TextEditingController();
+  final birth = TextEditingController();
   @override
-  void dispose() {
-    name.dispose();
-    phone.dispose();
-    rut.dispose();
-    super.dispose();
-  }
+  void dispose() { name.dispose(); email.dispose(); phone.dispose(); dni.dispose(); birth.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<OptiFlowController>();
+    final busy = app.staffPatientSaving;
     return StaffScaffold(
-      tab: StaffTab.patients,
-      topBar: StaffTopBar(title: 'Nuevo Cliente', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-            child: Row(
-              children: [
-                const IconTile(icon: Icons.description_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36, iconSize: 18),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('FICHA DIGITAL', style: GoogleFonts.inter(fontSize: 11, color: AppColors.skyTint, letterSpacing: 1)),
-                      const SizedBox(height: 6),
-                      Text('Registro rápido de paciente', style: GoogleFonts.inter(fontSize: 18, color: AppColors.white)),
-                      const SizedBox(height: 6),
-                      Text('Ingresa los datos indispensables para abrir su ficha clínica.', style: GoogleFonts.inter(fontSize: 11, color: AppColors.white.withValues(alpha: 0.85))),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          const _Label('Nombre completo'),
-          const SizedBox(height: 10),
-          TextField(controller: name, decoration: _field('Camila Paz Morales', Icons.person_outline)),
-          const SizedBox(height: 20),
-          const _Label('Teléfono móvil'),
-          const SizedBox(height: 10),
-          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: _field('+56 9 8745 9210', Icons.phone_outlined)),
-          const SizedBox(height: 20),
-          const _Label('RUT / identificación'),
-          const SizedBox(height: 10),
-          TextField(controller: rut, decoration: _field('18.942.105-K', Icons.credit_card_outlined)),
-          const SizedBox(height: 28),
-          Text('Motivo de consulta', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          const SizedBox(height: 12),
-          for (var row = 0; row < 2; row++) ...[
-            Row(
-              children: [
-                for (var col = 0; col < 2; col++) ...[
-                  if (col > 0) const SizedBox(width: 8),
-                  Expanded(child: _ReasonChip(reasons[row * 2 + col].$1, reasons[row * 2 + col].$2, reason == row * 2 + col, () => setState(() => reason = row * 2 + col))),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 14),
-          SolidButton(
-            label: 'Guardar paciente',
-            icon: Icons.check,
-            onPressed: () {
-              if (name.text.trim().isEmpty) {
-                showAppMessage(context, 'Ingresa el nombre del paciente');
-                return;
-              }
-              final app = context.read<OptiFlowController>();
-              final id = 'local-${app.staffPatients.length + 1}';
-              app.addStaffPatient(name: name.text, phone: phone.text, rut: rut.text, reason: reasons[reason].$2);
-              showAppMessage(context, 'Paciente registrado');
-              context.push('/s/patient/$id');
-            },
-          ),
-          const SizedBox(height: 14),
-          Center(
-            child: TextButton(
-              onPressed: () => context.pop(),
-              child: Text('Cancelar', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
-            ),
-          ),
-        ],
-      ),
+      tab: null, showBottomBar: false,
+      topBar: StaffTopBar(title: 'Nuevo Cliente', onBack: () { if (!busy) { context.canPop() ? context.pop() : context.go('/s/patients'); } }),
+      body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
+        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)), child: Row(children: [
+          const IconTile(icon: Icons.description_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36),
+          const SizedBox(width: 14),
+          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('FICHA DIGITAL', style: TextStyle(color: AppColors.skyTint, fontSize: 11)),
+            SizedBox(height: 6), Text('Registro rápido de paciente', style: TextStyle(color: AppColors.white, fontSize: 18)),
+            SizedBox(height: 6), Text('El paciente podrá entrar a la app con su correo y su DNI como contraseña temporal.', style: TextStyle(color: AppColors.white, fontSize: 11)),
+          ])),
+        ])),
+        const SizedBox(height: 18),
+        const _Label('Nombre completo'), const SizedBox(height: 10),
+        TextField(controller: name, enabled: !busy, maxLength: 80, decoration: _field('Camila Paz Morales', Icons.person_outline)),
+        const SizedBox(height: 16),
+        const _Label('Correo electrónico'), const SizedBox(height: 10),
+        TextField(controller: email, enabled: !busy, keyboardType: TextInputType.emailAddress, decoration: _field('camila@correo.com', Icons.mail_outline)),
+        const SizedBox(height: 16),
+        const _Label('Teléfono móvil'), const SizedBox(height: 10),
+        TextField(controller: phone, enabled: !busy, maxLength: 20, keyboardType: TextInputType.phone, decoration: _field('987 654 321', Icons.phone_outlined)),
+        const SizedBox(height: 16),
+        const _Label('DNI', hint: 'Será su contraseña temporal'), const SizedBox(height: 10),
+        TextField(controller: dni, enabled: !busy, maxLength: 8, inputFormatters: [FilteringTextInputFormatter.digitsOnly], keyboardType: TextInputType.number, decoration: _field('45879632', Icons.credit_card_outlined)),
+        const SizedBox(height: 16),
+        const _Label('Fecha de nacimiento', hint: 'Opcional · dd/mm/aaaa'), const SizedBox(height: 10),
+        TextField(controller: birth, enabled: !busy, maxLength: 10, keyboardType: TextInputType.datetime, decoration: _field('24/05/1990', Icons.calendar_today_outlined)),
+        if (app.staffPatientSaveError != null) Text(app.staffPatientSaveError!, style: const TextStyle(color: AppColors.errorRed)),
+        const SizedBox(height: 24),
+        SolidButton(label: 'Guardar paciente', loading: busy, icon: Icons.check, onPressed: () async {
+          final id = await app.registerStaffPatient(name: name.text, email: email.text, phone: phone.text, dni: dni.text, birthDate: birth.text);
+          if (!context.mounted || id == null) return;
+          showAppMessage(context, 'Paciente registrado');
+          context.replace('/s/patient/${Uri.encodeComponent(id)}');
+        }),
+        TextButton(onPressed: busy ? null : () => context.canPop() ? context.pop() : context.go('/s/patients'), child: const Text('Cancelar')),
+      ]),
     );
   }
 }
 
 class NewAppointmentScreen extends StatefulWidget {
-  const NewAppointmentScreen({super.key});
-
+  const NewAppointmentScreen({super.key, this.patientId});
+  final String? patientId;
   @override
   State<NewAppointmentScreen> createState() => _NewAppointmentScreenState();
 }
 
 class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
-  static const times = ['09:00', '10:30', '12:00', '14:30', '16:00', '17:00'];
-  int time = 1;
+  bool choosingPatient = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().prepareStaffBooking(patientId: widget.patientId); });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<OptiFlowController>();
+    final patient = app.staffBookingPatientId == null ? null : app.staffPatient(app.staffBookingPatientId!);
+    final days = {for (final slot in app.staffBookingSlots) StoreTime.day(slot.start)}.toList();
+    final slots = app.staffBookingSlots.where((slot) => app.staffBookingDay != null && StoreTime.isoDay(StoreTime.day(slot.start)) == StoreTime.isoDay(app.staffBookingDay!)).toList();
+    final busy = app.staffBookingSaving;
     return StaffScaffold(
-      tab: StaffTab.agenda,
-      topBar: StaffTopBar(title: 'Nueva cita', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-            child: Row(
-              children: [
-                const IconTile(icon: Icons.calendar_today_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36, iconSize: 18),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('AGENDAMIENTO · PASO ÚNICO', style: GoogleFonts.inter(fontSize: 11, color: AppColors.skyTint, letterSpacing: 1)),
-                    const SizedBox(height: 4),
-                    Text('Datos de la cita', style: GoogleFonts.inter(fontSize: 18, color: AppColors.white)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          const _Label('Nombre del paciente', hint: 'Paciente registrado'),
-          const SizedBox(height: 8),
-          _SelectRow('Valentina Silva Morales', leading: 'VS', onTap: () => context.push('/s/patients')),
-          const SizedBox(height: 18),
-          const _Label('Servicio', hint: '45 min aprox.'),
-          const SizedBox(height: 8),
-          const _SelectRow('Examen de vista completo', icon: Icons.remove_red_eye_outlined),
-          const SizedBox(height: 18),
-          const _Label('Óptica / sucursal', hint: 'Disponible'),
-          const SizedBox(height: 8),
-          const _SelectRow('Sucursal Centro · Av. Libertad 450', icon: Icons.location_on_outlined),
-          const SizedBox(height: 18),
-          const _Label('Fecha', hint: 'Junio 2025'),
-          const SizedBox(height: 8),
-          const _SelectRow('Miércoles, 20 de junio', icon: Icons.calendar_today_outlined),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(child: Text('Hora', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-              Text('Selecciona horario', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (var row = 0; row < 2; row++) ...[
-            Row(
-              children: [
-                for (var col = 0; col < 3; col++) ...[
-                  if (col > 0) const SizedBox(width: 10),
-                  Expanded(child: _TimeChip(times[row * 3 + col], time == row * 3 + col, () => setState(() => time = row * 3 + col))),
-                ],
-              ],
-            ),
-            const SizedBox(height: 10),
-          ],
-          const SizedBox(height: 14),
-          SolidButton(
-            label: 'Confirmar cita',
-            icon: Icons.check,
-            onPressed: () {
-              showAppMessage(context, 'Cita agendada para las ${times[time]}');
-              context.go('/s/agenda');
-            },
-          ),
+      tab: null, showBottomBar: false,
+      topBar: StaffTopBar(title: 'Nueva cita', onBack: () { if (!busy) { context.canPop() ? context.pop() : context.go('/s/agenda'); } }),
+      body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
+        Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)), child: const Row(children: [
+          IconTile(icon: Icons.calendar_today_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36),
+          SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('AGENDAMIENTO · PASO ÚNICO', style: TextStyle(fontSize: 11, color: AppColors.skyTint)),
+            SizedBox(height: 4), Text('Datos de la cita', style: TextStyle(fontSize: 18, color: AppColors.white)),
+          ])),
+        ])),
+        const SizedBox(height: 18), const _Label('Paciente', hint: 'Registrado en OptiFlow'), const SizedBox(height: 8),
+        _SelectRow(patient?.fullName ?? 'Elegir paciente', leading: patient?.initials, icon: patient == null ? Icons.person_outline : null, onTap: () { if (!busy) setState(() => choosingPatient = !choosingPatient); }),
+        if (choosingPatient) ...[
+          if (app.staffPatientsLoading) const LinearProgressIndicator(),
+          if (app.staffPatientsError != null) TextButton(onPressed: app.refreshStaffPatients, child: Text(app.staffPatientsError!)),
+          if (!app.staffPatientsLoading && app.staffPatients.isEmpty) const Text('Todavía no hay pacientes registrados.'),
+          for (final option in app.staffPatients) ListTile(title: Text(option.fullName), subtitle: Text(option.email), onTap: busy ? null : () {
+            app.selectStaffBooking(patientId: option.id); setState(() => choosingPatient = false);
+          }),
         ],
-      ),
+        const SizedBox(height: 18), const _Label('Fecha', hint: 'Turnos libres de mi óptica'), const SizedBox(height: 12),
+        if (app.staffBookingLoading) const LinearProgressIndicator()
+        else if (days.isEmpty) const Text('No hay horarios libres. El administrador puede abrirlos en Más > Horarios de atención.')
+        else ...[
+          Wrap(spacing: 8, runSpacing: 8, children: [for (final day in days)
+            SizedBox(width: 105, child: _TimeChip(DateFormat('EEE d MMM', 'es').format(day), day == app.staffBookingDay, () { if (!busy) app.selectStaffBooking(day: day); })),
+          ]),
+          const SizedBox(height: 18), const _Label('Hora', hint: 'Selecciona horario'), const SizedBox(height: 12),
+          Wrap(spacing: 10, runSpacing: 10, children: [for (final slot in slots)
+            SizedBox(width: 96, child: _TimeChip(DateFormat('HH:mm').format(StoreTime.clock(slot.start)), slot.id == app.staffBookingSlotId, () { if (!busy) app.selectStaffBooking(slotId: slot.id); })),
+          ]),
+        ],
+        if (app.staffBookingError != null) ...[
+          const SizedBox(height: 12), Text(app.staffBookingError!, style: const TextStyle(color: AppColors.errorRed)),
+          TextButton(onPressed: busy ? null : app.reloadStaffBookingSlots, child: const Text('Actualizar horarios')),
+        ],
+        const SizedBox(height: 20),
+        SolidButton(label: 'Confirmar cita', loading: busy, icon: Icons.check, onPressed: app.staffBookingLoading ? null : () async {
+          final booked = await app.confirmStaffBooking();
+          if (!context.mounted || !booked) return;
+          showAppMessage(context, 'Cita agendada.');
+          if (context.canPop()) { context.pop(); } else { context.go('/s/agenda'); }
+        }),
+      ]),
     );
   }
 }
-
 class ClinicalCareScreen extends StatefulWidget {
   const ClinicalCareScreen({super.key});
 
@@ -404,37 +338,6 @@ class _CareStage {
   final IconData icon;
   final String title;
   final String subtitle;
-}
-
-class _ReasonChip extends StatelessWidget {
-  const _ReasonChip(this.icon, this.label, this.selected, this.onTap);
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.staffAccent : const Color(0xFFF1F5FF),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 44,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: selected ? AppColors.white : AppColors.staffInk),
-              const SizedBox(width: 6),
-              Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11, color: selected ? AppColors.white : AppColors.staffInk))),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _SelectRow extends StatelessWidget {

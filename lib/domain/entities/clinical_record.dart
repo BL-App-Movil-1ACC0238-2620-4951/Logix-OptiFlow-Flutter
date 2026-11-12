@@ -8,6 +8,7 @@ class PrescriptionValues {
     this.cylinderOs,
     this.axisOs,
     this.treatment,
+    this.recommendedFrameType,
   });
 
   final num? sphereOd;
@@ -18,6 +19,7 @@ class PrescriptionValues {
   final num? cylinderOs;
   final num? axisOs;
   final String? treatment;
+  final String? recommendedFrameType;
 }
 
 class ClinicalRecord {
@@ -25,9 +27,15 @@ class ClinicalRecord {
     this.examinationDate,
     this.observations,
     this.prescription,
+    this.id,
+    this.appointmentId,
+    this.status,
   });
 
   final DateTime? examinationDate;
   final String? observations;
   final PrescriptionValues? prescription;
+  final String? id;
+  final String? appointmentId;
+  final String? status;
 }

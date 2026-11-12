@@ -6,6 +6,9 @@ import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
 import '../../domain/entities/models.dart';
 import '../../domain/entities/inventory.dart';
+import '../../domain/entities/staff_order.dart';
+import '../../domain/entities/store_time.dart';
+import '../mappers/staff_view_mapper.dart';
 import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
 import '../navigation/route_access.dart';
@@ -64,7 +67,39 @@ class OptiFlowController extends ChangeNotifier {
   int _bookingRequest = 0;
   StoreOption? get selectedBookingStore => selectedStoreIndex >= 0 && selectedStoreIndex < bookingStores.length ? bookingStores[selectedStoreIndex] : null;
 
-  late List<StaffPatient> staffPatients = List.of(deps.getStaffPatients());
+  List<StaffPatient> staffPatients = [];
+  final Map<String, StaffPatient> _staffPatientsById = {};
+  List<AgendaItem> agenda = [];
+  DateTime agendaDate = StoreTime.today();
+  bool staffPatientsLoading = false;
+  String? staffPatientsError;
+  int? patientsWithRecords;
+  String? patientSummaryError;
+  bool staffAgendaLoading = false;
+  String? staffAgendaError;
+  List<StaffOrder> staffOrders = [];
+  String? staffOrdersError;
+  bool staffOrdersLoading = false;
+  bool staffPatientSaving = false;
+  String? staffPatientSaveError;
+  int _staffPatientsRequest = 0;
+  int _staffAgendaRequest = 0;
+  int _staffOrdersRequest = 0;
+  final Set<String> staffRecordLoading = {};
+  final Map<String, int> _staffRecordRequests = {};
+  final Map<String, String> staffRecordErrors = {};
+  final Map<String, Map<String, String>> staffRecordSectionErrors = {};
+  final Map<String, List<ClinicalRecord>> staffRecordClinical = {};
+  final Map<String, List<Appointment>> staffRecordAppointments = {};
+  final Map<String, List<StaffOrder>> staffRecordOrders = {};
+  List<TimeSlot> staffBookingSlots = [];
+  String? staffBookingPatientId;
+  String? staffBookingSlotId;
+  DateTime? staffBookingDay;
+  bool staffBookingLoading = false;
+  bool staffBookingSaving = false;
+  String? staffBookingError;
+  int _staffBookingRequest = 0;
   List<FrameItem> _frames = [];
   final Map<String, FrameItem> _framesBySku = {};
   final Map<String, ProductItem> _productsBySku = {};
@@ -224,7 +259,39 @@ class OptiFlowController extends ChangeNotifier {
     movementsError = null;
     inventoryMutationBusy = false;
     inventoryMutationError = null;
-    staffPatients = List.of(deps.getStaffPatients());
+    _staffPatientsRequest++;
+    _staffAgendaRequest++;
+    _staffOrdersRequest++;
+    _staffBookingRequest++;
+    for (final id in _staffRecordRequests.keys.toList()) { _staffRecordRequests[id] = _staffRecordRequests[id]! + 1; }
+    staffPatients = [];
+    _staffPatientsById.clear();
+    agenda = [];
+    agendaDate = StoreTime.today();
+    staffPatientsLoading = false;
+    staffPatientsError = null;
+    patientsWithRecords = null;
+    patientSummaryError = null;
+    staffAgendaLoading = false;
+    staffAgendaError = null;
+    staffOrders = [];
+    staffOrdersLoading = false;
+    staffOrdersError = null;
+    staffPatientSaving = false;
+    staffPatientSaveError = null;
+    staffRecordLoading.clear();
+    staffRecordErrors.clear();
+    staffRecordSectionErrors.clear();
+    staffRecordClinical.clear();
+    staffRecordAppointments.clear();
+    staffRecordOrders.clear();
+    staffBookingSlots = [];
+    staffBookingPatientId = null;
+    staffBookingSlotId = null;
+    staffBookingDay = null;
+    staffBookingLoading = false;
+    staffBookingSaving = false;
+    staffBookingError = null;
     appointments = [];
     appointmentsLoading = false;
     appointmentsError = null;
@@ -898,33 +965,240 @@ class OptiFlowController extends ChangeNotifier {
   }
   List<FrameItem> get frames => _frames;
   FrameItem? frameById(String sku) => _framesBySku[sku];
-  List<AgendaItem> get agenda => deps.getAgenda();
   ProductItem? productById(String sku) => _productsBySku[sku];
   List<ProductionOrder> get productionOrders => deps.getProductionOrders();
   List<StaffAlert> get alerts => deps.getStaffAlerts();
   List<double> get reportBars => deps.getReportBars();
 
-  void addStaffPatient({required String name, required String phone, required String rut, required String reason}) {
-    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
-    final initials = parts.take(2).map((p) => p[0].toUpperCase()).join();
-    staffPatients = [
-      StaffPatient(
-        id: 'local-${staffPatients.length + 1}',
-        initials: initials.isEmpty ? 'NP' : initials,
-        name: parts.take(2).join(' '),
-        fullName: name.trim(),
-        rut: rut.trim().isEmpty ? '—' : rut.trim(),
-        note: reason,
-        phone: phone.trim(),
-        lastVisit: '—',
-        ficha: 'OPT-LOCAL-${staffPatients.length + 1}',
-        age: 0,
-      ),
-      ...staffPatients,
-    ];
+  String get staffStoreName => stores.where((s) => s.id == session?.opticalStoreId).firstOrNull?.name ?? session?.role.label ?? '';
+  Set<String> get waitingPatientIds => agenda.where((a) => a.status == AgendaStatus.waiting).map((a) => a.patientId).toSet();
+  Set<String> get workshopPatientIds => staffOrders.where((o) => o.status != 'DELIVERED').map((o) => o.patientId).whereType<String>().toSet();
+  int get newPatientsThisMonth {
+    final today = StoreTime.today();
+    return staffPatients.where((p) { final date = p.createdAt == null ? null : StoreTime.day(p.createdAt!); return date?.year == today.year && date?.month == today.month; }).length;
+  }
+  List<DateTime> get agendaWeek {
+    final monday = agendaDate.subtract(Duration(days: agendaDate.weekday - DateTime.monday));
+    return List.generate(6, (i) => monday.add(Duration(days: i)));
+  }
+
+  Future<void> refreshStaffOverview() async {
+    final current = session;
+    if (current?.isAuthenticated != true || current?.isPatient != false) return;
+    final tasks = <Future<void>>[];
+    if (canOpen('/s/patients')) tasks.add(refreshStaffPatients());
+    if (canOpen('/s/agenda')) tasks.add(refreshStaffAgenda());
+    if (canOpen('/s/production')) tasks.add(refreshStaffOrders());
+    tasks.add(() async { try { final loaded = await deps.getStores(); if (identical(current, session)) { stores = loaded; notifyListeners(); } } catch (_) {} }());
+    await Future.wait(tasks);
+  }
+
+  Future<void> refreshStaffPatients() async {
+    if (!canOpen('/s/patients')) return;
+    final current = session;
+    final request = ++_staffPatientsRequest;
+    staffPatientsLoading = true;
+    staffPatientsError = null;
+    patientSummaryError = null;
+    notifyListeners();
+    try {
+      final loaded = await deps.getStaffPatients();
+      if (!identical(current, session) || request != _staffPatientsRequest) return;
+      staffPatients = loaded;
+      for (final patient in loaded) { _staffPatientsById[patient.id] = patient; }
+      notifyListeners();
+      if (!identical(current, session)) return;
+      try {
+        final count = await deps.getPatientsWithRecords();
+        if (identical(current, session) && request == _staffPatientsRequest) patientsWithRecords = count;
+      } catch (e) {
+        if (identical(current, session) && request == _staffPatientsRequest) patientSummaryError = _inventoryMessage(e, 'No se pudo cargar el resumen clínico.');
+      }
+    } catch (e) {
+      if (identical(current, session) && request == _staffPatientsRequest) staffPatientsError = _inventoryMessage(e, 'No se pudieron cargar los pacientes.');
+    } finally {
+      if (identical(current, session) && request == _staffPatientsRequest) { staffPatientsLoading = false; notifyListeners(); }
+    }
+  }
+
+  Future<void> refreshStaffOrders() async {
+    if (!canOpen('/s/production')) return;
+    final current = session;
+    final request = ++_staffOrdersRequest;
+    staffOrdersLoading = true;
+    staffOrdersError = null;
+    notifyListeners();
+    try {
+      final loaded = await deps.getStaffOrders();
+      if (identical(current, session) && request == _staffOrdersRequest) staffOrders = loaded;
+    } catch (e) {
+      if (identical(current, session) && request == _staffOrdersRequest) staffOrdersError = _inventoryMessage(e, 'No se pudieron cargar las órdenes.');
+    } finally {
+      if (identical(current, session) && request == _staffOrdersRequest) { staffOrdersLoading = false; notifyListeners(); }
+    }
+  }
+
+  Future<void> refreshStaffAgenda({DateTime? date}) async {
+    if (!canOpen('/s/agenda')) return;
+    final current = session;
+    final storeId = current?.opticalStoreId;
+    if (storeId == null || storeId.isEmpty) { staffAgendaError = 'Tu cuenta no tiene una óptica asignada.'; notifyListeners(); return; }
+    agendaDate = date ?? agendaDate;
+    final requestedDate = agendaDate;
+    final request = ++_staffAgendaRequest;
+    staffAgendaLoading = true;
+    staffAgendaError = null;
+    agenda = [];
+    notifyListeners();
+    try {
+      final loaded = await deps.getAgenda(storeId, requestedDate);
+      final items = await Future.wait(loaded.where((a) => a.status != 'CANCELLED').map((appointment) async {
+        var patient = _staffPatientsById[appointment.patientId];
+        if (patient == null) { try { patient = await deps.getStaffPatient(appointment.patientId); } catch (_) {} }
+        if (identical(current, session) && patient != null) _staffPatientsById[patient.id] = patient;
+        return StaffViewMapper.agenda(appointment, patient?.fullName ?? 'Paciente');
+      }));
+      if (!identical(current, session) || request != _staffAgendaRequest) return;
+      agenda = items..sort((a, b) => a.startsAt!.compareTo(b.startsAt!));
+    } catch (e) {
+      if (identical(current, session) && request == _staffAgendaRequest) staffAgendaError = _inventoryMessage(e, 'No se pudo cargar la agenda.');
+    } finally {
+      if (identical(current, session) && request == _staffAgendaRequest) { staffAgendaLoading = false; notifyListeners(); }
+    }
+  }
+
+  Future<String?> registerStaffPatient({required String name, required String email, required String phone, required String dni, String birthDate = ''}) async {
+    if (staffPatientSaving) return null;
+    staffPatientSaveError = null;
+    final current = session;
+    final birth = birthDate.trim().isEmpty ? null : StoreTime.parseBirthDate(birthDate);
+    if (!canOpen('/s/patients/new')) { staffPatientSaveError = 'Tu cuenta no puede registrar pacientes.'; }
+    else if (name.trim().length < 2 || name.trim().length > 80) { staffPatientSaveError = 'Ingresa el nombre del paciente (2 a 80 caracteres).'; }
+    else if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.trim())) { staffPatientSaveError = 'Ingresa un correo válido.'; }
+    else if (phone.trim().isEmpty) { staffPatientSaveError = 'Ingresa el teléfono del paciente.'; }
+    else if (!RegExp(r'^\d{8}$').hasMatch(dni)) { staffPatientSaveError = 'El DNI debe tener 8 dígitos.'; }
+    else if (birthDate.trim().isNotEmpty && birth == null) { staffPatientSaveError = 'La fecha de nacimiento no es válida.'; }
+    if (staffPatientSaveError != null) { notifyListeners(); return null; }
+    staffPatientSaving = true;
+    notifyListeners();
+    try {
+      final patient = await deps.registerPatientByStaff(name: name.trim(), email: email.trim(), phone: phone.trim(), dni: dni, birthDate: birth);
+      if (!identical(current, session)) return null;
+      _staffPatientsRequest++;
+      staffPatientsLoading = false;
+      _staffPatientsById[patient.id] = patient;
+      staffPatients = [patient, ...staffPatients.where((p) => p.id != patient.id)];
+      return patient.id;
+    } catch (e) {
+      if (identical(current, session)) staffPatientSaveError = _inventoryMessage(e, 'No se pudo registrar al paciente.');
+      return null;
+    } finally {
+      if (identical(current, session)) { staffPatientSaving = false; notifyListeners(); }
+    }
+  }
+
+  Future<void> loadStaffRecord(String id) async {
+    if (!canOpen('/s/patients')) return;
+    final current = session;
+    final request = (_staffRecordRequests[id] ?? 0) + 1;
+    _staffRecordRequests[id] = request;
+    staffRecordLoading.add(id);
+    staffRecordErrors.remove(id);
+    staffRecordSectionErrors[id] = {};
+    notifyListeners();
+    Future<Object> result(Future<Object> call) => call.then<Object>((value) => value, onError: (Object error) => error);
+    try {
+      final responses = await Future.wait<Object>([
+        result(deps.getStaffPatient(id)), result(deps.getClinicalRecords(id)),
+        result(deps.getAppointments(id)), result(deps.getStaffOrders()),
+      ]);
+      if (!identical(current, session) || _staffRecordRequests[id] != request) return;
+      final patient = responses[0];
+      if (patient is! StaffPatient) throw patient;
+      _staffPatientsById[id] = patient;
+      final errors = <String, String>{};
+      if (responses[1] is List<ClinicalRecord>) { staffRecordClinical[id] = responses[1] as List<ClinicalRecord>; }
+      else { errors['clinical'] = _inventoryMessage(responses[1], 'No se pudo cargar la receta.'); }
+      if (responses[2] is List<Appointment>) { staffRecordAppointments[id] = responses[2] as List<Appointment>; }
+      else { errors['appointments'] = _inventoryMessage(responses[2], 'No se pudieron cargar las citas.'); }
+      if (responses[3] is List<StaffOrder>) { staffRecordOrders[id] = (responses[3] as List<StaffOrder>).where((o) => o.patientId == id).toList(); }
+      else { errors['orders'] = _inventoryMessage(responses[3], 'No se pudieron cargar las órdenes.'); }
+      staffRecordSectionErrors[id] = errors;
+    } catch (e) {
+      if (identical(current, session) && _staffRecordRequests[id] == request) staffRecordErrors[id] = _inventoryMessage(e, 'No se encontró al paciente.');
+    } finally {
+      if (identical(current, session) && _staffRecordRequests[id] == request) { staffRecordLoading.remove(id); notifyListeners(); }
+    }
+  }
+
+  Future<void> prepareStaffBooking({String? patientId}) async {
+    if (!canOpen('/s/appointments/new') || staffBookingSaving) return;
+    staffBookingPatientId = patientId;
+    staffBookingSlotId = null;
+    await Future.wait([refreshStaffPatients(), reloadStaffBookingSlots()]);
+  }
+
+  Future<void> reloadStaffBookingSlots() async {
+    if (!canOpen('/s/appointments/new')) return;
+    final current = session;
+    final storeId = current?.opticalStoreId;
+    if (storeId == null || storeId.isEmpty) { staffBookingError = 'Tu cuenta no tiene una óptica asignada.'; notifyListeners(); return; }
+    final request = ++_staffBookingRequest;
+    staffBookingLoading = true;
+    staffBookingError = null;
+    staffBookingSlots = [];
+    staffBookingSlotId = null;
+    notifyListeners();
+    try {
+      final loaded = await deps.getAvailability(storeId);
+      if (!identical(current, session) || request != _staffBookingRequest) return;
+      staffBookingSlots = loaded.where((s) => s.opticalStoreId == storeId && s.status == 'AVAILABLE' && s.start.isAfter(DateTime.now())).toList()..sort((a, b) => a.start.compareTo(b.start));
+      staffBookingDay = staffBookingSlots.isEmpty ? null : StoreTime.day(staffBookingSlots.first.start);
+    } catch (e) {
+      if (identical(current, session) && request == _staffBookingRequest) staffBookingError = _inventoryMessage(e, 'No se pudieron cargar los horarios.');
+    } finally {
+      if (identical(current, session) && request == _staffBookingRequest) { staffBookingLoading = false; notifyListeners(); }
+    }
+  }
+
+  void selectStaffBooking({String? patientId, DateTime? day, String? slotId}) {
+    if (staffBookingSaving) return;
+    if (patientId != null) staffBookingPatientId = patientId;
+    if (day != null) { staffBookingDay = day; staffBookingSlotId = null; }
+    if (slotId != null) staffBookingSlotId = slotId;
+    staffBookingError = null;
     notifyListeners();
   }
 
+  Future<bool> confirmStaffBooking() async {
+    if (staffBookingSaving || staffBookingLoading || !canOpen('/s/appointments/new')) return false;
+    final current = session;
+    final storeId = current?.opticalStoreId;
+    final patientId = staffBookingPatientId;
+    final slot = staffBookingSlots.where((s) => s.id == staffBookingSlotId).firstOrNull;
+    if (storeId == null || patientId == null || staffPatient(patientId) == null || slot == null || !slot.start.isAfter(DateTime.now())) {
+      staffBookingError = 'Elige un paciente registrado y un horario disponible.'; notifyListeners(); return false;
+    }
+    staffBookingSaving = true;
+    staffBookingError = null;
+    notifyListeners();
+    try {
+      await deps.bookAppointment(patientId: patientId, opticalStoreId: storeId, timeSlotId: slot.id);
+      if (!identical(current, session)) return false;
+      staffBookingSlots = staffBookingSlots.where((s) => s.id != slot.id).toList();
+      staffBookingSlotId = null;
+      await Future.wait([refreshStaffAgenda(), loadStaffRecord(patientId)]);
+      return identical(current, session);
+    } catch (e) {
+      if (!identical(current, session)) return false;
+      final message = _inventoryMessage(e, 'No se pudo agendar la cita.');
+      await reloadStaffBookingSlots();
+      if (identical(current, session)) staffBookingError = message;
+      return false;
+    } finally {
+      if (identical(current, session)) { staffBookingSaving = false; notifyListeners(); }
+    }
+  }
   int stockOf(ProductItem product) => product.available;
 
   void setClinicalStage(int index) {
@@ -946,9 +1220,7 @@ class OptiFlowController extends ChangeNotifier {
     return null;
   }
 
-  StaffPatient staffPatient(String id) {
-    return staffPatients.firstWhere((p) => p.id == id, orElse: () => staffPatients.first);
-  }
+  StaffPatient? staffPatient(String id) => _staffPatientsById[id];
 
   static DateTime _monday(DateTime date) {
     final day = DateTime(date.year, date.month, date.day);

@@ -1,232 +1,120 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../domain/entities/store_time.dart';
 import '../../widgets/chrome.dart';
 
-class StaffPatientRecordScreen extends StatelessWidget {
+class StaffPatientRecordScreen extends StatefulWidget {
   const StaffPatientRecordScreen({super.key, required this.id});
-
   final String id;
+  @override
+  State<StaffPatientRecordScreen> createState() => _StaffPatientRecordScreenState();
+}
+
+class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().loadStaffRecord(widget.id); });
+  }
+
+  String _diopters(num? value) {
+    final number = value ?? 0;
+    return '${number > 0 ? '+' : ''}${number.toStringAsFixed(2)}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final patient = context.watch<OptiFlowController>().staffPatient(id);
+    final app = context.watch<OptiFlowController>();
+    final id = widget.id;
+    final patient = app.staffPatient(id);
+    final loading = app.staffRecordLoading.contains(id);
+    final errors = app.staffRecordSectionErrors[id] ?? {};
+    final records = app.staffRecordClinical[id] ?? [];
+    final examined = records.where((r) => r.status != 'PENDING' && r.examinationDate != null).toList()..sort((a, b) => b.examinationDate!.compareTo(a.examinationDate!));
+    final prescriptions = records.where((r) => r.prescription != null).toList()..sort((a, b) => (b.examinationDate ?? DateTime.utc(1970)).compareTo(a.examinationDate ?? DateTime.utc(1970)));
+    final last = prescriptions.firstOrNull;
+    final rx = last?.prescription;
+    final next = (app.staffRecordAppointments[id] ?? []).where((a) => const {'CONFIRMED', 'PENDING'}.contains(a.status) && a.end.isAfter(DateTime.now())).toList()..sort((a, b) => a.start.compareTo(b.start));
+    final appointment = next.firstOrNull;
+    final orders = [...?app.staffRecordOrders[id]]..sort((a, b) => (b.createdAt ?? DateTime.utc(1970)).compareTo(a.createdAt ?? DateTime.utc(1970)));
+    final order = orders.where((o) => o.status != 'DELIVERED').firstOrNull ?? orders.firstOrNull;
+    final lastVisit = examined.isEmpty ? 'Sin visitas' : DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(examined.first.examinationDate!));
     return StaffScaffold(
-      tab: StaffTab.patients,
-      topBar: StaffTopBar(
-        title: 'Ficha del Paciente',
-        onBack: () => context.pop(),
-        trailing: IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz, color: AppColors.white)),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(18)),
-                      child: Text(patient.initials, style: GoogleFonts.inter(fontSize: 16, color: AppColors.electric)),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: const Color(0x3310B981), borderRadius: BorderRadius.circular(20)),
-                            child: Text('Paciente activo', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFA7F3D0))),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(patient.fullName, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
-                          Text('ID #${patient.ficha}', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate300)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                Row(
-                  children: [
-                    Expanded(child: _HeroFact('TELÉFONO', patient.phone)),
-                    Expanded(child: _HeroFact('ÚLTIMA VISITA', patient.lastVisit)),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(child: SolidButton(label: 'Llamar', icon: Icons.phone_outlined, background: AppColors.white, foreground: const Color(0xFF0013C1), onPressed: () => showAppMessage(context, 'Llamada a ${patient.phone}'))),
-                    const SizedBox(width: 10),
-                    Expanded(child: SolidButton(label: 'Mensaje', icon: Icons.mail_outline, background: AppColors.white, foreground: const Color(0xFF0013C1), onPressed: () => showAppMessage(context, 'Mensaje listo para ${patient.fullName}'))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(child: Text('Última prescripción', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-              GestureDetector(
-                onTap: () => context.push('/s/evaluation'),
-                child: Text('Ver historial', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.remove_red_eye_outlined, color: AppColors.staffAccent, size: 26),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Última Prescripción', style: GoogleFonts.inter(fontSize: 18, color: AppColors.staffInk)),
-                          Text('Dr. Sergio Ramos · 24 jun 2023', style: GoogleFonts.inter(fontSize: 8, color: AppColors.staffInk)),
-                        ],
-                      ),
-                    ),
-                    _Pill('Vigente'),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Row(
-                  children: [
-                    Expanded(child: _EyeBox('Ojo derecho', '-1.75 / -0.50', '180° · DP 31.5')),
-                    SizedBox(width: 8),
-                    Expanded(child: _EyeBox('Ojo izquierdo', '-2.00 / -0.75', '175° · DP 31.0')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
-                  child: Text('Monofocal Filtro Azul 1.60', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffAccent)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text('Próxima cita', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          const SizedBox(height: 12),
-          AppCard(
-            onTap: () => context.go('/s/agenda'),
-            child: Row(
-              children: [
-                const DateBadge(day: '20', month: 'JUN'),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _Pill('Confirmada'),
-                      const SizedBox(height: 4),
-                      Text('Evaluación visual completa', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                      Text('10:30 · Control visual integral', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: AppColors.staffInk),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(child: Text('Proceso de sus lentes', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-              GestureDetector(
-                onTap: () => context.push('/s/production'),
-                child: Text('Orden OT-2048', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AppCard(
-            onTap: () => context.push('/s/production'),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const IconTile(icon: Icons.settings_outlined, size: 36, background: Color(0xFFEEF2FF), color: AppColors.staffAccent),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _Pill('En taller'),
-                          const SizedBox(height: 4),
-                          Text('Biselado y montaje', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                          Text('Montura Ray-Ban · Cristales monofocales 1.60', style: GoogleFonts.inter(fontSize: 9, color: AppColors.staffInk)),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: AppColors.staffInk),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Row(
-                  children: [
-                    Expanded(child: _Progress(AppColors.staffAccent)),
-                    SizedBox(width: 6),
-                    Expanded(child: _Progress(AppColors.staffAccent)),
-                    SizedBox(width: 6),
-                    Expanded(child: _Progress(Color(0xFF93C5FD))),
-                    SizedBox(width: 6),
-                    Expanded(child: _Progress(AppColors.staffChip)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: Text('Pedido recibido', style: GoogleFonts.inter(fontSize: 8, color: AppColors.staffInk))),
-                    Text('Entrega estimada: 28 de junio', style: GoogleFonts.inter(fontSize: 8, color: AppColors.staffAccent)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(child: SolidButton(label: 'Nueva cita', icon: Icons.calendar_today_outlined, onPressed: () => context.push('/s/appointments/new'))),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SolidButton(
-                  label: 'Iniciar atención',
-                  icon: Icons.add,
-                  background: AppColors.white,
-                  foreground: AppColors.staffInk,
-                  border: AppColors.staffBorder,
-                  onPressed: () => context.push('/s/clinical'),
-                ),
-              ),
-            ],
-          ),
+      tab: null, showBottomBar: false,
+      topBar: StaffTopBar(title: 'Ficha del Paciente', onBack: () => context.canPop() ? context.pop() : context.go('/s/patients')),
+      body: RefreshIndicator(onRefresh: () => app.loadStaffRecord(id), child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
+        if (loading) const LinearProgressIndicator(),
+        if (app.staffRecordErrors[id] != null) ...[
+          Text(app.staffRecordErrors[id]!, style: const TextStyle(color: AppColors.errorRed)),
+          TextButton(onPressed: () => app.loadStaffRecord(id), child: const Text('Reintentar')),
         ],
-      ),
+        if (patient != null) ...[
+          Container(padding: const EdgeInsets.fromLTRB(16, 18, 16, 18), decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              CircleAvatar(radius: 30, backgroundColor: AppColors.lavender, child: Text(patient.initials)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Paciente activo', style: TextStyle(color: Color(0xFFA7F3D0))),
+                const SizedBox(height: 4), Text(patient.fullName, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
+                Text('ID #${patient.ficha}', style: const TextStyle(fontSize: 10, color: AppColors.slate300)),
+              ])),
+            ]),
+            const SizedBox(height: 22),
+            Row(children: [Expanded(child: _HeroFact('TELÉFONO', patient.phone)), Expanded(child: _HeroFact('ÚLTIMA VISITA', lastVisit))]),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: SolidButton(label: 'Llamar', icon: Icons.phone_outlined, background: AppColors.white, foreground: AppColors.electric, onPressed: () {})),
+              const SizedBox(width: 10), Expanded(child: SolidButton(label: 'Mensaje', icon: Icons.mail_outline, background: AppColors.white, foreground: AppColors.electric, onPressed: () {})),
+            ]),
+          ])),
+          const SizedBox(height: 24), const SectionHeader('Última prescripción'), const SizedBox(height: 12),
+          if (errors['clinical'] != null) Text(errors['clinical']!, style: const TextStyle(color: AppColors.errorRed))
+          else if (rx == null) AppCard(child: Text(loading ? 'Cargando…' : 'Aún no tiene recetas registradas.'))
+          else AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Última Prescripción', style: GoogleFonts.inter(fontSize: 18, color: AppColors.staffInk)),
+            Text(last?.examinationDate == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(last!.examinationDate!))),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: _EyeBox('Ojo derecho', '${_diopters(rx.sphereOd)} / ${_diopters(rx.cylinderOd)}', 'Eje ${rx.axisOd ?? 0}°')),
+              const SizedBox(width: 8), Expanded(child: _EyeBox('Ojo izquierdo', '${_diopters(rx.sphereOs)} / ${_diopters(rx.cylinderOs)}', 'Eje ${rx.axisOs ?? 0}°')),
+            ]),
+            if (rx.addition != null) Text('Adición ${_diopters(rx.addition)}'),
+            if (rx.treatment?.isNotEmpty == true) Text(rx.treatment!),
+            if (rx.recommendedFrameType?.isNotEmpty == true) Text('Montura: ${rx.recommendedFrameType}'),
+          ])),
+          const SizedBox(height: 24), const SectionHeader('Próxima cita'), const SizedBox(height: 12),
+          if (errors['appointments'] != null) Text(errors['appointments']!, style: const TextStyle(color: AppColors.errorRed))
+          else if (appointment == null) AppCard(child: Text(loading ? 'Cargando…' : 'No tiene citas próximas.'))
+          else AppCard(child: Row(children: [
+            DateBadge(day: '${StoreTime.clock(appointment.start).day}', month: DateFormat('MMM', 'es').format(StoreTime.clock(appointment.start)).toUpperCase()),
+            const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _Pill(appointment.status == 'PENDING' ? 'Pendiente' : 'Confirmada'),
+              const SizedBox(height: 4), Text('${DateFormat('HH:mm').format(StoreTime.clock(appointment.start))} · Evaluación visual'),
+            ])),
+          ])),
+          const SizedBox(height: 24), const SectionHeader('Proceso de sus lentes'), const SizedBox(height: 12),
+          if (errors['orders'] != null) Text(errors['orders']!, style: const TextStyle(color: AppColors.errorRed))
+          else if (order == null) AppCard(child: Text(loading ? 'Cargando…' : 'No tiene órdenes de trabajo registradas.'))
+          else AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Orden OT-${order.id.substring(0, order.id.length < 4 ? order.id.length : 4).toUpperCase()}'),
+            _Pill(order.label), const SizedBox(height: 8), Text(order.detail),
+            const SizedBox(height: 14), Row(children: [for (var i = 0; i < 5; i++) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: _Progress(i <= order.step ? AppColors.staffAccent : AppColors.staffChip)))]),
+            const SizedBox(height: 8), Text(order.status == 'DELIVERED' ? 'Entregada' : 'Entrega estimada: ${order.dueDate ?? 'sin fecha'}${order.delayed ? ' (atrasada)' : ''}'),
+          ])),
+          const SizedBox(height: 18),
+          SolidButton(label: 'Nueva cita', icon: Icons.calendar_today_outlined, onPressed: () => context.push(Uri(path: '/s/appointments/new', queryParameters: {'patientId': id}).toString())),
+          if (errors.isNotEmpty) TextButton(onPressed: () => app.loadStaffRecord(id), child: const Text('Volver a cargar la ficha')),
+        ],
+      ])),
     );
   }
 }
-
 class _HeroFact extends StatelessWidget {
   const _HeroFact(this.label, this.value);
   final String label;

@@ -8,6 +8,9 @@ class AgendaItem {
     required this.name,
     required this.service,
     required this.status,
+    this.appointmentId,
+    this.startsAt,
+    this.endsAt,
   });
 
   final String time;
@@ -16,4 +19,7 @@ class AgendaItem {
   final String name;
   final String service;
   final AgendaStatus status;
+  final String? appointmentId;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
 }

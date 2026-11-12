@@ -67,7 +67,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/s/more', builder: (_, __) => const StaffMoreScreen()),
       GoRoute(path: '/s/patients/new', builder: (_, __) => const NewPatientScreen()),
       GoRoute(path: '/s/patient/:id', builder: (_, state) => StaffPatientRecordScreen(id: state.pathParameters['id']!)),
-      GoRoute(path: '/s/appointments/new', builder: (_, __) => const NewAppointmentScreen()),
+      GoRoute(path: '/s/appointments/new', builder: (_, state) => NewAppointmentScreen(patientId: state.uri.queryParameters['patientId'])),
       GoRoute(path: '/s/clinical', builder: (_, __) => const ClinicalCareScreen()),
       GoRoute(path: '/s/evaluation', builder: (_, __) => const VisualEvaluationScreen()),
       GoRoute(path: '/s/work-order', builder: (_, __) => const WorkOrderScreen()),

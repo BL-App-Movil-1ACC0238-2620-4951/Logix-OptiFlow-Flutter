@@ -10,6 +10,9 @@ class StaffPatient {
     required this.lastVisit,
     required this.ficha,
     required this.age,
+    this.email = '',
+    this.birthDate,
+    this.createdAt,
   });
 
   final String id;
@@ -22,4 +25,7 @@ class StaffPatient {
   final String lastVisit;
   final String ficha;
   final int age;
+  final String email;
+  final DateTime? birthDate;
+  final DateTime? createdAt;
 }

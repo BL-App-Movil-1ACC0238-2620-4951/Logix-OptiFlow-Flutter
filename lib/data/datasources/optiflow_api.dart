@@ -10,6 +10,10 @@ import '../models/time_slot_dto.dart';
 import '../models/work_order_dto.dart';
 import '../models/inventory_dto.dart';
 import '../../domain/entities/inventory.dart';
+import '../../domain/entities/staff_patient.dart';
+import '../../domain/entities/staff_order.dart';
+import '../../domain/entities/store_time.dart';
+import '../models/staff_dto.dart';
 import '../../core/errors/api_exception.dart';
 
 /// Cliente HTTP del backend. La app lo usa solo desde los repositorios.
@@ -31,6 +35,26 @@ class OptiFlowApi {
   static String _normalize(String raw) {
     final trimmed = raw.trim().replaceAll(RegExp(r'/+$'), '');
     return trimmed.endsWith('/api/v1') ? '$trimmed/' : '$trimmed/api/v1/';
+  }
+
+  Future<List<StaffPatient>> staffPatients() async => _staffList(await _get('patients')).map(StaffDto.patient).toList();
+  Future<StaffPatient> staffPatient(String id) async => StaffDto.patient(Map<String, dynamic>.from(await _get('patients/${Uri.encodeComponent(id)}') as Map));
+  Future<StaffPatient> registerPatientByStaff({required String name, required String email, required String phone, required String dni, DateTime? birthDate}) async =>
+      StaffDto.patient(Map<String, dynamic>.from(await _send('POST', 'patients', {
+        'name': name, 'email': email, 'phone': phone, 'password': dni,
+        if (birthDate != null) 'birthDate': StoreTime.isoDay(birthDate),
+      }) as Map));
+  Future<List<AppointmentDto>> storeAgenda(String opticalStoreId, DateTime date) async => _staffList(await _get('appointments', {
+    'opticalStoreId': opticalStoreId, 'date': StoreTime.isoDay(date),
+  })).map(AppointmentDto.fromJson).toList();
+  Future<int> patientsWithRecords() async {
+    final json = await _get('clinical-records/summary') as Map;
+    return (json['patientsWithRecords'] as num).toInt();
+  }
+  Future<List<StaffOrder>> staffOrders() async => _staffList(await _get('work-orders')).map(StaffDto.order).toList();
+  List<Map<String, dynamic>> _staffList(Object? json) {
+    if (json is! List || json.any((item) => item is! Map)) throw ApiException('El servidor devolvió una lista del personal inválida.');
+    return json.map((item) => Map<String, dynamic>.from(item as Map)).toList();
   }
 
   Future<List<FrameModelDto>> frameCatalog() async => _inventoryList(await _get('inventory/frames'))

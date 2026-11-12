@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../../../domain/entities/models.dart';
+import '../../../domain/entities/store_time.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
@@ -15,18 +17,28 @@ export 'staff_inventory_screens.dart';
 export 'staff_record_screen.dart';
 export 'staff_sale_screens.dart';
 
-class StaffDashboardScreen extends StatelessWidget {
+class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});
+  @override
+  State<StaffDashboardScreen> createState() => _StaffDashboardScreenState();
+}
+
+class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().refreshStaffOverview(); });
+  }
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final next = app.agenda.first;
+    final next = app.agenda.where((a) => a.status != AgendaStatus.done).firstOrNull;
     return StaffScaffold(
       tab: StaffTab.home,
       topBar: StaffTopBar(
         title: 'Hola, ${app.firstName}',
-        subtitle: app.session?.role.label,
+        subtitle: app.staffStoreName,
         trailing: app.canOpen('/s/alerts') ? IconButton(
           onPressed: () => context.push('/s/alerts'),
           icon: const Icon(Icons.notifications_none, color: AppColors.white),
@@ -44,7 +56,7 @@ class StaffDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('MIÉRCOLES 20 JUN', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.4)),
+                      Text(DateFormat('EEEE d MMM', 'es').format(app.agendaDate).toUpperCase(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.4)),
                       const SizedBox(height: 10),
                       Text('Tu jornada, de un vistazo', style: GoogleFonts.inter(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.white)),
                       const SizedBox(height: 6),
@@ -63,13 +75,16 @@ class StaffDashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          if (app.staffAgendaLoading || app.staffOrdersLoading) const LinearProgressIndicator(),
+          if (app.staffAgendaError != null) TextButton(onPressed: app.refreshStaffAgenda, child: Text(app.staffAgendaError!)),
+          if (app.staffOrdersError != null) TextButton(onPressed: app.refreshStaffOrders, child: Text(app.staffOrdersError!)),
           Row(
             children: [
               if (app.canOpen('/s/agenda'))
-                Expanded(child: _Stat('8', 'Citas de hoy', () => context.go('/s/agenda'), detail: '2 pendientes', icon: Icons.calendar_today_outlined)),
+                Expanded(child: _Stat('${app.agenda.length}', 'Citas del día', () => context.go('/s/agenda'), detail: '${app.agenda.where((a) => a.status != AgendaStatus.done).length} pendientes', icon: Icons.calendar_today_outlined)),
               if (app.canOpen('/s/agenda') && app.canOpen('/s/production')) const SizedBox(width: 14),
               if (app.canOpen('/s/production'))
-                Expanded(child: _Stat('12', 'En producción', () => context.push('/s/production'), detail: '3 por entregar', icon: Icons.work_outline)),
+                Expanded(child: _Stat('${app.staffOrders.where((o) => o.status != 'DELIVERED').length}', 'En producción', () => context.push('/s/production'), detail: '${app.staffOrders.where((o) => o.status == 'READY_FOR_DELIVERY').length} por entregar', icon: Icons.work_outline)),
             ],
           ),
           const SizedBox(height: 24),
@@ -84,6 +99,9 @@ class StaffDashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (next == null)
+            const Text('No hay más citas para este día.')
+          else
           AppCard(
             onTap: () => context.push('/s/patient/${next.patientId}'),
             child: Row(
@@ -93,7 +111,7 @@ class StaffDashboardScreen extends StatelessWidget {
                   height: 43,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(12)),
-                  child: Text('VS', style: GoogleFonts.inter(fontSize: 11, color: AppColors.electric)),
+                  child: Text(next.name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2).map((s) => s[0]).join().toUpperCase(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.electric)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -103,7 +121,7 @@ class StaffDashboardScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(color: AppColors.staffBlue50, borderRadius: BorderRadius.circular(20)),
-                        child: Text('En 15 minutos', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+                        child: Text(next.status == AgendaStatus.waiting ? 'En sala de espera' : next.status == AgendaStatus.pending ? 'Por confirmar' : 'Confirmada', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
                       ),
                       const SizedBox(height: 4),
                       Text(next.name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
@@ -141,7 +159,7 @@ class StaffDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('3 alertas requieren atención', style: TextStyle(fontSize: 12, color: AppColors.staffInk)),
+                      Text('Alertas de la óptica', style: TextStyle(fontSize: 12, color: AppColors.staffInk)),
                       Text('Stock bajo y órdenes con retraso.', style: TextStyle(fontSize: 11, color: AppColors.staffMuted)),
                     ],
                   ),
@@ -165,13 +183,20 @@ class StaffAgendaScreen extends StatefulWidget {
 
 class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
   int filter = 0;
-  int day = 2;
   static const filters = ['Todas', 'En espera', 'Confirmadas', 'Retiros'];
-  static const days = [('LUN', '18'), ('MAR', '19'), ('MIÉ', '20'), ('JUE', '21'), ('VIE', '22'), ('SÁB', '23')];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().refreshStaffAgenda(); });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final agenda = context.read<OptiFlowController>().agenda;
+    final app = context.watch<OptiFlowController>();
+    final agenda = app.agenda;
+    final days = app.agendaWeek;
+    final day = days.indexWhere((date) => StoreTime.isoDay(date) == StoreTime.isoDay(app.agendaDate));
     final items = agenda.where((item) {
       return switch (filter) {
         1 => item.status == AgendaStatus.waiting,
@@ -188,12 +213,14 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
             _ => true,
           };
         }).length;
+    final waitingItems = items.where((item) => item.status == AgendaStatus.waiting).toList();
+    final otherItems = items.where((item) => item.status != AgendaStatus.waiting).toList();
     return StaffScaffold(
       tab: StaffTab.agenda,
       topBar: StaffTopBar(
         title: 'Citas y agenda',
-        subtitle: 'Óptica Visión Norte',
-        trailing: IconButton(onPressed: () => context.push('/s/alerts'), icon: const Icon(Icons.notifications_none, color: AppColors.white)),
+        subtitle: app.staffStoreName,
+        trailing: app.canOpen('/s/alerts') ? IconButton(onPressed: () => context.push('/s/alerts'), icon: const Icon(Icons.notifications_none, color: AppColors.white)) : null,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -207,11 +234,11 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('MIÉRCOLES 20 JUN', style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
+                      Text(DateFormat('EEEE d MMM', 'es').format(app.agendaDate).toUpperCase(), style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
                       const SizedBox(height: 8),
-                      Text('8 pacientes hoy', style: GoogleFonts.inter(fontSize: 20, color: AppColors.white)),
+                      Text('${agenda.length} pacientes', style: GoogleFonts.inter(fontSize: 20, color: AppColors.white)),
                       const SizedBox(height: 8),
-                      Text('2 consultas completadas · 1 en sala de espera', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
+                      Text('${agenda.where((a) => a.status == AgendaStatus.done).length} consultas completadas · ${agenda.where((a) => a.status == AgendaStatus.waiting).length} en sala de espera', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
                     ],
                   ),
                 ),
@@ -220,7 +247,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                   height: 34,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(10)),
-                  child: Text('8', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
+                  child: Text('${agenda.length}', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
                 ),
               ],
             ),
@@ -232,7 +259,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                 if (i > 0) const SizedBox(width: 8),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => day = i),
+                    onTap: () => app.refreshStaffAgenda(date: days[i]),
                     child: Container(
                       height: 56,
                       decoration: BoxDecoration(
@@ -243,8 +270,8 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(days[i].$1, style: GoogleFonts.inter(fontSize: 8, color: day == i ? AppColors.white : AppColors.staffInk)),
-                          Text(days[i].$2, style: GoogleFonts.inter(fontSize: 16, color: day == i ? AppColors.white : AppColors.staffInk)),
+                          Text(DateFormat('E', 'es').format(days[i]).replaceAll('.', '').toUpperCase(), style: GoogleFonts.inter(fontSize: 8, color: day == i ? AppColors.white : AppColors.staffInk)),
+                          Text('${days[i].day}', style: GoogleFonts.inter(fontSize: 16, color: day == i ? AppColors.white : AppColors.staffInk)),
                         ],
                       ),
                     ),
@@ -277,7 +304,15 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          for (final item in items) ...[
+          if (app.staffAgendaLoading) const LinearProgressIndicator(),
+          if (app.staffAgendaError != null) ...[
+            Text(app.staffAgendaError!, style: const TextStyle(color: AppColors.errorRed)),
+            TextButton(onPressed: app.refreshStaffAgenda, child: const Text('Reintentar')),
+          ],
+          if (!app.staffAgendaLoading && app.staffAgendaError == null && items.isEmpty) const Text('No hay citas con este filtro para el día seleccionado.'),
+          for (final item in [...waitingItems, ...otherItems]) ...[
+            if (item == waitingItems.firstOrNull || item == otherItems.firstOrNull)
+              Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(item.status == AgendaStatus.waiting ? 'En sala de espera' : 'Siguientes citas', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
             AppCard(
               onTap: () => context.push('/s/patient/${item.patientId}'),
               child: Row(
@@ -309,7 +344,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
         AgendaStatus.confirmed => 'Confirmada',
         AgendaStatus.pending => 'Pendiente',
         AgendaStatus.pickup => 'Retiro',
-        AgendaStatus.done => 'Lista',
+        AgendaStatus.done => 'Atendida',
       };
 }
 
@@ -326,10 +361,18 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
   static const tints = [AppColors.lavender, Color(0xFFDBEAFE), Color(0xFFF3F4FF), Color(0xFFE0E7FF)];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().refreshStaffOverview(); });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final patients = context.watch<OptiFlowController>().staffPatients.where((patient) {
+    final app = context.watch<OptiFlowController>();
+    final patients = app.staffPatients.where((patient) {
       final q = query.trim().toLowerCase();
-      return q.isEmpty || patient.fullName.toLowerCase().contains(q) || patient.rut.contains(q) || patient.phone.contains(q);
+      final matches = filter == 0 || (filter == 1 && app.waitingPatientIds.contains(patient.id)) || (filter == 2 && app.workshopPatientIds.contains(patient.id));
+      return matches && (q.isEmpty || patient.fullName.toLowerCase().contains(q) || patient.email.toLowerCase().contains(q) || patient.phone.contains(q));
     }).toList();
     return StaffScaffold(
       tab: StaffTab.patients,
@@ -350,11 +393,11 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                 const SizedBox(height: 8),
                 Text('Fichas optométricas, recetas y seguimientos al día.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
                 const SizedBox(height: 22),
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: _HeroStat('1.248', 'Total pacientes')),
-                    Expanded(child: _HeroStat('34', 'Nuevos este mes', valueColor: Color(0xFF34D399))),
-                    Expanded(child: _HeroStat('890', 'Con ficha vigente')),
+                    Expanded(child: _HeroStat('${app.staffPatients.length}', 'Total pacientes')),
+                    Expanded(child: _HeroStat('${app.newPatientsThisMonth}', 'Nuevos este mes', valueColor: const Color(0xFF34D399))),
+                    Expanded(child: _HeroStat(app.patientsWithRecords?.toString() ?? '—', 'Con ficha vigente')),
                   ],
                 ),
               ],
@@ -364,7 +407,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
           TextField(
             onChanged: (value) => setState(() => query = value),
             decoration: InputDecoration(
-              hintText: 'Buscar por nombre, RUT o teléfono',
+              hintText: 'Buscar por nombre, correo o teléfono',
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: AppColors.white,
@@ -378,7 +421,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
               children: [
                 for (var i = 0; i < 3; i++) ...[
                   if (i > 0) const SizedBox(width: 8),
-                  _StaffChip(['Todos (1.248)', 'En atención (1)', 'En taller (12)'][i], filter == i, () => setState(() => filter = i)),
+                  _StaffChip(['Todos (${app.staffPatients.length})', 'En atención (${app.staffPatients.where((p) => app.waitingPatientIds.contains(p.id)).length})', 'En taller (${app.staffPatients.where((p) => app.workshopPatientIds.contains(p.id)).length})'][i], filter == i, () => setState(() => filter = i)),
                 ],
               ],
             ),
@@ -391,6 +434,13 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          if (app.staffPatientsLoading) const LinearProgressIndicator(),
+          if (app.staffPatientsError != null) ...[
+            Text(app.staffPatientsError!, style: const TextStyle(color: AppColors.errorRed)),
+            TextButton(onPressed: app.refreshStaffPatients, child: const Text('Reintentar')),
+          ],
+          if (app.patientSummaryError != null) Text(app.patientSummaryError!, style: const TextStyle(color: AppColors.errorRed)),
+          if (!app.staffPatientsLoading && app.staffPatientsError == null && patients.isEmpty) const Text('No hay pacientes con esos criterios.'),
           for (var index = 0; index < patients.length; index++) ...[
             AppCard(
               onTap: () => context.push('/s/patient/${patients[index].id}'),
@@ -410,7 +460,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(patients[index].name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
-                        Text(patients[index].rut, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                        Text(patients[index].email, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
                         Text(patients[index].note, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
                       ],
                     ),

@@ -95,3 +95,22 @@ dart --packages=.dart_tool/package_config.json test/support/inventory_api_checks
 ```
 
 Órdenes, historia clínica, ventas, agenda del personal y administración todavía tienen áreas de prototipo para los siguientes bloques.
+
+## Migración por bloques — bloque 4: personal, según Movile
+
+La referencia funcional y visual es `Logix-OptiFlow-Movile`, especialmente `StaffViewModel.kt`, `NewAppointmentViewModel.kt`, `StaffPatientRecordViewModel.kt`, `StaffTabScreens.kt` y `StaffClinicalScreens.kt`. Se mantienen la jerarquía de pantallas, tarjetas, colores, filtros y navegación del módulo al adaptarlos a widgets Flutter.
+
+- Directorio real de pacientes, búsqueda local por nombre/correo/teléfono, total y nuevos del mes. El contador de fichas usa `GET /clinical-records/summary`.
+- Registro con nombre, correo, teléfono, DNI de 8 dígitos como contraseña temporal y nacimiento opcional `dd/mm/aaaa`. El registro conserva la sesión del personal; no inicia sesión como el paciente creado.
+- Agenda de la óptica asignada y fecha elegida, semana de lunes a sábado como en Movile. Excluye citas canceladas; la sala de espera se calcula desde 15 minutos antes del inicio hasta el fin. Las horas y fechas de operación usan America/Lima (UTC-5).
+- Nueva cita de paso único: paciente registrado, fecha y horario libre real de la óptica. La ficha preselecciona al paciente. Si falla la reserva, se vuelve a leer disponibilidad, como en Movile.
+- Ficha de consulta con perfil, última prescripción, próxima cita y orden de lentes real; los errores de cada sección no se muestran como datos de demostración. Un identificador inexistente nunca abre la ficha de otra persona.
+- Los formularios y la ficha ocultan la barra inferior como en Android. Los accesos y las consultas respetan el rol.
+
+La captura y edición de la atención clínica, las transiciones de producción, ventas, administración y los demás módulos se migrarán en los siguientes bloques. Los botones «Llamar» y «Mensaje» conservan el comportamiento sin acción que tienen en la pantalla de referencia de Movile.
+
+Comprobaciones de contratos y reglas de paridad que no requieren Flutter Test:
+
+```powershell
+dart --packages=.dart_tool/package_config.json test/support/staff_api_checks.dart
+```
