@@ -82,7 +82,7 @@ class OptiFlowController extends ChangeNotifier {
   List<NotificationItem> get notifications {
     final items = <NotificationItem>[];
     final now = DateTime.now();
-    final realAppts = appointments.where((a) => a.fromApi && !a.isPast);
+    final realAppts = upcoming.where((a) => a.fromApi);
     {
       for (final appt in realAppts) {
         items.add(NotificationItem(

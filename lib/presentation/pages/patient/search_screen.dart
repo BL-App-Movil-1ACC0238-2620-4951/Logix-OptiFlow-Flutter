@@ -19,29 +19,35 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _query = TextEditingController();
+  late final TextEditingController _query;
+  late final TextEditingController _address;
   Timer? _debounce;
   int _chip = 0;
 
-  static const _chips = ['Todas', 'Abiertas', 'Mejor valoradas', '4.5+', '4.0+'];
+  static const _chips = ['Todas', 'Activas', 'Mejor valoradas', '4.5+', '4.0+'];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<OptiFlowController>().searchStores());
+    final app = context.read<OptiFlowController>();
+    _query = TextEditingController(text: app.searchQuery);
+    _address = TextEditingController(text: app.searchAddress);
+    _chip = app.minRating == 4.5 ? 3 : app.minRating == 4 ? 4 : 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) app.searchStores(); });
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _query.dispose();
+    _address.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    var stores = app.stores;
+    var stores = app.searchResults;
     if (_chip == 1) {
       stores = stores.where((s) => const {'ACTIVE', 'OPEN', 'ABIERTO'}.contains(s.status.toUpperCase())).toList();
     } else if (_chip == 2) {
@@ -66,7 +72,7 @@ class _SearchScreenState extends State<SearchScreen> {
               _debounce = Timer(const Duration(milliseconds: 400), () => context.read<OptiFlowController>().searchStores());
             },
             decoration: InputDecoration(
-              hintText: 'Buscar armazón, dirección, estilo...',
+              hintText: 'Nombre de la óptica',
               prefixIcon: const Icon(Icons.search, color: AppColors.slate500),
               filled: true,
               fillColor: AppColors.white,
@@ -74,6 +80,18 @@ class _SearchScreenState extends State<SearchScreen> {
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.skyTint)),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.skyTint)),
             ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _address,
+            onChanged: (value) {
+              context.read<OptiFlowController>().setSearchAddress(value);
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 400), () {
+                if (mounted) context.read<OptiFlowController>().searchStores();
+              });
+            },
+            decoration: const InputDecoration(labelText: 'Dirección o distrito', prefixIcon: Icon(Icons.place_outlined)),
           ),
           const SizedBox(height: 16),
           CatalogPrompt(onTap: () => context.push('/p/catalog')),
@@ -109,112 +127,26 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _MapPreview(count: stores.length),
-          const SizedBox(height: 22),
           Row(
             children: [
-              Expanded(child: Text('Resultados cercanos', style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
-              Text('Mapa', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
+              Expanded(child: Text('Ópticas encontradas', style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
+              Text('${stores.length}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
             ],
           ),
           const SizedBox(height: 12),
-          if (app.searchLoading && stores.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.electric))),
-          if (app.searchError != null)
+          if (app.searchLoading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.electric))),
+          if (app.searchError != null) ...[
             Text(app.searchError!, style: GoogleFonts.inter(color: AppColors.errorRed)),
-          if (!app.searchLoading && stores.isEmpty)
+            TextButton(onPressed: app.searchStores, child: const Text('Reintentar')),
+          ],
+          if (!app.searchLoading && app.searchError == null && stores.isEmpty)
             Text(app.searchMessage ?? 'No encontramos ópticas con ese filtro.', style: GoogleFonts.inter(color: AppColors.slate500)),
-          for (var i = 0; i < stores.length; i++) ...[
-            StoreResultCard(store: stores[i], index: i),
+          if (!app.searchLoading && app.searchError == null) for (var i = 0; i < stores.length; i++) ...[
+            StoreResultCard(store: stores[i]),
             const SizedBox(height: 14),
           ],
         ],
       ),
     );
   }
-}
-
-class _MapPreview extends StatelessWidget {
-  const _MapPreview({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 144,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFFD9E5FB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.skyTint),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          return Stack(
-            children: [
-              const Positioned.fill(child: CustomPaint(painter: _MapHatchPainter())),
-              Positioned(left: width * 0.18, top: 28, child: const _MapPin()),
-              Positioned(left: width * 0.62, top: 36, child: const _MapPin()),
-              Positioned(left: width * 0.40, top: 78, child: const _MapPin()),
-              Positioned(
-                left: 14,
-                bottom: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2))],
-                  ),
-                  child: Text(
-                    '$count ópticas cerca de ti',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MapPin extends StatelessWidget {
-  const _MapPin();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.patientHeader,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.white, width: 2),
-        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 2))],
-      ),
-      child: const Icon(Icons.location_on, size: 15, color: AppColors.white),
-    );
-  }
-}
-
-class _MapHatchPainter extends CustomPainter {
-  const _MapHatchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFE7EEFD)
-      ..strokeWidth = 14;
-    const step = 34.0;
-    for (var x = -size.height; x < size.width + size.height; x += step) {
-      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

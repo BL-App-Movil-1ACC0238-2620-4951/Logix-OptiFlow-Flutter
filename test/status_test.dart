@@ -5,6 +5,7 @@ void main() {
   test('mapea estados de cita del backend', () {
     expect(AppointmentStatusLabel.fromApi('BOOKED'), AppointmentStatus.confirmed);
     expect(AppointmentStatusLabel.fromApi('cancelled'), AppointmentStatus.cancelled);
+    expect(AppointmentStatusLabel.fromApi('COMPLETED'), AppointmentStatus.completed);
     expect(AppointmentStatusLabel.fromApi('WAITLIST'), AppointmentStatus.pending);
   });
 }

@@ -7,18 +7,15 @@ import '../../../../domain/entities/optical_store.dart';
 import '../../../widgets/chrome.dart';
 
 class StoreResultCard extends StatelessWidget {
-  const StoreResultCard({super.key, required this.store, required this.index});
+  const StoreResultCard({super.key, required this.store});
   final OpticalStore store;
-  final int index;
-
-  static const distances = ['0,8 km', '1,4 km', '2,1 km', '3,2 km'];
-  static const slots = ['Hoy · 10:30', 'Hoy · 12:00', 'Mañana · 09:00', 'Mañana · 11:30'];
 
   @override
   Widget build(BuildContext context) {
     final rating = store.rating == null ? '—' : store.rating!.toStringAsFixed(1);
+    final active = const {'ACTIVE', 'OPEN', 'ABIERTO'}.contains(store.status.toUpperCase());
     return AppCard(
-      onTap: () => context.push('/p/book?storeId=${store.id}'),
+      onTap: active ? () => context.push('/p/book?storeId=${store.id}') : null,
       padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
       borderColor: AppColors.skyTint,
       child: Row(
@@ -37,7 +34,7 @@ class StoreResultCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.schedule, size: 12, color: AppColors.deepNavy),
                       const SizedBox(width: 4),
-                      Text(slots[index % slots.length], style: GoogleFonts.inter(fontSize: 12, color: AppColors.deepNavy)),
+                      Text(active ? 'Consultar horarios' : 'No disponible', style: GoogleFonts.inter(fontSize: 12, color: AppColors.deepNavy)),
                     ],
                   ),
                 ),
@@ -47,10 +44,10 @@ class StoreResultCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.place_outlined, size: 14, color: AppColors.navyBlue),
                     const SizedBox(width: 5),
-                    Expanded(child: Text('$rating · ${distances[index % distances.length]}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500))),
+                    Expanded(child: Text(store.address, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500))),
                   ],
                 ),
-                Text('Examen visual · Lentes · Monturas', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                Text(store.rating == null ? 'Sin calificaciones' : '★ $rating', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
               ],
             ),
           ),

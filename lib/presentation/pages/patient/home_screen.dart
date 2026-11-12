@@ -75,7 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
           SectionHeader('Próxima cita', action: 'Ver todas', onAction: () => context.go('/p/appointments')),
           const SizedBox(height: 8),
-          if (next == null)
+          if (app.appointmentsLoading && next == null)
+            const Center(child: CircularProgressIndicator())
+          else if (app.appointmentsError != null && next == null)
+            AppCard(child: Column(children: [Text(app.appointmentsError!), TextButton(onPressed: app.refreshAppointments, child: const Text('Reintentar'))]))
+          else if (next == null)
             AppCard(
               onTap: () => context.push('/p/book'),
               child: Row(

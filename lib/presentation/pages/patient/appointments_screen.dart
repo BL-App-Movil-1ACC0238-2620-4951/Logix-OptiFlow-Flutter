@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../domain/entities/models.dart';
@@ -9,9 +8,10 @@ import '../../models/ui_models.dart';
 import '../../state/optiflow_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/chrome.dart';
+import 'booking_screen.dart';
 
-const _services = ['Examen de vista completo', 'Control de lentes', 'Adaptación de lentes de contacto'];
-const _times = ['09:00', '10:30', '12:00', '14:30', '16:00', '17:00'];
+
+
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -22,6 +22,14 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
   int tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<OptiFlowController>().refreshAppointments();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +85,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (items.isEmpty)
+          if (app.appointmentsLoading) const LinearProgressIndicator(),
+          if (app.appointmentsError != null) ...[
+            Text(app.appointmentsError!, style: const TextStyle(color: AppColors.errorRed)),
+            TextButton(onPressed: app.refreshAppointments, child: const Text('Reintentar')),
+          ],
+          if (!app.appointmentsLoading && app.appointmentsError == null && items.isEmpty)
             Text(
               switch (tab) {
                 0 => 'No tienes citas próximas.',
@@ -169,7 +182,16 @@ class AppointmentDetailScreen extends StatelessWidget {
     final app = context.watch<OptiFlowController>();
     final item = app.appointmentById(id);
     if (item == null) {
-      return const PatientScaffold(tab: PatientTab.appointments, topBar: DarkTopBar(title: 'Cita'), body: Center(child: Text('No encontramos esta cita.')));
+      return PatientScaffold(
+        tab: PatientTab.appointments,
+        topBar: DarkTopBar(title: 'Cita', onBack: () => context.go('/p/appointments')),
+        body: Center(child: app.appointmentsLoading
+          ? const CircularProgressIndicator()
+          : Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(app.appointmentsError ?? 'No encontramos esta cita.'),
+              TextButton(onPressed: app.refreshAppointments, child: const Text('Volver a cargar')),
+            ])),
+      );
     }
     final cancelled = item.status == AppointmentStatus.cancelled;
     return PatientScaffold(
@@ -250,15 +272,24 @@ class AppointmentDetailScreen extends StatelessWidget {
               background: AppColors.white,
               foreground: AppColors.electric,
               border: AppColors.skyTint,
-              onPressed: () => context.push('/p/reschedule/${item.id}'),
+              onPressed: app.appointmentActionLoading ? null : () => context.push('/p/reschedule/${item.id}'),
             ),
             TextButton(
-              onPressed: () {
-                app.cancelAppointment(item.id);
-                showAppMessage(context, 'Cita cancelada');
-                context.pop();
+              onPressed: app.appointmentActionLoading ? null : () async {
+                final accepted = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+                  title: const Text('¿Cancelar esta cita?'),
+                  content: Text('Se liberará tu horario del ${item.day} de ${item.monthName} a las ${item.time}.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Conservar cita')),
+                    FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Cancelar cita')),
+                  ],
+                ));
+                if (accepted != true || !context.mounted) return;
+                final cancelled = await app.cancelAppointment(item.id);
+                if (!context.mounted) return;
+                showAppMessage(context, cancelled ? 'Cita cancelada' : app.appointmentActionError ?? 'No se pudo cancelar la cita.');
               },
-              child: Text('Cancelar cita', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.electric)),
+              child: Text(app.appointmentActionLoading ? 'Cancelando…' : 'Cancelar cita', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.electric)),
             ),
           ],
         ],
@@ -296,169 +327,10 @@ class _DetailLine extends StatelessWidget {
   }
 }
 
-class RescheduleScreen extends StatefulWidget {
+class RescheduleScreen extends StatelessWidget {
   const RescheduleScreen({super.key, required this.id});
   final String id;
 
   @override
-  State<RescheduleScreen> createState() => _RescheduleScreenState();
-}
-
-class _RescheduleScreenState extends State<RescheduleScreen> {
-  int service = 0;
-  int store = 0;
-  int time = 1;
-  DateTime? date;
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final item = app.appointmentById(widget.id);
-    final storeNames = app.stores.isEmpty
-        ? (app.bookingStores.isEmpty ? const ['Sucursal Centro', 'Sucursal Norte', 'Sucursal Providencia'] : app.bookingStores.map((s) => s.name).toList())
-        : app.stores.map((s) => s.name).toList();
-    final storeIndex = store.clamp(0, storeNames.length - 1);
-    final dateLabel = date == null ? 'Selecciona una fecha' : _formatDate(date!);
-
-    return PatientScaffold(
-      tab: PatientTab.appointments,
-      topBar: DarkTopBar(title: 'Detalle de cita', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          AppCard(
-            radius: 24,
-            padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Reprograma cita', style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.navyBlue)),
-                const SizedBox(height: 8),
-                Text('Elige el servicio y el horario que mejor te convenga.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
-                if (item != null) ...[
-                  const SizedBox(height: 6),
-                  Text('Cita actual: ${item.weekday} ${item.day} · ${item.time}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
-                ],
-                const SizedBox(height: 18),
-                _label('Servicio'),
-                _dropdown(_services, service, (value) => setState(() => service = value)),
-                const SizedBox(height: 16),
-                _label('Óptica'),
-                _dropdown(storeNames, storeIndex, (value) => setState(() => store = value)),
-                const SizedBox(height: 16),
-                _label('Fecha'),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: date ?? DateTime.now().add(const Duration(days: 1)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) setState(() => date = picked);
-                  },
-                  child: Container(
-                    height: 46,
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F8FF),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFA8BCD9)),
-                    ),
-                    child: Text(dateLabel, style: GoogleFonts.inter(fontSize: 14, color: date == null ? AppColors.slate400 : AppColors.deepNavy)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _label('Horarios disponibles'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (var i = 0; i < _times.length; i++)
-                      SizedBox(
-                        width: 96,
-                        height: 44,
-                        child: OutlinedButton(
-                          onPressed: () => setState(() => time = i),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: time == i ? const Color(0xFFBFDBFE) : AppColors.white,
-                            side: BorderSide(color: time == i ? const Color(0xFFBFDBFE) : const Color(0xFFA8BCD9)),
-                            foregroundColor: time == i ? AppColors.white : AppColors.deepNavy,
-                          ),
-                          child: Text(_times[i]),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: const Color(0xFFDDEFFB), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_month_outlined, color: Color(0xFF0E6A93), size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text('Recibirás un recordatorio 24 horas antes de tu cita.', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0E5A80)))),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-                SolidButton(
-                  label: 'Confirmar reserva',
-                  icon: Icons.calendar_month_outlined,
-                  onPressed: () {
-                    if (date == null || item == null) {
-                      showAppMessage(context, 'Selecciona una fecha');
-                      return;
-                    }
-                    final chosen = storeNames[storeIndex];
-                    final address = app.stores.where((s) => s.name == chosen).map((s) => s.address).firstOrNull ?? item.storeAddress;
-                    app.rescheduleAppointment(
-                      id: item.id,
-                      title: _services[service],
-                      storeName: chosen,
-                      storeAddress: address,
-                      date: date!,
-                      time: _times[time],
-                    );
-                    showAppMessage(context, 'Solicitud de reprogramación enviada');
-                    context.go('/p/appointments');
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _label(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-    );
-  }
-
-  Widget _dropdown(List<String> options, int selected, ValueChanged<int> onChanged) {
-    return DropdownButtonFormField<int>(
-      initialValue: selected,
-      items: [for (var i = 0; i < options.length; i++) DropdownMenuItem(value: i, child: Text(options[i]))],
-      onChanged: (value) {
-        if (value != null) onChanged(value);
-      },
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFFF4F8FF),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFA8BCD9))),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime value) {
-    final text = DateFormat("EEEE d 'de' MMMM", 'es').format(value);
-    return text[0].toUpperCase() + text.substring(1);
-  }
+  Widget build(BuildContext context) => BookingScreen(rescheduleId: id);
 }

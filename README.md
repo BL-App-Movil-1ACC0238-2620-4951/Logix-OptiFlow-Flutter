@@ -66,3 +66,14 @@ flutter analyze
 flutter test
 flutter build web
 ```
+
+## Migración por bloques — bloque 2
+
+- Búsqueda de ópticas por nombre, dirección y calificación; las respuestas antiguas no reemplazan una búsqueda más reciente.
+- Reserva con ópticas activas y horarios futuros disponibles del backend, incluidos sábados y domingos. No se usan horarios ni confirmaciones de demostración.
+- Mis citas carga el listado real, muestra errores con reintento y conserva el estado vacío cuando no existen reservas.
+- Cancelación real con `PATCH /api/v1/appointments/{id}/status` y estado `CANCELLED`.
+- Reprogramación con el flujo del backend: reservar un nuevo horario y luego cancelar la cita anterior. Si falla la cancelación, se informa que la nueva cita existe; reintentar solo cancela la anterior y no genera otra reserva.
+- El estado `COMPLETED` se muestra como «Atendida». Las citas se ordenan por fecha y hora completas.
+
+La duración proviene del horario elegido. La óptica asigna al profesional; la app no inventa nombres, distancias ni disponibilidad. Catálogo, órdenes, historia clínica y otras áreas todavía tienen datos de prototipo hasta sus siguientes bloques.
