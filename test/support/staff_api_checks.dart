@@ -47,6 +47,12 @@ Future<void> runStaffApiChecks() async {
   final api = OptiFlowApi(client: MockClient((request) async {
     final path = request.url.path;
     if (request.method == 'POST') {
+      if (path == '/api/v1/appointments') {
+        final body = jsonDecode(request.body) as Map;
+        verify(body['patientId'] == 'patient-1' && body['opticalStoreId'] == 'store-1' && body['timeSlotId'] == 'slot-1', 'Staff must book for the selected patient in their own store');
+        verify(request.headers['Authorization'] == 'Bearer staff-token', 'Staff booking must keep staff authentication');
+        return staffResponse(staffAppointmentFixture, 201);
+      }
       verify(path == '/api/v1/patients',
           'Staff registration must use POST /patients');
       final body = jsonDecode(request.body) as Map;
@@ -136,6 +142,7 @@ Future<void> runStaffApiChecks() async {
   verify((await api.appointments('patient-1')).single.id == 'appointment-1',
       'Patient record must read own appointment list');
   final appointment = agenda.single.toEntity();
+  verify((await api.book(patientId: 'patient-1', opticalStoreId: 'store-1', timeSlotId: 'slot-1')).id == 'appointment-1', 'Staff booking must return the real appointment');
   final waiting = StaffViewMapper.agenda(appointment, 'Camila',
       now: DateTime.parse('2026-11-12T14:45:00Z'));
   verify(

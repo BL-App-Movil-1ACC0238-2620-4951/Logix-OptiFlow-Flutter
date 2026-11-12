@@ -38,7 +38,11 @@ class OptiFlowApi {
   }
 
   Future<List<StaffPatient>> staffPatients() async => _staffList(await _get('patients')).map(StaffDto.patient).toList();
-  Future<StaffPatient> staffPatient(String id) async => StaffDto.patient(Map<String, dynamic>.from(await _get('patients/${Uri.encodeComponent(id)}') as Map));
+  Future<StaffPatient> staffPatient(String id) async {
+    final patient = StaffDto.patient(Map<String, dynamic>.from(await _get('patients/${Uri.encodeComponent(id)}') as Map));
+    if (patient.id != id) throw ApiException('El paciente recibido no coincide con la ficha solicitada.');
+    return patient;
+  }
   Future<StaffPatient> registerPatientByStaff({required String name, required String email, required String phone, required String dni, DateTime? birthDate}) async =>
       StaffDto.patient(Map<String, dynamic>.from(await _send('POST', 'patients', {
         'name': name, 'email': email, 'phone': phone, 'password': dni,
