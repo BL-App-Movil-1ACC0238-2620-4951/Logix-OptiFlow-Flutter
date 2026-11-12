@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/errors/api_exception.dart';
 import '../../domain/entities/models.dart';
+import '../../domain/entities/inventory.dart';
 import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
 import '../navigation/route_access.dart';
@@ -64,7 +65,29 @@ class OptiFlowController extends ChangeNotifier {
   StoreOption? get selectedBookingStore => selectedStoreIndex >= 0 && selectedStoreIndex < bookingStores.length ? bookingStores[selectedStoreIndex] : null;
 
   late List<StaffPatient> staffPatients = List.of(deps.getStaffPatients());
-  final Map<String, int> stockDelta = {};
+  List<FrameItem> _frames = [];
+  final Map<String, FrameItem> _framesBySku = {};
+  final Map<String, ProductItem> _productsBySku = {};
+  List<ProductItem> products = [];
+  bool catalogLoading = false;
+  String? catalogError;
+  bool inventoryLoading = false;
+  String? inventoryError;
+  final Set<String> frameLoading = {};
+  final Map<String, String> frameErrors = {};
+  final Map<String, int> _frameRequests = {};
+  int _catalogRequest = 0;
+  int _inventoryRequest = 0;
+  List<Supplier> suppliers = [];
+  bool suppliersLoading = false;
+  String? suppliersError;
+  int _supplierRequest = 0;
+  List<StockMovement> stockMovements = [];
+  bool movementsLoading = false;
+  String? movementsError;
+  int _movementsRequest = 0;
+  bool inventoryMutationBusy = false;
+  String? inventoryMutationError;
   int clinicalStage = 1;
 
   String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Valentina Silva');
@@ -178,7 +201,29 @@ class OptiFlowController extends ChangeNotifier {
     readNotificationIds = {};
     selectedSlot = null;
     bookingStep = 1;
-    stockDelta.clear();
+    _catalogRequest++;
+    _inventoryRequest++;
+    _supplierRequest++;
+    _movementsRequest++;
+    for (final sku in _frameRequests.keys.toList()) { _frameRequests[sku] = _frameRequests[sku]! + 1; }
+    _frames = [];
+    _framesBySku.clear();
+    _productsBySku.clear();
+    products = [];
+    frameLoading.clear();
+    frameErrors.clear();
+    catalogLoading = false;
+    catalogError = null;
+    inventoryLoading = false;
+    inventoryError = null;
+    suppliers = [];
+    suppliersLoading = false;
+    suppliersError = null;
+    stockMovements = [];
+    movementsLoading = false;
+    movementsError = null;
+    inventoryMutationBusy = false;
+    inventoryMutationError = null;
     staffPatients = List.of(deps.getStaffPatients());
     appointments = [];
     appointmentsLoading = false;
@@ -627,11 +672,234 @@ class OptiFlowController extends ChangeNotifier {
 
   bool hasSlots(DateTime date) => slots.any((s) => _sameDay(s.date, date));
 
-  List<FrameItem> get frames => deps.getFrames();
-  FrameItem frameById(String id) => deps.getFrame(id);
+  bool get canUseCatalog => session?.isAuthenticated == true && (session!.isPatient || session!.role.can(StaffFeature.catalog));
+
+  String _inventoryMessage(Object error, String fallback) => error is ApiException ? error.message : fallback;
+
+  void _cacheFrame(FrameItem frame) {
+    _framesBySku[frame.id] = frame;
+    _frames = [for (final item in _frames) item.id == frame.id ? frame : item];
+  }
+
+  ProductItem _product(FrameItem frame, {StockLevel? stock, bool storeStockLoaded = false}) => ProductItem(
+    id: frame.id, sku: frame.sku, name: frame.name, code: frame.sku,
+    detail: frame.description, price: frame.fromPrice, tag: frame.category,
+    available: stock?.quantity ?? frame.stock, quantityKnown: storeStockLoaded || stock != null || frame.stockKnown,
+    minimumStock: stock?.minimumStock ?? frame.minimumStock,
+    image: frame.image, category: frame.category, size: '', location: '', supplier: '',
+  );
+
+  Future<void> refreshCatalog() async {
+    if (!canUseCatalog) return;
+    final current = session;
+    final request = ++_catalogRequest;
+    catalogLoading = true;
+    catalogError = null;
+    notifyListeners();
+    try {
+      final loaded = await deps.getFrames();
+      if (!identical(current, session) || request != _catalogRequest) return;
+      _frames = loaded;
+      for (final frame in loaded) { _framesBySku[frame.id] = frame; }
+    } catch (e) {
+      if (identical(current, session) && request == _catalogRequest) {
+        catalogError = _inventoryMessage(e, 'No se pudo cargar el catálogo.');
+      }
+    } finally {
+      if (identical(current, session) && request == _catalogRequest) {
+        catalogLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<FrameItem?> loadFrame(String sku, {bool forInventory = false}) async {
+    if (!canUseCatalog || frameLoading.contains(sku)) return frameById(sku);
+    final current = session;
+    final storeId = forInventory ? current?.opticalStoreId : null;
+    if (forInventory && (storeId == null || storeId.isEmpty)) {
+      frameErrors[sku] = 'Tu cuenta no tiene una óptica asignada.';
+      notifyListeners();
+      return null;
+    }
+    final request = (_frameRequests[sku] ?? 0) + 1;
+    _frameRequests[sku] = request;
+    frameLoading.add(sku);
+    frameErrors.remove(sku);
+    notifyListeners();
+    try {
+      final frame = await deps.getFrame(sku, opticalStoreId: storeId);
+      if (!identical(current, session) || _frameRequests[sku] != request) return null;
+      _cacheFrame(frame);
+      if (forInventory) _productsBySku[sku] = _product(frame);
+      return frame;
+    } catch (e) {
+      if (identical(current, session) && _frameRequests[sku] == request) {
+        frameErrors[sku] = _inventoryMessage(e, 'No se encontró la montura o no se pudo cargar.');
+      }
+      return null;
+    } finally {
+      if (identical(current, session) && _frameRequests[sku] == request) {
+        frameLoading.remove(sku);
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> refreshInventory() async {
+    final current = session;
+    if (!canOpen('/s/inventory')) return;
+    final storeId = current?.opticalStoreId;
+    if (storeId == null || storeId.isEmpty) {
+      inventoryError = 'Tu cuenta no tiene una óptica asignada. Solicita la asignación al administrador.';
+      notifyListeners();
+      return;
+    }
+    final request = ++_inventoryRequest;
+    inventoryLoading = true;
+    inventoryError = null;
+    notifyListeners();
+    try {
+      final results = await Future.wait<Object>([deps.getFrames(), deps.getStoreStock(storeId)]);
+      if (!identical(current, session) || request != _inventoryRequest) return;
+      final catalog = results[0] as List<FrameItem>;
+      final inventory = results[1] as StoreInventory;
+      if (inventory.opticalStoreId != storeId) throw ApiException('El stock recibido pertenece a otra óptica.');
+      final stocks = {for (final stock in inventory.stocks) stock.sku: stock};
+      products = [for (final frame in catalog)
+        _product(frame, stock: stocks[frame.sku], storeStockLoaded: true),
+      ];
+      _productsBySku.clear();
+      for (final product in products) { _productsBySku[product.id] = product; }
+      for (final frame in catalog) { _cacheFrame(frame); }
+    } catch (e) {
+      if (identical(current, session) && request == _inventoryRequest) {
+        inventoryError = _inventoryMessage(e, 'No se pudo cargar el inventario de tu óptica.');
+      }
+    } finally {
+      if (identical(current, session) && request == _inventoryRequest) {
+        inventoryLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> refreshSuppliers() async {
+    if (!canOpen('/s/movement')) return;
+    final current = session;
+    final request = ++_supplierRequest;
+    suppliersLoading = true;
+    suppliersError = null;
+    notifyListeners();
+    try {
+      final loaded = await deps.getSuppliers();
+      if (identical(current, session) && request == _supplierRequest) suppliers = loaded;
+    } catch (e) {
+      if (identical(current, session) && request == _supplierRequest) suppliersError = _inventoryMessage(e, 'No se pudieron cargar los proveedores.');
+    } finally {
+      if (identical(current, session) && request == _supplierRequest) {
+        suppliersLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> refreshStockMovements({String? sku, DateTime? from, DateTime? to}) async {
+    if (!canOpen('/s/movement')) return;
+    final current = session;
+    final storeId = current?.opticalStoreId;
+    if (storeId == null || storeId.isEmpty) {
+      movementsError = 'Tu cuenta no tiene una óptica asignada.';
+      notifyListeners();
+      return;
+    }
+    final request = ++_movementsRequest;
+    movementsLoading = true;
+    movementsError = null;
+    stockMovements = [];
+    notifyListeners();
+    try {
+      final end = to ?? DateTime.now();
+      final loaded = await deps.getStockMovements(opticalStoreId: storeId, from: from ?? end.subtract(const Duration(days: 30)), to: end, sku: sku);
+      if (identical(current, session) && request == _movementsRequest) stockMovements = loaded;
+    } catch (e) {
+      if (identical(current, session) && request == _movementsRequest) movementsError = _inventoryMessage(e, 'No se pudieron cargar los movimientos.');
+    } finally {
+      if (identical(current, session) && request == _movementsRequest) {
+        movementsLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<bool> replenishStock({required String sku, required String supplierId, required int quantity, int? minimumStock}) async {
+    if (inventoryMutationBusy) return false;
+    inventoryMutationError = null;
+    final current = session;
+    final storeId = current?.opticalStoreId;
+    if (!canOpen('/s/movement') || storeId == null || storeId.isEmpty) {
+      inventoryMutationError = 'Solo el administrador con óptica asignada puede registrar ingresos.';
+    } else if (sku.trim().isEmpty || supplierId.isEmpty || quantity < 1 || quantity > 1000 || (minimumStock != null && minimumStock < 0)) {
+      inventoryMutationError = 'Elige montura y proveedor, cantidad de 1 a 1000 y mínimo mayor o igual a cero.';
+    }
+    if (inventoryMutationError != null) { notifyListeners(); return false; }
+    inventoryMutationBusy = true;
+    notifyListeners();
+    try {
+      await deps.replenishStock(opticalStoreId: storeId!, sku: sku.trim(), supplierId: supplierId, quantity: quantity, minimumStock: minimumStock);
+      if (!identical(current, session)) return false;
+      _inventoryRequest++;
+      _frameRequests[sku] = (_frameRequests[sku] ?? 0) + 1;
+      frameLoading.remove(sku);
+      // The movement is already saved. A reload error must not invite a duplicate POST.
+      await refreshInventory();
+      await loadFrame(sku, forInventory: true);
+      return identical(current, session);
+    } catch (e) {
+      if (identical(current, session)) inventoryMutationError = _inventoryMessage(e, 'No se pudo verificar el ingreso. Consulta los movimientos antes de reintentar.');
+      return false;
+    } finally {
+      if (identical(current, session)) { inventoryMutationBusy = false; notifyListeners(); }
+    }
+  }
+
+  Future<bool> updateFramePrice(String sku, num price) async {
+    if (inventoryMutationBusy) return false;
+    inventoryMutationError = null;
+    if (!canUseCatalog || session!.isPatient || !session!.role.can(StaffFeature.catalog) || !price.isFinite || price <= 0 || price > 99999999.99 || (price * 100 - (price * 100).round()).abs() > 0.000001) {
+      inventoryMutationError = 'Ingresa un precio válido, mayor a cero, con máximo dos decimales.';
+      notifyListeners();
+      return false;
+    }
+    final current = session;
+    inventoryMutationBusy = true;
+    notifyListeners();
+    try {
+      final updated = await deps.updateFramePrice(sku, price);
+      if (!identical(current, session)) return false;
+      _catalogRequest++;
+      catalogLoading = false;
+      _inventoryRequest++;
+      inventoryLoading = false;
+      _frameRequests[sku] = (_frameRequests[sku] ?? 0) + 1;
+      frameLoading.remove(sku);
+      _cacheFrame(updated);
+      final old = _productsBySku[sku];
+      final product = old?.withPrice(updated.fromPrice) ?? _product(updated);
+      _productsBySku[sku] = product;
+      products = [for (final item in products) item.id == sku ? product : item];
+      return true;
+    } catch (e) {
+      if (identical(current, session)) inventoryMutationError = _inventoryMessage(e, 'No se pudo actualizar el precio.');
+      return false;
+    } finally {
+      if (identical(current, session)) { inventoryMutationBusy = false; notifyListeners(); }
+    }
+  }
+  List<FrameItem> get frames => _frames;
+  FrameItem? frameById(String sku) => _framesBySku[sku];
   List<AgendaItem> get agenda => deps.getAgenda();
-  List<ProductItem> get products => deps.getProducts();
-  ProductItem productById(String id) => deps.getProduct(id);
+  ProductItem? productById(String sku) => _productsBySku[sku];
   List<ProductionOrder> get productionOrders => deps.getProductionOrders();
   List<StaffAlert> get alerts => deps.getStaffAlerts();
   List<double> get reportBars => deps.getReportBars();
@@ -657,12 +925,7 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  int stockOf(ProductItem product) => product.available + (stockDelta[product.id] ?? 0);
-
-  void adjustStock(String productId, int delta) {
-    stockDelta[productId] = (stockDelta[productId] ?? 0) + delta;
-    notifyListeners();
-  }
+  int stockOf(ProductItem product) => product.available;
 
   void setClinicalStage(int index) {
     clinicalStage = index;

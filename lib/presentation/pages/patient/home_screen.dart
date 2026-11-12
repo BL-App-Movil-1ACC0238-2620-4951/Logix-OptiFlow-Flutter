@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          TryOnBanner(onTap: () => context.push('/p/tryon/verona')),
+          TryOnBanner(onTap: () => context.push('/p/catalog')),
           const SizedBox(height: 24),
           SectionHeader('Próxima cita', action: 'Ver todas', onAction: () => context.go('/p/appointments')),
           const SizedBox(height: 8),

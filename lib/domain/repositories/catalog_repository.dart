@@ -1,7 +1,9 @@
 import '../entities/frame.dart';
 
 abstract class CatalogRepository {
-  List<FrameItem> frames();
+  Future<List<FrameItem>> frames();
 
-  FrameItem frame(String id);
+  Future<FrameItem> frame(String sku, {String? opticalStoreId});
+
+  Future<FrameItem> updatePrice(String sku, num price);
 }

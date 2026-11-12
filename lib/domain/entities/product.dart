@@ -13,6 +13,8 @@ class ProductItem {
     required this.size,
     required this.location,
     required this.supplier,
+    this.quantityKnown = true,
+    this.minimumStock,
   });
 
   final String id;
@@ -28,4 +30,13 @@ class ProductItem {
   final String size;
   final String location;
   final String supplier;
+  final bool quantityKnown;
+  final int? minimumStock;
+
+  ProductItem withPrice(String value) => ProductItem(
+    id: id, name: name, sku: sku, code: code, detail: detail,
+    price: value, tag: tag, available: available, image: image,
+    category: category, size: size, location: location, supplier: supplier,
+    quantityKnown: quantityKnown, minimumStock: minimumStock,
+  );
 }

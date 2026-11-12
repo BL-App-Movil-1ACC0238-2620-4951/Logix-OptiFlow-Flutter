@@ -8,6 +8,8 @@ import '../models/optical_store_dto.dart';
 import '../models/patient_dto.dart';
 import '../models/time_slot_dto.dart';
 import '../models/work_order_dto.dart';
+import '../models/inventory_dto.dart';
+import '../../domain/entities/inventory.dart';
 import '../../core/errors/api_exception.dart';
 
 /// Cliente HTTP del backend. La app lo usa solo desde los repositorios.
@@ -29,6 +31,37 @@ class OptiFlowApi {
   static String _normalize(String raw) {
     final trimmed = raw.trim().replaceAll(RegExp(r'/+$'), '');
     return trimmed.endsWith('/api/v1') ? '$trimmed/' : '$trimmed/api/v1/';
+  }
+
+  Future<List<FrameModelDto>> frameCatalog() async => _inventoryList(await _get('inventory/frames'))
+      .map(FrameModelDto.new).toList();
+
+  Future<FrameModelDto> frameModel(String sku, {String? opticalStoreId}) async => FrameModelDto(
+      Map<String, dynamic>.from(await _get('inventory/frames/${Uri.encodeComponent(sku)}', {'opticalStoreId': opticalStoreId}) as Map));
+
+  Future<FrameModelDto> updateFramePrice(String sku, num price) async => FrameModelDto(
+      Map<String, dynamic>.from(await _send('PATCH', 'inventory/frames/${Uri.encodeComponent(sku)}/price', {'price': price}) as Map));
+
+  Future<StoreInventory> inventoryStock(String opticalStoreId) async => InventoryDto.stock(
+      Map<String, dynamic>.from(await _get('inventory/stock', {'opticalStoreId': opticalStoreId}) as Map));
+
+  Future<List<Supplier>> suppliers() async => _inventoryList(await _get('suppliers')).map(InventoryDto.supplier).toList();
+
+  Future<List<StockMovement>> stockMovements({required String opticalStoreId, required DateTime from, required DateTime to, String? sku}) async =>
+      _inventoryList(await _get('inventory/movements', {
+        'opticalStoreId': opticalStoreId, 'from': from.toIso8601String().substring(0, 10),
+        'to': to.toIso8601String().substring(0, 10), 'sku': sku,
+      })).map(InventoryDto.movement).toList();
+
+  Future<StockMovement> replenishStock({required String opticalStoreId, required String sku, required String supplierId, required int quantity, int? minimumStock}) async =>
+      InventoryDto.movement(Map<String, dynamic>.from(await _send('POST', 'inventory/replenishments', {
+        'opticalStoreId': opticalStoreId, 'sku': sku, 'supplierId': supplierId, 'quantity': quantity,
+        if (minimumStock != null) 'minimumStock': minimumStock,
+      }) as Map));
+
+  List<Map<String, dynamic>> _inventoryList(Object? json) {
+    if (json is! List || json.any((item) => item is! Map)) throw ApiException('El servidor devolvió una lista de inventario inválida.');
+    return json.map((item) => Map<String, dynamic>.from(item as Map)).toList();
   }
 
   Future<List<OpticalStoreDto>> listStores({String? name, String? address}) async {

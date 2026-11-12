@@ -11,12 +11,17 @@ class FrameItem {
     required this.features,
     required this.colors,
     required this.size,
+    this.sku = '',
+    this.currency = 'PEN',
+    this.stockKnown = false,
+    this.minimumStock,
+    this.tryOnModelUrl,
   });
 
   final String id;
   final String name;
   final String category;
-  final int price;
+  final num price;
   final String fromPrice;
   final String image;
   final String description;
@@ -24,4 +29,9 @@ class FrameItem {
   final List<String> features;
   final List<String> colors;
   final int size;
+  final String sku;
+  final String currency;
+  final bool stockKnown;
+  final int? minimumStock;
+  final String? tryOnModelUrl;
 }
