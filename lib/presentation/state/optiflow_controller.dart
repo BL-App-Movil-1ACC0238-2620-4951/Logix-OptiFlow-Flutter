@@ -58,7 +58,7 @@ class OptiFlowController extends ChangeNotifier {
   final Map<String, int> stockDelta = {};
   int clinicalStage = 1;
 
-  String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : 'Valentina Silva';
+  String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Valentina Silva');
   String get firstName => displayName.split(' ').first;
   String get email => session?.email.trim().isNotEmpty == true ? session!.email.trim() : 'valentina.silva@email.com';
   String get initials {
@@ -259,7 +259,7 @@ class OptiFlowController extends ChangeNotifier {
     try {
       loadedStores = await deps.getStores();
     } catch (_) {}
-    if (current != null) {
+    {
       try {
         apiAppointments = await deps.getAppointments(current.patientId);
       } catch (_) {}

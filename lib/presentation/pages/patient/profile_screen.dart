@@ -247,6 +247,30 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
+    if (staff) {
+      return StaffScaffold(
+        tab: StaffTab.more,
+        topBar: StaffTopBar(title: 'Mi cuenta', onBack: () => context.pop()),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            AppCard(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(app.displayName, style: Theme.of(context).textTheme.titleLarge),
+                Text(app.session?.email ?? ''),
+                const SizedBox(height: 8),
+                Text(app.session?.role.label ?? ''),
+                const SizedBox(height: 8),
+                const Text('El administrador de la óptica gestiona tu cuenta y tus permisos.'),
+              ],
+            )),
+            const SizedBox(height: 20),
+            SolidButton(label: 'Cerrar sesión', icon: Icons.logout, onPressed: () async { await app.logout(); }),
+          ],
+        ),
+      );
+    }
     return PatientScaffold(
       tab: PatientTab.profile,
       topBar: LightTopBar(title: 'Configuración', onBack: () => context.pop()),

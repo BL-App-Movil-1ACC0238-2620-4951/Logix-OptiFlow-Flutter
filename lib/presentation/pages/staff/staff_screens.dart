@@ -20,16 +20,17 @@ class StaffDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final next = context.read<OptiFlowController>().agenda.first;
+    final app = context.watch<OptiFlowController>();
+    final next = app.agenda.first;
     return StaffScaffold(
       tab: StaffTab.home,
       topBar: StaffTopBar(
-        title: 'Buenos días, Camila',
-        subtitle: 'Óptica Visión Norte',
-        trailing: IconButton(
+        title: 'Hola, ${app.firstName}',
+        subtitle: app.session?.role.label,
+        trailing: app.canOpen('/s/alerts') ? IconButton(
           onPressed: () => context.push('/s/alerts'),
           icon: const Icon(Icons.notifications_none, color: AppColors.white),
-        ),
+        ) : null,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -56,7 +57,7 @@ class StaffDashboardScreen extends StatelessWidget {
                   height: 42,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(color: AppColors.staffChip, shape: BoxShape.circle),
-                  child: Text('CR', style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffHeader)),
+                  child: Text(app.initials, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffHeader)),
                 ),
               ],
             ),
@@ -64,12 +65,15 @@ class StaffDashboardScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _Stat('8', 'Citas de hoy', () => context.go('/s/agenda'), detail: '2 pendientes', icon: Icons.calendar_today_outlined)),
-              const SizedBox(width: 14),
-              Expanded(child: _Stat('12', 'En producción', () => context.push('/s/production'), detail: '3 por entregar', icon: Icons.work_outline)),
+              if (app.canOpen('/s/agenda'))
+                Expanded(child: _Stat('8', 'Citas de hoy', () => context.go('/s/agenda'), detail: '2 pendientes', icon: Icons.calendar_today_outlined)),
+              if (app.canOpen('/s/agenda') && app.canOpen('/s/production')) const SizedBox(width: 14),
+              if (app.canOpen('/s/production'))
+                Expanded(child: _Stat('12', 'En producción', () => context.push('/s/production'), detail: '3 por entregar', icon: Icons.work_outline)),
             ],
           ),
           const SizedBox(height: 24),
+          if (app.canOpen('/s/agenda')) ...[
           Row(
             children: [
               Expanded(child: Text('Próxima atención', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
@@ -112,20 +116,20 @@ class StaffDashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          ],
           Text('Acciones frecuentes', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
           const SizedBox(height: 12),
           Row(
             children: [
-              _Action(Icons.people_outline, 'Nuevo paciente', () => context.push('/s/patients/new')),
-              const SizedBox(width: 10),
-              _Action(Icons.qr_code_scanner, 'Escanear', () => context.push('/s/scanner')),
-              const SizedBox(width: 10),
-              _Action(Icons.description_outlined, 'Cotización', () => context.push('/s/quote')),
-              const SizedBox(width: 10),
-              _Action(Icons.credit_card, 'Nueva venta', () => context.push('/s/sale')),
+              if (app.canOpen('/s/patients/new')) _Action(Icons.people_outline, 'Nuevo paciente', () => context.push('/s/patients/new')),
+              if (app.canOpen('/s/scanner')) _Action(Icons.qr_code_scanner, 'Escanear', () => context.push('/s/scanner')),
+              if (app.canOpen('/s/quote')) _Action(Icons.description_outlined, 'Cotización', () => context.push('/s/quote')),
+              if (app.canOpen('/s/sale')) _Action(Icons.credit_card, 'Nueva venta', () => context.push('/s/sale')),
+              if (app.canOpen('/s/production') && !app.canOpen('/s/agenda')) _Action(Icons.work_outline, 'Producción', () => context.push('/s/production')),
             ],
           ),
           const SizedBox(height: 18),
+          if (app.canOpen('/s/alerts'))
           AppCard(
             onTap: () => context.push('/s/alerts'),
             color: AppColors.staffBlue50,
@@ -696,6 +700,7 @@ class StaffMoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<OptiFlowController>();
     return StaffScaffold(
       tab: StaffTab.more,
       topBar: const StaffTopBar(title: 'Más herramientas'),
@@ -708,9 +713,10 @@ class StaffMoreScreen extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _Tool(Icons.credit_card, 'Ventas y pagos', 'Historial y nueva venta', () => context.push('/s/sale')),
-                _Tool(Icons.description_outlined, 'Cotizaciones', 'Pendientes y enviadas', () => context.push('/s/quote')),
-                _Tool(Icons.work_outline, 'Órdenes de trabajo', 'Producción y entregas', () => context.push('/s/production'), badge: '5'),
+                if (app.canOpen('/s/sale')) _Tool(Icons.credit_card, 'Ventas y pagos', 'Historial y nueva venta', () => context.push('/s/sale')),
+                if (app.canOpen('/s/quote')) _Tool(Icons.description_outlined, 'Cotizaciones', 'Pendientes y enviadas', () => context.push('/s/quote')),
+                if (app.canOpen('/s/production')) _Tool(Icons.work_outline, 'Órdenes de trabajo', 'Producción y entregas', () => context.push('/s/production'), badge: '5'),
+                if (app.canOpen('/s/clinical')) _Tool(Icons.visibility_outlined, 'Atención clínica', 'Evaluación y receta', () => context.push('/s/clinical')),
               ],
             ),
           ),
@@ -721,11 +727,11 @@ class StaffMoreScreen extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _Tool(Icons.notifications_none, 'Alertas', null, () => context.push('/s/alerts'), badge: '3'),
-                _Tool(Icons.bar_chart, 'Reportes', null, () => context.push('/s/reports')),
-                _Tool(Icons.settings_outlined, 'Configuración y permisos', null, () => context.push('/p/settings?staff=true')),
+                if (app.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', null, () => context.push('/s/alerts'), badge: '3'),
+                if (app.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', null, () => context.push('/s/reports')),
+                _Tool(Icons.settings_outlined, 'Configuración y permisos', app.session?.role.label, () => context.push('/s/settings')),
                 _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
-                _Tool(Icons.person_outline, 'Vista paciente', 'Cambiar de experiencia', () => context.go('/p/home')),
+                _Tool(Icons.logout, 'Cerrar sesión', app.session?.email, () async { await app.logout(); }),
               ],
             ),
           ),
