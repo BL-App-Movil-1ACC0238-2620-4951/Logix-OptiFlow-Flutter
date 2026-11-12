@@ -1,774 +1,287 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../state/optiflow_controller.dart';
 import '../../widgets/chrome.dart';
+import '../../widgets/frame_image.dart';
 
-class ScannerScreen extends StatelessWidget {
+class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1F3A6D),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                children: [
-                  IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.chevron_left, color: AppColors.white, size: 28)),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text('Escanear producto', style: GoogleFonts.inter(fontSize: 14, color: AppColors.white)),
-                        Text('Alinea el código dentro del marco', style: GoogleFonts.inter(fontSize: 11, color: AppColors.white.withValues(alpha: 0.8))),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.help_outline, color: AppColors.white, size: 22),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: const Color(0xFF1E4383), borderRadius: BorderRadius.circular(24)),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(width: 250, height: 180, child: CustomPaint(painter: _ScanCornersPainter())),
-                      Positioned(
-                        bottom: 48,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(14), boxShadow: const [BoxShadow(color: Color(0x3300135B), blurRadius: 8, offset: Offset(0, 3))]),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: const BoxDecoration(color: AppColors.electric, shape: BoxShape.circle),
-                                child: const Icon(Icons.check, color: AppColors.white, size: 14),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Código detectado', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffInk)),
-                                  Text('NV-N24-AZ', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-              child: Row(
-                children: [
-                  _ScanAction(Icons.flashlight_on_outlined, 'Linterna', () => showAppMessage(context, 'Linterna activada')),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SolidButton(label: 'Ver producto', background: AppColors.staffAccent, onPressed: () => context.push('/s/product/rb5154')),
-                  ),
-                  const SizedBox(width: 16),
-                  const _ScanAction(Icons.edit_outlined, 'Ingresar código', null),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _ScanAction extends StatelessWidget {
-  const _ScanAction(this.icon, this.label, this.onTap);
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
+class _ScannerScreenState extends State<ScannerScreen> {
+  final sku = TextEditingController();
+  bool loading = false;
+  String? error;
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        width: 72,
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.white, size: 22),
-            const SizedBox(height: 6),
-            Text(label, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, color: AppColors.white)),
-          ],
-        ),
-      ),
-    );
-  }
-}
+  void dispose() { sku.dispose(); super.dispose(); }
 
-class _ScanCornersPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.white
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    const len = 34.0;
-    void corner(Offset origin, double dx, double dy) {
-      canvas.drawLine(origin, origin + Offset(len * dx, 0), paint);
-      canvas.drawLine(origin, origin + const Offset(0, 0) + Offset(0, len * dy), paint);
-    }
-
-    corner(Offset.zero, 1, 1);
-    corner(Offset(size.width, 0), -1, 1);
-    corner(Offset(0, size.height), 1, -1);
-    corner(Offset(size.width, size.height), -1, -1);
-    final scan = Paint()
-      ..shader = const LinearGradient(colors: [Color(0x66FFFFFF), AppColors.white, Color(0x66FFFFFF)]).createShader(Rect.fromLTWH(0, size.height / 2, size.width, 4))
-      ..strokeWidth = 3;
-    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), scan);
+  Future<void> _lookup() async {
+    if (loading || sku.text.trim().isEmpty) return;
+    setState(() { loading = true; error = null; });
+    final app = context.read<OptiFlowController>();
+    final selected = sku.text.trim();
+    final frame = await app.loadFrame(selected, forInventory: true);
+    if (!mounted) return;
+    setState(() { loading = false; error = frame == null ? app.frameErrors[selected] ?? 'No se encontró la montura.' : null; });
+    if (frame != null) context.push('/s/product/${Uri.encodeComponent(frame.sku)}');
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) => StaffScaffold(
+    tab: StaffTab.inventory,
+    topBar: StaffTopBar(title: 'Buscar por SKU', onBack: () => context.canPop() ? context.pop() : context.go('/s/inventory')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('Ingresa el SKU que aparece en la etiqueta de la montura.'),
+      const SizedBox(height: 16),
+      TextField(controller: sku, enabled: !loading, onSubmitted: (_) => _lookup(), decoration: const InputDecoration(labelText: 'SKU', prefixIcon: Icon(Icons.qr_code))),
+      if (error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: const TextStyle(color: AppColors.errorRed))),
+      const SizedBox(height: 20),
+      SolidButton(label: 'Consultar montura', loading: loading, onPressed: _lookup),
+    ]),
+  );
 }
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key, required this.id});
   final String id;
-
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  int thumb = 0;
-
   @override
-  Widget build(BuildContext context) {
-    final product = context.read<OptiFlowController>().productById(widget.id);
-    final stock = context.watch<OptiFlowController>().stockOf(product);
-    final gallery = [product.image, 'assets/images/img_prod_thumb2.png', 'assets/images/img_eval_frame.png'];
-    return StaffScaffold(
-      tab: StaffTab.inventory,
-      topBar: StaffTopBar(title: 'Detalle del producto', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          AppCard(
-            radius: 20,
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.asset(gallery[thumb], height: 200, width: double.infinity, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    for (var i = 0; i < gallery.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => thumb = i),
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: thumb == i ? AppColors.staffAccent : Colors.transparent, width: 1.5),
-                            ),
-                            child: ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.asset(gallery[i], fit: BoxFit.cover)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(20)),
-              child: Text('$stock unidades disponibles', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(product.name, style: GoogleFonts.inter(fontSize: 22, color: AppColors.staffInk)),
-          const SizedBox(height: 6),
-          Text('${product.sku} · Carey y dorado · Acetato con metal', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
-          const SizedBox(height: 14),
-          Text(product.price, style: GoogleFonts.inter(fontSize: 20, color: AppColors.staffInk)),
-          const SizedBox(height: 18),
-          AppCard(
-            color: const Color(0xFFF7F9FF),
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _InfoCell('Código', product.code)),
-                    Expanded(child: _InfoCell('Talla', product.size.replaceAll('-', '–'))),
-                  ],
-                ),
-                const Divider(height: 1, color: AppColors.lavender),
-                Row(
-                  children: [
-                    Expanded(child: _InfoCell('Ubicación', product.location)),
-                    Expanded(child: _InfoCell('Proveedor', product.supplier)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(child: SolidButton(label: 'Ver stock', background: AppColors.white, foreground: AppColors.staffInk, border: AppColors.staffBorder, onPressed: () => context.push('/s/stock/${product.id}'))),
-              const SizedBox(width: 12),
-              Expanded(flex: 2, child: SolidButton(label: 'Agregar', onPressed: () => context.push('/s/sale'))),
-            ],
-          ),
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().loadFrame(widget.id, forInventory: true); });
   }
-}
 
-class _InfoCell extends StatelessWidget {
-  const _InfoCell(this.label, this.value);
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
-          const SizedBox(height: 6),
-          Text(value, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-        ],
-      ),
-    );
+  Future<void> _editPrice(OptiFlowController app) async {
+    final value = TextEditingController(text: app.frameById(widget.id)?.price.toStringAsFixed(2) ?? '');
+    String? error;
+    bool saving = false;
+    await showDialog<void>(context: context, barrierDismissible: false, builder: (dialogContext) => StatefulBuilder(builder: (context, update) => AlertDialog(
+      title: const Text('Actualizar precio en soles'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: value, enabled: !saving, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Precio S/', helperText: 'Mayor a cero, máximo dos decimales')),
+        if (error != null) Text(error!, style: const TextStyle(color: AppColors.errorRed)),
+      ]),
+      actions: [
+        TextButton(onPressed: saving ? null : () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+        FilledButton(onPressed: saving ? null : () async {
+          final price = num.tryParse(value.text.trim().replaceAll(',', '.'));
+          if (price == null) { update(() => error = 'Ingresa un precio válido.'); return; }
+          update(() { saving = true; error = null; });
+          final saved = await app.updateFramePrice(widget.id, price);
+          if (!dialogContext.mounted) return;
+          if (saved) { Navigator.pop(dialogContext); } else { update(() { saving = false; error = app.inventoryMutationError; }); }
+        }, child: Text(saving ? 'Guardando…' : 'Guardar precio')),
+      ],
+    )));
+    value.dispose();
   }
-}
-
-class StockManagementScreen extends StatelessWidget {
-  const StockManagementScreen({super.key, required this.id});
-  final String id;
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final product = app.productById(id);
-    final stock = app.stockOf(product);
+    final product = app.productById(widget.id);
     return StaffScaffold(
       tab: StaffTab.inventory,
-      topBar: StaffTopBar(title: 'Detalle y gestión de stock', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: Text('CONTROL DE LOTE · REF #${product.sku}', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate300, letterSpacing: 0.4))),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(20)),
-                      child: Text(product.supplier, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffInk)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(product.name, style: GoogleFonts.inter(fontSize: 20, color: AppColors.white)),
-                Text('${product.sku} 2000 · Carey & Dorado Vintage (Acetato + Metal)', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset(product.image, width: 68, height: 44, fit: BoxFit.cover)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('SKU PRIMARIO', style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate300)),
-                          Text(product.code, style: GoogleFonts.inter(fontSize: 16, color: AppColors.white)),
-                          Text('Calibre 51 · Puente 21 · Varilla 145', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
-                        ],
-                      ),
-                    ),
-                    IconButton(onPressed: () => context.push('/s/scanner'), icon: const Icon(Icons.qr_code_scanner, color: AppColors.white)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _PriceBit('PVP SUGERIDO', product.price),
-                    _PriceBit('COSTO UNIT.', '\$98.500'),
-                    _PriceBit('MARGEN', '48% Bruto', alignEnd: true),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _StockStat(icon: Icons.inventory_2_outlined, tileBg: AppColors.errorBg, tint: AppColors.errorRed, pill: 'Bajo', value: '$stock', valueColor: AppColors.errorRed, title: 'Stock actual', subtitle: 'Total físico red')),
-              const SizedBox(width: 10),
-              Expanded(child: _StockStat(icon: Icons.description_outlined, tileBg: const Color(0xFFEEF2FF), tint: AppColors.staffAccent, pill: 'Objetivo', value: '6', valueColor: AppColors.staffInk, title: 'Mínimo umbral', subtitle: 'Déficit: ${stock - 6} uds')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          AppCard(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                const IconTile(icon: Icons.inventory_2_outlined, background: Color(0xFFEEF2FF), color: AppColors.staffAccent, size: 34, iconSize: 18),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text('12 en tránsito', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                          const SizedBox(width: 8),
-                          Text('Hoy 16:30', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-                        ],
-                      ),
-                      Text('Despacho Guía #EX-90412 · Essilor Central', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: AppColors.staffInk),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Ajuste manual rápido', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                      Text('Registrar merma, rotura o conteo', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
-                    ],
-                  ),
-                ),
-                _Step('-', stock > 0 ? () => app.adjustStock(product.id, -1) : null),
-                Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text('$stock', style: GoogleFonts.inter(fontSize: 18, color: AppColors.staffInk))),
-                _Step('+', () => app.adjustStock(product.id, 1)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _Section('Disponibilidad en red', trailing: '3 puntos'),
-          const SizedBox(height: 12),
-          AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Column(
-              children: const [
-                _NetworkRow(Icons.grid_view, 'Vitrina Sucursal Centro', '2 unidades (Bajo mínimo)', 'Auditar'),
-                Divider(height: 1, color: AppColors.staffBorder),
-                _NetworkRow(Icons.home_outlined, 'Cajón Taller / Bodega', '2 unidades operativas', 'Mover'),
-                Divider(height: 1, color: AppColors.staffBorder),
-                _NetworkRow(Icons.inventory_2_outlined, 'Sucursal Norte', '0 unidades (Agotado)', 'Sin stock', danger: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const _Section('Acciones directas'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _DirectAction(Icons.chevron_right, 'Trasladar', 'Enviar a otra sucursal', () => context.push('/s/movement'))),
-              const SizedBox(width: 10),
-              Expanded(child: _DirectAction(Icons.description_outlined, 'Etiqueta', 'Imprimir código barras', () => showAppMessage(context, 'Etiqueta enviada a la impresora'))),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const _Section('Últimos movimientos', trailing: 'Ver kardex'),
-          const SizedBox(height: 12),
-          const _MovementRow(Icons.credit_card, 'Venta en tienda #8839', 'Boleta B-1092 · Hoy, 11:20 · Vendedora: Camila R.', '-1 ud', AppColors.errorRed),
-          const SizedBox(height: 10),
-          const _MovementRow(Icons.inventory_2_outlined, 'Recepción lote Essilor', 'Factura Prov #77102 · 18 jun, 09:45', '+5 uds', AppColors.staffGreen),
+      topBar: StaffTopBar(title: 'Montura', onBack: () => context.canPop() ? context.pop() : context.go('/s/inventory')),
+      body: ListView(padding: const EdgeInsets.all(20), children: [
+        if (app.frameLoading.contains(widget.id)) const LinearProgressIndicator(),
+        if (app.frameErrors[widget.id] != null) ...[
+          Text(app.frameErrors[widget.id]!, style: const TextStyle(color: AppColors.errorRed)),
+          TextButton(onPressed: () => app.loadFrame(widget.id, forInventory: true), child: const Text('Reintentar')),
+        ],
+        if (product != null) ...[
+          FrameImage(path: product.image, height: 200),
           const SizedBox(height: 16),
-          SolidButton(label: 'Solicitar pedido de reposición', icon: Icons.add, onPressed: () => showAppMessage(context, 'Pedido de reposición solicitado')),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceBit extends StatelessWidget {
-  const _PriceBit(this.label, this.value, {this.alignEnd = false});
-  final String label;
-  final String value;
-  final bool alignEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate300)),
-          Text(value, style: GoogleFonts.inter(fontSize: 13, color: AppColors.white)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StockStat extends StatelessWidget {
-  const _StockStat({required this.icon, required this.tileBg, required this.tint, required this.pill, required this.value, required this.valueColor, required this.title, required this.subtitle});
-  final IconData icon;
-  final Color tileBg;
-  final Color tint;
-  final String pill;
-  final String value;
-  final Color valueColor;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              IconTile(icon: icon, background: tileBg, color: tint, size: 32, iconSize: 16),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(20)),
-                child: Text(pill, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
-              ),
-            ],
-          ),
+          AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(product.name, style: Theme.of(context).textTheme.headlineSmall),
+            Text('SKU: ${product.sku}'),
+            Text(product.detail),
+            const SizedBox(height: 12),
+            Text(product.price, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text(product.quantityKnown ? 'Stock de mi óptica: ${product.available} unidades' : 'Stock no disponible'),
+            if (product.minimumStock != null) Text('Mínimo: ${product.minimumStock} unidades'),
+          ])),
           const SizedBox(height: 16),
-          Text(value, style: GoogleFonts.inter(fontSize: 24, color: valueColor)),
-          Text(title, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+          SolidButton(label: 'Actualizar precio', loading: app.inventoryMutationBusy, onPressed: () => _editPrice(app)),
+          if (app.canOpen('/s/movement')) ...[
+            const SizedBox(height: 12),
+            SolidButton(label: 'Stock y movimientos', onPressed: () => context.push('/s/stock/${Uri.encodeComponent(product.sku)}')),
+          ],
         ],
-      ),
+      ]),
     );
   }
 }
 
-class _Step extends StatelessWidget {
-  const _Step(this.label, this.onTap);
-  final String label;
-  final VoidCallback? onTap;
-
+class StockManagementScreen extends StatefulWidget {
+  const StockManagementScreen({super.key, required this.id});
+  final String id;
   @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFEEF2FF),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(width: 30, height: 30, child: Center(child: Text(label, style: GoogleFonts.inter(fontSize: 16, color: AppColors.staffAccent)))),
-      ),
-    );
-  }
+  State<StockManagementScreen> createState() => _StockManagementScreenState();
 }
 
-class _NetworkRow extends StatelessWidget {
-  const _NetworkRow(this.icon, this.title, this.subtitle, this.action, {this.danger = false});
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String action;
-  final bool danger;
+class _StockManagementScreenState extends State<StockManagementScreen> {
+  DateTimeRange? range;
+  Future<void> _refresh() async {
+    final app = context.read<OptiFlowController>();
+    await Future.wait([
+      app.loadFrame(widget.id, forInventory: true),
+      app.refreshStockMovements(sku: widget.id, from: range?.start, to: range?.end),
+    ]);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _refresh(); });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          IconTile(icon: icon, background: const Color(0xFFEEF2FF), color: AppColors.staffAccent, size: 34, iconSize: 16),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffInk)),
-                Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: danger ? AppColors.errorRed : AppColors.staffAccent)),
-              ],
-            ),
-          ),
-          Text(action, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
+    final app = context.watch<OptiFlowController>();
+    final product = app.productById(widget.id);
+    final movements = app.stockMovements.where((movement) => movement.sku == widget.id).toList();
+    return StaffScaffold(
+      tab: StaffTab.inventory,
+      topBar: StaffTopBar(title: 'Stock y movimientos', onBack: () => context.canPop() ? context.pop() : context.go('/s/inventory')),
+      body: RefreshIndicator(onRefresh: _refresh, child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(20), children: [
+        if (app.frameErrors[widget.id] != null) Text(app.frameErrors[widget.id]!, style: const TextStyle(color: AppColors.errorRed)),
+        if (product != null) AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(product.name, style: Theme.of(context).textTheme.titleLarge),
+          Text(product.sku),
+          Text(product.quantityKnown ? '${product.available} unidades en mi óptica' : 'Stock no disponible'),
+          if (product.minimumStock != null) Text('Mínimo: ${product.minimumStock}'),
+        ])),
+        const SizedBox(height: 16),
+        SolidButton(label: 'Registrar ingreso de proveedor', onPressed: () => context.push(Uri(path: '/s/movement', queryParameters: {'sku': widget.id}).toString())),
+        const SizedBox(height: 16),
+        TextButton.icon(icon: const Icon(Icons.date_range), label: Text(range == null ? 'Últimos 30 días · cambiar fechas' : '${DateFormat('dd/MM/yyyy').format(range!.start)} – ${DateFormat('dd/MM/yyyy').format(range!.end)}'), onPressed: () async {
+          final selected = await showDateRangePicker(context: context, firstDate: DateTime(2000), lastDate: DateTime.now(), initialDateRange: range);
+          if (selected == null || !mounted) return;
+          setState(() => range = selected);
+          await app.refreshStockMovements(sku: widget.id, from: selected.start, to: selected.end);
+        }),
+        if (app.movementsLoading || app.frameLoading.contains(widget.id)) const LinearProgressIndicator(),
+        if (app.movementsError != null) ...[
+          Text(app.movementsError!, style: const TextStyle(color: AppColors.errorRed)),
+          TextButton(onPressed: _refresh, child: const Text('Reintentar')),
         ],
-      ),
-    );
-  }
-}
-
-class _DirectAction extends StatelessWidget {
-  const _DirectAction(this.icon, this.title, this.subtitle, this.onTap);
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          IconTile(icon: icon, background: const Color(0xFFEEF2FF), color: AppColors.staffAccent, size: 30, iconSize: 16),
-          const SizedBox(height: 10),
-          Text(title, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-        ],
-      ),
-    );
-  }
-}
-
-class _MovementRow extends StatelessWidget {
-  const _MovementRow(this.icon, this.title, this.subtitle, this.delta, this.color);
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String delta;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          IconTile(icon: icon, background: const Color(0xFFEEF2FF), color: AppColors.staffAccent, size: 32, iconSize: 16),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffInk)),
-                Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffInk)),
-              ],
-            ),
-          ),
-          Text(delta, style: GoogleFonts.inter(fontSize: 13, color: color)),
-        ],
-      ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.title, {this.trailing});
-  final String title;
-  final String? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-        if (trailing != null) Text(trailing!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
-      ],
+        if (!app.movementsLoading && app.movementsError == null && movements.isEmpty) const Text('No hay movimientos en este período.'),
+        for (final movement in movements) ListTile(
+          leading: Icon(movement.type == 'IN' ? Icons.south_west : Icons.north_east),
+          title: Text('${movement.type == 'IN' ? 'Ingreso' : 'Salida'} · ${movement.quantity} unidades'),
+          subtitle: Text('${DateFormat('dd/MM/yyyy HH:mm').format(movement.createdAt)} · ${_movementReason(movement.reason)}'),
+        ),
+      ])),
     );
   }
 }
 
 class NewMovementScreen extends StatefulWidget {
-  const NewMovementScreen({super.key});
-
+  const NewMovementScreen({super.key, this.sku});
+  final String? sku;
   @override
   State<NewMovementScreen> createState() => _NewMovementScreenState();
 }
 
+String _movementReason(String value) => switch (value) {
+  'REPLENISHMENT' => 'Reposición de proveedor',
+  'SALE' => 'Venta',
+  'ADJUSTMENT' => 'Ajuste',
+  _ => 'Movimiento de stock',
+};
+
 class _NewMovementScreenState extends State<NewMovementScreen> {
-  static const reasons = ['Reposición de proveedor', 'Devolución de cliente', 'Traslado entre sucursales', 'Merma o rotura'];
-  int type = 0;
-  int qty = 1;
-  int reason = 0;
-  final note = TextEditingController();
+  String? selectedSku;
+  String? supplierId;
+  final quantity = TextEditingController(text: '1');
+  final minimum = TextEditingController();
 
   @override
-  void dispose() {
-    note.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    selectedSku = widget.sku;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final app = context.read<OptiFlowController>();
+      app.inventoryMutationError = null;
+      app.refreshInventory();
+      app.refreshSuppliers();
+    });
+  }
+
+  @override
+  void dispose() { quantity.dispose(); minimum.dispose(); super.dispose(); }
+
+  Future<void> _submit() async {
+    final app = context.read<OptiFlowController>();
+    if (app.inventoryMutationBusy) return;
+    final units = int.tryParse(quantity.text.trim());
+    final threshold = minimum.text.trim().isEmpty ? null : int.tryParse(minimum.text.trim());
+    if (selectedSku == null || supplierId == null || !app.products.any((item) => item.sku == selectedSku) || !app.suppliers.any((item) => item.id == supplierId) || units == null || (minimum.text.trim().isNotEmpty && threshold == null)) {
+      showAppMessage(context, 'Selecciona montura y proveedor e ingresa cantidades enteras.');
+      return;
+    }
+    final saved = await app.replenishStock(sku: selectedSku!, supplierId: supplierId!, quantity: units, minimumStock: threshold);
+    if (!mounted || !saved) return;
+    await app.refreshStockMovements(sku: selectedSku);
+    if (!mounted) return;
+    showAppMessage(context, app.inventoryError == null ? 'Ingreso registrado' : 'Ingreso registrado. Reintenta actualizar el stock desde inventario.');
+    if (context.canPop()) { context.pop(); } else { context.go('/s/inventory'); }
   }
 
   @override
   Widget build(BuildContext context) {
-    final current = context.watch<OptiFlowController>().stockOf(context.read<OptiFlowController>().productById('rb5154'));
-    final result = switch (type) {
-      0 => current + qty,
-      1 => current - qty,
-      _ => qty,
-    };
+    final app = context.watch<OptiFlowController>();
+    final loading = app.inventoryLoading || app.suppliersLoading;
+    final busy = app.inventoryMutationBusy;
     return StaffScaffold(
       tab: StaffTab.inventory,
-      topBar: StaffTopBar(title: 'Nuevo movimiento', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-        children: [
-          Text('Tipo de movimiento', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          const SizedBox(height: 14),
-          Container(
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5FF), borderRadius: BorderRadius.circular(14)),
-            child: Row(
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => type = i),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(color: type == i ? AppColors.white : Colors.transparent, borderRadius: BorderRadius.circular(10)),
-                        child: Text(['Ingreso', 'Salida', 'Ajuste'][i], style: GoogleFonts.inter(fontSize: 12, color: type == i ? AppColors.staffAccent : AppColors.staffInk)),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          Text('Cantidad', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-          const SizedBox(height: 10),
-          Container(
-            height: 52,
-            decoration: BoxDecoration(color: const Color(0xFFF1F5FF), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.lavender)),
-            child: Row(
-              children: [
-                _QtyButton('−', () => setState(() => qty = qty > 1 ? qty - 1 : 1)),
-                Expanded(child: Center(child: Text('$qty', style: GoogleFonts.inter(fontSize: 16, color: AppColors.staffInk)))),
-                _QtyButton('+', () => setState(() => qty++)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          Text('Motivo', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-          const SizedBox(height: 10),
-          Material(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              onTap: () => setState(() => reason = (reason + 1) % reasons.length),
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.lavender)),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(reasons[reason], style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk))),
-                    const Icon(Icons.expand_more, color: AppColors.staffInk),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Text('Nota', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-              const Spacer(),
-              Text('Opcional', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: note,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Agrega un detalle del movimiento...',
-              filled: true,
-              fillColor: AppColors.staffField,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.lavender)),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5FF), borderRadius: BorderRadius.circular(14)),
-            child: Row(
-              children: [
-                const IconTile(icon: Icons.grid_view, background: AppColors.lavender, color: AppColors.electric, size: 36, iconSize: 18),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Stock resultante: $result unidades', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                    Text('Stock actual: $current unidades', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          SolidButton(
-            label: 'Confirmar movimiento',
-            onPressed: () {
-              final delta = switch (type) {
-                0 => qty,
-                1 => -qty,
-                _ => 0,
-              };
-              context.read<OptiFlowController>().adjustStock('rb5154', delta);
-              showAppMessage(context, 'Movimiento registrado');
-              context.pop();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QtyButton extends StatelessWidget {
-  const _QtyButton(this.label, this.onTap);
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(width: 48, height: 52, child: Center(child: Text(label, style: GoogleFonts.inter(fontSize: 18, color: AppColors.staffAccent)))),
+      topBar: StaffTopBar(title: 'Ingreso de proveedor', onBack: () { if (!busy) { context.canPop() ? context.pop() : context.go('/s/inventory'); } }),
+      body: ListView(padding: const EdgeInsets.all(20), children: [
+        const Text('Registra las unidades que entregó un proveedor a tu óptica. Las salidas se registran mediante las ventas.'),
+        const SizedBox(height: 16),
+        if (loading) const LinearProgressIndicator(),
+        if (app.inventoryError != null) Text(app.inventoryError!, style: const TextStyle(color: AppColors.errorRed)),
+        if (app.suppliersError != null) Text(app.suppliersError!, style: const TextStyle(color: AppColors.errorRed)),
+        if (app.inventoryError != null || app.suppliersError != null)
+          TextButton(onPressed: loading || busy ? null : () { app.refreshInventory(); app.refreshSuppliers(); }, child: const Text('Volver a cargar opciones')),
+        DropdownButtonFormField<String>(
+          key: ValueKey('sku-${app.products.length}-$selectedSku'),
+          initialValue: app.products.any((item) => item.sku == selectedSku) ? selectedSku : null,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Montura'),
+          items: [for (final item in app.products) DropdownMenuItem(value: item.sku, child: Text('${item.sku} · ${item.name}', overflow: TextOverflow.ellipsis))],
+          onChanged: busy || loading ? null : (value) => setState(() => selectedSku = value),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          key: ValueKey('supplier-${app.suppliers.length}-$supplierId'),
+          initialValue: app.suppliers.any((item) => item.id == supplierId) ? supplierId : null, isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Proveedor'),
+          items: [for (final supplier in app.suppliers) DropdownMenuItem(value: supplier.id, child: Text(supplier.name, overflow: TextOverflow.ellipsis))],
+          onChanged: busy || loading ? null : (value) => setState(() => supplierId = value),
+        ),
+        if (!loading && app.suppliersError == null && app.suppliers.isEmpty) const Text('No hay proveedores registrados. Registra uno desde las herramientas de administración.'),
+        const SizedBox(height: 16),
+        TextField(controller: quantity, enabled: !busy, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cantidad recibida', helperText: 'De 1 a 1000 unidades')),
+        const SizedBox(height: 16),
+        TextField(controller: minimum, enabled: !busy, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nuevo stock mínimo (opcional)', helperText: 'Vacío conserva el mínimo actual; para un stock nuevo se aplica 5.')),
+        if (app.inventoryMutationError != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(app.inventoryMutationError!, style: const TextStyle(color: AppColors.errorRed))),
+        const SizedBox(height: 24),
+        SolidButton(label: 'Registrar ingreso', loading: busy, onPressed: loading || app.inventoryError != null || app.suppliersError != null || app.products.isEmpty || app.suppliers.isEmpty ? null : _submit),
+      ]),
     );
   }
 }

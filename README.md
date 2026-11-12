@@ -40,7 +40,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api/v1/
 
 En un celular físico usa la IP de tu PC en lugar de `10.0.2.2`. En escritorio o web usa `http://localhost:8080/api/v1/`. También se acepta la URL del servidor sin `/api/v1`: el cliente agrega el prefijo una sola vez.
 
-El catálogo de monturas, el inventario y la operación clínica usan los mismos datos de prototipo que la app Android cuando el API no los expone. Login, ópticas, horarios y reservas sí salen del backend.
+Login, ópticas, horarios, reservas, catálogo e inventario consumen el backend. Las áreas clínicas, comerciales y de producción todavía tienen funciones de prototipo pendientes de migración.
 
 ## Migración por bloques — bloque 1
 
@@ -57,7 +57,7 @@ El catálogo de monturas, el inventario y la operación clínica usan los mismos
 | Técnico | Producción |
 | Administrador | Todas las secciones |
 
-Este bloque migra el acceso y los permisos. Las pantallas de operación clínica, inventario, ventas y producción todavía usan datos de prototipo; su integración con los endpoints actuales se hará en los siguientes bloques.
+El bloque 1 migró el acceso y los permisos. La integración del catálogo y el inventario se describe en el bloque 3; clínica, ventas y producción se completarán en los siguientes bloques.
 
 Validación:
 
@@ -76,4 +76,22 @@ flutter build web
 - Reprogramación con el flujo del backend: reservar un nuevo horario y luego cancelar la cita anterior. Si falla la cancelación, se informa que la nueva cita existe; reintentar solo cancela la anterior y no genera otra reserva.
 - El estado `COMPLETED` se muestra como «Atendida». Las citas se ordenan por fecha y hora completas.
 
-La duración proviene del horario elegido. La óptica asigna al profesional; la app no inventa nombres, distancias ni disponibilidad. Catálogo, órdenes, historia clínica y otras áreas todavía tienen datos de prototipo hasta sus siguientes bloques.
+La duración proviene del horario elegido. La óptica asigna al profesional; la app no inventa nombres, distancias ni disponibilidad. Las áreas de prototipo que siguen pendientes se detallan al final.
+
+## Migración por bloques — bloque 3
+
+- Catálogo y destacados desde `GET /api/v1/inventory/frames`. Los enlaces y búsquedas usan el SKU real, con precios en PEN y decimales conservados.
+- Detalle por SKU; el personal consulta el stock de la óptica asignada a su sesión. El catálogo de pacientes no afirma disponibilidad cuando el API no la informa.
+- Inventario por óptica, cantidades y mínimos reales. Asesores y administradores pueden consultarlo y actualizar precios.
+- Los administradores registran ingresos de proveedores con cantidad de 1 a 1000 y mínimo opcional. Las salidas se generan mediante ventas; se retiraron los ajustes manuales que solo modificaban la pantalla.
+- Movimientos de entrada y salida por SKU, con filtro de fechas. Un ingreso confirmado no se reporta como fallido si una consulta posterior de stock falla, para evitar registros duplicados al reintentar.
+- La búsqueda por SKU permite consultar una etiqueta escrita. La captura con cámara y el visor AR no forman parte de este bloque; se retiraron las simulaciones de detección de rostro y stock ficticio.
+- Cuando no existe fotografía en el API, se muestra un marcador sin atribuirle la imagen de otra montura.
+
+También se pueden ejecutar las comprobaciones de contratos HTTP sin iniciar Flutter Test:
+
+```powershell
+dart --packages=.dart_tool/package_config.json test/support/inventory_api_checks.dart
+```
+
+Órdenes, historia clínica, ventas, agenda del personal y administración todavía tienen áreas de prototipo para los siguientes bloques.

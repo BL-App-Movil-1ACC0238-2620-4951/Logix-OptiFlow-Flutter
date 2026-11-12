@@ -78,7 +78,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/s/scanner', builder: (_, __) => const ScannerScreen()),
       GoRoute(path: '/s/product/:id', builder: (_, state) => ProductDetailScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/s/stock/:id', builder: (_, state) => StockManagementScreen(id: state.pathParameters['id']!)),
-      GoRoute(path: '/s/movement', builder: (_, __) => const NewMovementScreen()),
+      GoRoute(path: '/s/movement', builder: (_, state) => NewMovementScreen(sku: state.uri.queryParameters['sku'])),
       GoRoute(path: '/s/alerts', builder: (_, __) => const AlertsScreen()),
       GoRoute(path: '/s/reports', builder: (_, __) => const ReportsScreen()),
     ],
