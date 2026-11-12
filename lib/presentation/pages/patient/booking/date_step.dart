@@ -14,7 +14,7 @@ class BookingDateStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<OptiFlowController>();
-    final days = List.generate(5, (i) => app.weekStart.add(Duration(days: i)));
+    final days = List.generate(7, (i) => app.weekStart.add(Duration(days: i)));
     final slots = app.slotsFor(app.selectedDate);
     final morning = slots.where((slot) => _hour(slot.time) < 13).toList();
     final afternoon = slots.where((slot) => _hour(slot.time) >= 13).toList();
@@ -64,7 +64,7 @@ class BookingDateStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Duración aproximada: 45 min', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                    Text(app.selectedSlot?.durationMinutes == null ? 'Selecciona un horario para ver su duración' : 'Duración: ${app.selectedSlot!.durationMinutes} min', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                     Text('Llega 10 minutos antes de tu cita.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
                   ],
                 ),
@@ -75,9 +75,10 @@ class BookingDateStep extends StatelessWidget {
         if (app.bookingError != null) ...[
           const SizedBox(height: 12),
           Text(app.bookingError!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+          TextButton(onPressed: app.bookingLoading ? null : app.continueFromStore, child: const Text('Actualizar horarios')),
         ],
         const SizedBox(height: 28),
-        SolidButton(label: 'Continuar', onPressed: app.continueFromDate, loading: app.bookingLoading),
+        SolidButton(label: 'Continuar', onPressed: app.selectedSlot == null ? null : app.continueFromDate, loading: app.bookingLoading),
       ],
     );
   }
@@ -174,7 +175,7 @@ class _SlotGroup extends StatelessWidget {
 
   bool _active(SlotOption? selected, SlotOption slot) {
     if (selected == null) return false;
-    return selected.time == slot.time && selected.date.year == slot.date.year && selected.date.month == slot.date.month && selected.date.day == slot.date.day;
+    return selected.id == slot.id;
   }
 }
 

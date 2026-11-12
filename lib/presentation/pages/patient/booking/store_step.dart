@@ -29,10 +29,13 @@ class BookingStoreStep extends StatelessWidget {
         if (app.bookingError != null) ...[
           const SizedBox(height: 4),
           Text(app.bookingError!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+          if (app.bookingStores.isEmpty)
+            TextButton(onPressed: app.bookingLoading ? null : () => app.prepareBooking(null, rescheduleId: app.reschedulingId), child: const Text('Reintentar')),
         ],
         const SizedBox(height: 8),
         SolidButton(
           label: 'Continuar',
+          loading: app.bookingLoading,
           onPressed: app.bookingStores.isEmpty ? null : app.continueFromStore,
         ),
       ],
@@ -83,7 +86,7 @@ class _StoreChoice extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '${store.distance} · ${store.availability}',
+                        store.availability,
                         style: GoogleFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: selected ? AppColors.electric : AppColors.slate500),
                       ),
                     ),

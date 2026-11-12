@@ -18,13 +18,14 @@ class Appointment {
   final DateTime end;
 }
 
-enum AppointmentStatus { confirmed, pending, cancelled }
+enum AppointmentStatus { confirmed, pending, cancelled, completed }
 
 extension AppointmentStatusLabel on AppointmentStatus {
   String get label => switch (this) {
         AppointmentStatus.confirmed => 'Confirmada',
         AppointmentStatus.pending => 'Pendiente',
         AppointmentStatus.cancelled => 'Cancelada',
+        AppointmentStatus.completed => 'Atendida',
       };
 
   static AppointmentStatus fromApi(String raw) {
@@ -38,6 +39,8 @@ extension AppointmentStatusLabel on AppointmentStatus {
       case 'CANCELED':
       case 'CANCELADA':
         return AppointmentStatus.cancelled;
+      case 'COMPLETED':
+        return AppointmentStatus.completed;
       default:
         return AppointmentStatus.pending;
     }

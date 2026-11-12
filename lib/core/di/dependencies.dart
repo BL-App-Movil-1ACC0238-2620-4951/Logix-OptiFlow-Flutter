@@ -34,6 +34,7 @@ class AppDependencies {
     searchStores = SearchOpticalStores(stores);
     getAvailability = GetStoreAvailability(stores);
     getAppointments = GetPatientAppointments(appointments);
+    cancelAppointment = CancelAppointment(appointments);
     bookAppointment = BookAppointment(appointments);
     getWorkOrders = GetPatientWorkOrders(appointments);
     getClinicalRecords = GetPatientClinicalRecords(appointments);
@@ -64,6 +65,7 @@ class AppDependencies {
   late final SearchOpticalStores searchStores;
   late final GetStoreAvailability getAvailability;
   late final GetPatientAppointments getAppointments;
+  late final CancelAppointment cancelAppointment;
   late final BookAppointment bookAppointment;
   late final GetPatientWorkOrders getWorkOrders;
   late final GetPatientClinicalRecords getClinicalRecords;

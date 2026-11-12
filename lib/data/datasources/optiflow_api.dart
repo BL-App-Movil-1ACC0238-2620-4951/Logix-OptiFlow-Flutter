@@ -118,6 +118,11 @@ class OptiFlowApi {
     return list.whereType<Map>().map((e) => AppointmentDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
+  Future<AppointmentDto> cancelAppointment(String appointmentId) async {
+    final json = await _send('PATCH', 'appointments/$appointmentId/status', {'status': 'CANCELLED'});
+    return AppointmentDto.fromJson(Map<String, dynamic>.from(json as Map));
+  }
+
   Future<List<WorkOrderDto>> workOrders(String patientId) async {
     final json = await _get('patients/$patientId/work-orders');
     final list = json is List ? json : const [];
@@ -155,12 +160,10 @@ class OptiFlowApi {
     final uri = Uri.parse('$baseUrl$path');
     final requestToken = path == 'auth/tokens' || path == 'patients' ? null : token;
     try {
-      final response = await _client
-          .post(uri, headers: _headers(requestToken), body: jsonEncode(body))
-          .timeout(_timeout);
-      if (method != 'POST') {
-        throw ApiException('Método no soportado');
-      }
+      final request = http.Request(method, uri)
+        ..headers.addAll(_headers(requestToken))
+        ..body = jsonEncode(body);
+      final response = await _client.send(request).then(http.Response.fromStream).timeout(_timeout);
       return _decode(response, requestToken: requestToken);
     } catch (error) {
       throw _wrap(error);

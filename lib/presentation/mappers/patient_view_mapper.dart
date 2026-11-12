@@ -17,6 +17,8 @@ abstract final class PatientViewMapper {
     required AppointmentStatus status,
     required bool isPast,
     required bool fromApi,
+    String? opticalStoreId,
+    String? timeSlotId,
   }) {
     return AppointmentUi(
       id: id,
@@ -29,10 +31,13 @@ abstract final class PatientViewMapper {
       title: title,
       storeName: storeName,
       storeAddress: storeAddress,
-      professional: 'Dra. Fernanda Soto',
+      professional: 'Por asignar en la óptica',
       status: status,
       isPast: isPast,
       fromApi: fromApi,
+      opticalStoreId: opticalStoreId,
+      timeSlotId: timeSlotId,
+      startsAt: start,
     );
   }
 
@@ -64,6 +69,7 @@ abstract final class PatientViewMapper {
       id: slot.id,
       date: DateTime(slot.start.year, slot.start.month, slot.start.day),
       time: DateFormat('HH:mm').format(slot.start),
+      endsAt: slot.end,
     );
   }
 

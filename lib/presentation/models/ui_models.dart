@@ -16,6 +16,9 @@ class AppointmentUi {
     required this.status,
     required this.isPast,
     required this.fromApi,
+    this.opticalStoreId,
+    this.timeSlotId,
+    this.startsAt,
   });
 
   final String id;
@@ -32,6 +35,9 @@ class AppointmentUi {
   final AppointmentStatus status;
   final bool isPast;
   final bool fromApi;
+  final String? opticalStoreId;
+  final String? timeSlotId;
+  final DateTime? startsAt;
 
   AppointmentUi copyWith({
     AppointmentStatus? status,
@@ -61,6 +67,9 @@ class AppointmentUi {
         status: status ?? this.status,
         isPast: isPast ?? this.isPast,
         fromApi: fromApi,
+        opticalStoreId: opticalStoreId,
+        timeSlotId: timeSlotId,
+        startsAt: startsAt,
       );
 }
 
@@ -240,11 +249,19 @@ class StoreOption {
 }
 
 class SlotOption {
-  const SlotOption({required this.id, required this.date, required this.time});
+  const SlotOption({required this.id, required this.date, required this.time, this.endsAt});
 
   final String? id;
   final DateTime date;
   final String time;
+  final DateTime? endsAt;
+
+  DateTime get startsAt {
+    final parts = time.split(':');
+    return DateTime(date.year, date.month, date.day, int.parse(parts[0]), int.parse(parts[1]));
+  }
+
+  int? get durationMinutes => endsAt?.difference(startsAt).inMinutes;
 
   String get label => time;
 }

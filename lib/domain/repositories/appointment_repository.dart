@@ -3,6 +3,8 @@ import '../entities/models.dart';
 abstract class AppointmentRepository {
   Future<List<Appointment>> forPatient(String patientId);
 
+  Future<Appointment> cancel(String appointmentId);
+
   Future<Appointment> book({
     required String patientId,
     required String opticalStoreId,

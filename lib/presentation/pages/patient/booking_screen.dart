@@ -11,8 +11,9 @@ import 'booking/done_step.dart';
 import 'booking/store_step.dart';
 
 class BookingScreen extends StatefulWidget {
-  const BookingScreen({super.key, this.storeId});
+  const BookingScreen({super.key, this.storeId, this.rescheduleId});
   final String? storeId;
+  final String? rescheduleId;
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -22,7 +23,9 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<OptiFlowController>().prepareBooking(widget.storeId));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<OptiFlowController>().prepareBooking(widget.storeId, rescheduleId: widget.rescheduleId);
+    });
   }
 
   @override
@@ -38,6 +41,11 @@ class _BookingScreenState extends State<BookingScreen> {
       topBar: DarkTopBar(
         title: title,
         onBack: () {
+          if (app.bookingLoading) return;
+          if (app.bookingAppointment != null && app.bookingStep != 4) {
+            context.go('/p/appointments');
+            return;
+          }
           if (app.bookingStep > 1 && app.bookingStep < 4) {
             app.bookingBack();
           } else if (context.canPop()) {
@@ -52,6 +60,8 @@ class _BookingScreenState extends State<BookingScreen> {
         children: [
           BookingStepper(step: app.bookingStep),
           const SizedBox(height: 26),
+          if (app.reschedulingId != null && app.bookingStep < 4)
+            const Padding(padding: EdgeInsets.only(bottom: 16), child: Text('Reservaremos el nuevo horario y después cancelaremos la cita anterior.')),
           if (app.bookingStep == 1) const BookingStoreStep(),
           if (app.bookingStep == 2) const BookingDateStep(),
           if (app.bookingStep == 3) const BookingConfirmStep(),

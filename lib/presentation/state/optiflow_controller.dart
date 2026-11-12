@@ -25,34 +25,43 @@ class OptiFlowController extends ChangeNotifier {
   Future<void>? _bootstrapFuture;
   String get homeRoute => homePath(session);
   bool canOpen(String path) => canAccessPath(session, path);
-  List<AppointmentUi> appointments = PatientDemo.appointments();
+  List<AppointmentUi> appointments = [];
+  bool appointmentsLoading = false;
+  String? appointmentsError;
+  bool appointmentActionLoading = false;
+  String? appointmentActionError;
+  int _appointmentsRequest = 0;
   List<OrderUi> orders = PatientDemo.orders();
   List<HistoryEntry> history = List.of(PatientDemo.history);
   PrescriptionUi prescription = PrescriptionUi.demo('Valentina Silva');
   List<OpticalStore> stores = const [];
   bool patientLoading = true;
 
-  final Set<String> _cancelled = {};
   Set<String> readNotificationIds = {};
   AppSettings settings = const AppSettings();
 
   String searchQuery = '';
+  String searchAddress = '';
+  List<OpticalStore> searchResults = [];
+  int _searchRequest = 0;
   double? minRating;
   bool searchLoading = false;
   String? searchMessage;
   String? searchError;
 
   int bookingStep = 1;
-  List<StoreOption> bookingStores = PatientDemo.stores;
+  List<StoreOption> bookingStores = [];
   int selectedStoreIndex = 0;
   List<SlotOption> slots = const [];
   DateTime weekStart = _monday(DateTime.now());
   DateTime? selectedDate;
   SlotOption? selectedSlot;
-  String bookingReason = '';
   bool bookingLoading = false;
   String? bookingError;
-  bool bookingDemo = true;
+  String? reschedulingId;
+  Appointment? bookingAppointment;
+  int _bookingRequest = 0;
+  StoreOption? get selectedBookingStore => selectedStoreIndex >= 0 && selectedStoreIndex < bookingStores.length ? bookingStores[selectedStoreIndex] : null;
 
   late List<StaffPatient> staffPatients = List.of(deps.getStaffPatients());
   final Map<String, int> stockDelta = {};
@@ -67,22 +76,14 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   List<AppointmentUi> get upcoming =>
-      appointments.where((a) => !a.isPast && a.status != AppointmentStatus.cancelled).toList();
+      appointments.where((a) => !a.isPast && a.status != AppointmentStatus.cancelled && a.status != AppointmentStatus.completed).toList();
   AppointmentUi? get nextAppointment => upcoming.isEmpty ? null : upcoming.first;
 
   List<NotificationItem> get notifications {
     final items = <NotificationItem>[];
     final now = DateTime.now();
     final realAppts = appointments.where((a) => a.fromApi && !a.isPast);
-    if (realAppts.isEmpty) {
-      items.add(NotificationItem(
-        id: 'demo-appt-reminder',
-        type: NotificationType.appointment,
-        title: 'Recordatorio de cita',
-        message: 'Tu evaluación visual es el martes a las 10:30.',
-        occurredAt: now.subtract(const Duration(hours: 2)),
-      ));
-    } else {
+    {
       for (final appt in realAppts) {
         items.add(NotificationItem(
           id: 'appt-${appt.id}',
@@ -171,13 +172,31 @@ class OptiFlowController extends ChangeNotifier {
   Future<void> logout() async {
     session = null;
     deps.api.token = null;
-    _cancelled.clear();
+    _appointmentsRequest++;
+    _searchRequest++;
+    _bookingRequest++;
     readNotificationIds = {};
     selectedSlot = null;
     bookingStep = 1;
     stockDelta.clear();
     staffPatients = List.of(deps.getStaffPatients());
-    appointments = PatientDemo.appointments();
+    appointments = [];
+    appointmentsLoading = false;
+    appointmentsError = null;
+    appointmentActionLoading = false;
+    appointmentActionError = null;
+    bookingStores = [];
+    slots = [];
+    bookingAppointment = null;
+    reschedulingId = null;
+    bookingLoading = false;
+    bookingError = null;
+    searchResults = [];
+    searchQuery = '';
+    searchAddress = '';
+    searchLoading = false;
+    searchError = null;
+    minRating = null;
     orders = PatientDemo.orders();
     history = List.of(PatientDemo.history);
     prescription = PrescriptionUi.demo('Valentina Silva');
@@ -247,52 +266,64 @@ class OptiFlowController extends ChangeNotifier {
     }
   }
 
+  AppointmentUi _appointmentView(Appointment appt) {
+    final store = stores.where((s) => s.id == appt.opticalStoreId).firstOrNull;
+    final status = AppointmentStatusLabel.fromApi(appt.status);
+    return PatientViewMapper.appointment(
+      id: appt.id, start: appt.start, end: appt.end,
+      opticalStoreId: appt.opticalStoreId, timeSlotId: appt.timeSlotId,
+      title: 'Evaluación visual', storeName: store?.name ?? 'Óptica',
+      storeAddress: store?.address ?? '', status: status,
+      isPast: appt.end.isBefore(DateTime.now()) || status == AppointmentStatus.completed,
+      fromApi: true,
+    );
+  }
+
+  void _putAppointment(Appointment appt) {
+    appointments = [for (final item in appointments) if (item.id != appt.id) item, _appointmentView(appt)]
+      ..sort((a, b) => a.startsAt!.compareTo(b.startsAt!));
+  }
+
+  Future<void> refreshAppointments() async {
+    final current = session;
+    if (current?.isAuthenticated != true || !current!.isPatient) return;
+    final request = ++_appointmentsRequest;
+    appointmentsLoading = true;
+    appointmentsError = null;
+    notifyListeners();
+    try {
+      final storeRequest = deps.getStores().catchError((_) => stores);
+      final results = await deps.getAppointments(current.patientId);
+      final loadedStores = await storeRequest;
+      if (!identical(current, session) || request != _appointmentsRequest) return;
+      stores = loadedStores;
+      appointments = results.map(_appointmentView).toList()
+        ..sort((a, b) => a.startsAt!.compareTo(b.startsAt!));
+    } catch (e) {
+      if (identical(current, session) && request == _appointmentsRequest) {
+        appointmentsError = e is ApiException ? e.message : 'No se pudieron cargar tus citas. Intenta nuevamente.';
+      }
+    } finally {
+      if (identical(current, session) && request == _appointmentsRequest) {
+        appointmentsLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> refreshPatient() async {
     final current = session;
     if (current?.isAuthenticated != true || !current!.isPatient) return;
     patientLoading = true;
     notifyListeners();
-    List<OpticalStore> loadedStores = const [];
-    List<Appointment> apiAppointments = const [];
+    final appointmentsRequest = refreshAppointments();
     List<WorkOrder> apiOrders = const [];
     List<ClinicalRecord> records = const [];
-    try {
-      loadedStores = await deps.getStores();
-    } catch (_) {}
-    {
-      try {
-        apiAppointments = await deps.getAppointments(current.patientId);
-      } catch (_) {}
-      try {
-        apiOrders = await deps.getWorkOrders(current.patientId);
-      } catch (_) {}
-      try {
-        records = await deps.getClinicalRecords(current.patientId);
-      } catch (_) {}
-    }
-    // Ignore responses from a request started before logout/account switching.
-    if (!identical(session, current)) return;
-    stores = loadedStores;
-    final byId = {for (final store in loadedStores) store.id: store};
-    final now = DateTime.now();
-    final mapped = apiAppointments.map((appt) {
-      final store = byId[appt.opticalStoreId];
-      return PatientViewMapper.appointment(
-        id: appt.id,
-        start: appt.start,
-        end: appt.end,
-        title: 'Evaluación visual',
-        storeName: store?.name ?? 'Óptica OptiFlow',
-        storeAddress: store?.address ?? '',
-        status: AppointmentStatusLabel.fromApi(appt.status),
-        isPast: appt.end.isBefore(now),
-        fromApi: true,
-      );
-    }).toList()
-      ..sort((a, b) => a.time.compareTo(b.time));
-    appointments = (mapped.isEmpty ? PatientDemo.appointments() : mapped)
-        .map((a) => _cancelled.contains(a.id) ? a.copyWith(status: AppointmentStatus.cancelled) : a)
-        .toList();
+    try { apiOrders = await deps.getWorkOrders(current.patientId); } catch (_) {}
+    if (!identical(current, session)) return;
+    try { records = await deps.getClinicalRecords(current.patientId); } catch (_) {}
+    await appointmentsRequest;
+    if (!identical(current, session)) return;
     final name = displayName;
     orders = apiOrders.map(PatientViewMapper.order).toList();
     if (orders.isEmpty) orders = PatientDemo.orders();
@@ -303,35 +334,30 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void rescheduleAppointment({
-    required String id,
-    required String title,
-    required String storeName,
-    required String storeAddress,
-    required DateTime date,
-    required String time,
-  }) {
-    appointments = [
-      for (final item in appointments)
-        if (item.id == id)
-          PatientViewMapper.reschedule(
-            item,
-            title: title,
-            storeName: storeName,
-            storeAddress: storeAddress,
-            date: date,
-            time: time,
-          )
-        else
-          item,
-    ];
+  Future<bool> cancelAppointment(String id) async {
+    if (appointmentActionLoading) return false;
+    final current = session;
+    final item = appointmentById(id);
+    if (current?.isAuthenticated != true || current?.isPatient != true || item == null || !item.fromApi) return false;
+    appointmentActionLoading = true;
+    appointmentActionError = null;
     notifyListeners();
-  }
-
-  void cancelAppointment(String id) {
-    _cancelled.add(id);
-    appointments = [for (final a in appointments) if (a.id == id) a.copyWith(status: AppointmentStatus.cancelled) else a];
-    notifyListeners();
+    try {
+      final updated = await deps.cancelAppointment(id);
+      if (!identical(current, session)) return false;
+      _appointmentsRequest++; // Older list requests must not restore the old status.
+      appointmentsLoading = false;
+      _putAppointment(updated);
+      return true;
+    } catch (e) {
+      if (identical(current, session)) appointmentActionError = e is ApiException ? e.message : 'No se pudo cancelar la cita.';
+      return false;
+    } finally {
+      if (identical(current, session)) {
+        appointmentActionLoading = false;
+        notifyListeners();
+      }
+    }
   }
 
   void savePrescription(PrescriptionUi value) {
@@ -360,137 +386,164 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> searchStores() async {
+    final request = ++_searchRequest;
     searchLoading = true;
     searchError = null;
     searchMessage = null;
     notifyListeners();
     try {
-      final name = searchQuery.trim().isEmpty ? null : searchQuery.trim();
-      if (minRating != null) {
-        final result = await deps.searchStores(name: name, minRating: minRating);
-        stores = result.stores;
-        searchMessage = result.stores.isEmpty ? result.message : null;
-      } else {
-        stores = await deps.getStores(name: name);
-      }
-    } on ApiException catch (e) {
-      searchError = e.message;
+      final result = await deps.searchStores(
+        name: searchQuery.trim().isEmpty ? null : searchQuery.trim(),
+        address: searchAddress.trim().isEmpty ? null : searchAddress.trim(),
+        minRating: minRating,
+      );
+      if (request != _searchRequest) return;
+      searchResults = result.stores;
+      searchMessage = result.message;
     } catch (e) {
-      searchError = '$e';
+      if (request != _searchRequest) return;
+      searchResults = [];
+      searchError = e is ApiException ? e.message : 'No se pudieron buscar las ópticas.';
     } finally {
-      searchLoading = false;
-      notifyListeners();
+      if (request == _searchRequest) {
+        searchLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   void setSearchQuery(String value) {
     searchQuery = value;
-    notifyListeners();
+    _searchRequest++; // Invalidate earlier responses during the debounce interval.
+  }
+
+  void setSearchAddress(String value) {
+    searchAddress = value;
+    _searchRequest++;
   }
 
   void setMinRating(double? value) {
     minRating = value;
-    notifyListeners();
-    searchStores();
+    unawaited(searchStores());
   }
 
-  Future<void> prepareBooking(String? storeId) async {
+  Future<void> prepareBooking(String? storeId, {String? rescheduleId}) async {
+    if (bookingLoading && bookingStep == 3) return;
+    final request = ++_bookingRequest;
+    final current = session;
     bookingStep = 1;
     selectedSlot = null;
+    slots = [];
+    bookingStores = [];
+    bookingAppointment = null;
+    reschedulingId = rescheduleId;
     bookingError = null;
-    bookingReason = '';
     bookingLoading = true;
     notifyListeners();
-    List<OpticalStore> loaded = stores;
-    if (loaded.isEmpty) {
-      try {
-        loaded = await deps.getStores();
-        stores = loaded;
-      } catch (_) {}
-    }
-    const distances = ['0,8 km', '3,2 km', '1,4 km', '3,6 km'];
-    if (loaded.isNotEmpty) {
-      bookingStores = [
-        for (var i = 0; i < loaded.length; i++)
-          StoreOption(
-            id: loaded[i].id,
-            name: loaded[i].name,
-            address: loaded[i].address,
-            distance: distances[i % distances.length],
-            availability: i.isEven ? 'Disponible hoy' : 'Disponible mañana',
-            availableToday: i.isEven,
-          ),
+    try {
+      if (rescheduleId != null) {
+        await refreshAppointments();
+        if (request != _bookingRequest || !identical(current, session)) return;
+        final original = appointmentById(rescheduleId);
+        if (original == null || original.isPast || original.status == AppointmentStatus.cancelled || original.status == AppointmentStatus.completed) {
+          throw ApiException(appointmentsError ?? 'Esta cita no se puede reprogramar.');
+        }
+        storeId ??= original.opticalStoreId;
+      }
+      final loaded = await deps.getStores(); // Always load all stores, independent of search filters.
+      if (request != _bookingRequest || !identical(current, session)) return;
+      stores = loaded;
+      bookingStores = [for (final store in loaded)
+        if (const {'ACTIVE', 'OPEN', 'ABIERTO'}.contains(store.status.toUpperCase()))
+          StoreOption(id: store.id, name: store.name, address: store.address,
+            distance: '', availability: 'Consultar horarios', availableToday: false),
       ];
-      bookingDemo = false;
-    } else {
-      bookingStores = PatientDemo.stores;
-      bookingDemo = true;
+      selectedStoreIndex = bookingStores.indexWhere((s) => s.id == storeId);
+      if (selectedStoreIndex < 0) selectedStoreIndex = 0;
+      if (bookingStores.isEmpty) bookingError = 'No hay ópticas disponibles para reservar.';
+    } catch (e) {
+      if (request == _bookingRequest && identical(current, session)) {
+        bookingError = e is ApiException ? e.message : 'No se pudieron cargar las ópticas.';
+      }
+    } finally {
+      if (request == _bookingRequest && identical(current, session)) {
+        bookingLoading = false;
+        notifyListeners();
+      }
     }
-    final index = bookingStores.indexWhere((s) => s.id != null && s.id == storeId);
-    selectedStoreIndex = index < 0 ? 0 : index;
-    bookingLoading = false;
-    notifyListeners();
   }
 
   void selectStore(int index) {
+    if (bookingLoading || bookingAppointment != null || index < 0 || index >= bookingStores.length) return;
     selectedStoreIndex = index;
+    selectedSlot = null;
+    slots = [];
     bookingError = null;
     notifyListeners();
   }
 
   Future<void> continueFromStore() async {
-    final store = bookingStores[selectedStoreIndex];
+    if (bookingLoading || bookingAppointment != null) return;
+    final store = selectedBookingStore;
+    if (store?.id == null) return;
+    final request = ++_bookingRequest;
+    final current = session;
     bookingStep = 2;
     bookingLoading = true;
+    slots = [];
     selectedSlot = null;
+    selectedDate = null;
     bookingError = null;
     notifyListeners();
-    List<TimeSlot> apiSlots = const [];
-    if (store.id != null) {
-      try {
-        apiSlots = await deps.getAvailability(store.id!);
-      } catch (_) {}
+    try {
+      final available = await deps.getAvailability(store!.id!);
+      if (request != _bookingRequest || !identical(current, session)) return;
+      final now = DateTime.now();
+      slots = [for (final slot in available)
+        if (slot.opticalStoreId == store.id && slot.start.isAfter(now) && slot.status.toUpperCase() == 'AVAILABLE')
+          PatientViewMapper.slot(slot),
+      ]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      selectedDate = slots.firstOrNull?.date;
+      weekStart = _monday(selectedDate ?? now);
+    } catch (e) {
+      if (request == _bookingRequest && identical(current, session)) {
+        bookingError = e is ApiException ? e.message : 'No se pudieron cargar los horarios.';
+      }
+    } finally {
+      if (request == _bookingRequest && identical(current, session)) {
+        bookingLoading = false;
+        notifyListeners();
+      }
     }
-    if (apiSlots.isEmpty) {
-      slots = _demoSlots();
-      bookingDemo = true;
-    } else {
-      slots = [for (final slot in apiSlots) PatientViewMapper.slot(slot)];
-    }
-    selectedDate = slots.isEmpty ? null : slots.map((s) => s.date).reduce((a, b) => a.isBefore(b) ? a : b);
-    weekStart = _monday(selectedDate ?? DateTime.now());
-    bookingLoading = false;
-    notifyListeners();
   }
 
   void shiftWeek(int weeks) {
+    if (bookingLoading || bookingAppointment != null) return;
     weekStart = weekStart.add(Duration(days: 7 * weeks));
-    final days = List.generate(5, (i) => weekStart.add(Duration(days: i)));
+    final days = List.generate(7, (i) => weekStart.add(Duration(days: i)));
     selectedDate = days.firstWhere(hasSlots, orElse: () => days.first);
     selectedSlot = null;
     notifyListeners();
   }
 
   void selectDate(DateTime date) {
+    if (bookingLoading || bookingAppointment != null) return;
     selectedDate = DateTime(date.year, date.month, date.day);
     selectedSlot = null;
     notifyListeners();
   }
 
   void selectSlot(SlotOption slot) {
+    if (bookingLoading || bookingAppointment != null || !slots.contains(slot)) return;
     selectedSlot = slot;
     bookingError = null;
     notifyListeners();
   }
 
-  void setReason(String value) {
-    bookingReason = value;
-    notifyListeners();
-  }
-
   bool continueFromDate() {
-    if (selectedSlot == null) {
-      bookingError = 'Selecciona un horario para continuar.';
+    if (bookingLoading) return false;
+    if (selectedSlot?.id == null || !selectedSlot!.startsAt.isAfter(DateTime.now())) {
+      bookingError = 'Selecciona un horario disponible para continuar.';
       notifyListeners();
       return false;
     }
@@ -501,41 +554,69 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   void bookingBack() {
+    if (bookingLoading || bookingAppointment != null) return;
     if (bookingStep > 1 && bookingStep < 4) {
-      bookingStep -= 1;
+      bookingStep--;
       bookingError = null;
       notifyListeners();
     }
   }
 
   Future<bool> confirmBooking() async {
+    if (bookingLoading || bookingStep != 3) return false;
     final slot = selectedSlot;
-    final store = bookingStores.isEmpty ? null : bookingStores[selectedStoreIndex];
-    if (slot == null || store == null) return false;
-    if (slot.id == null || store.id == null) {
-      bookingStep = 4;
-      notifyListeners();
-      return true;
-    }
-    if (session == null) {
-      bookingError = 'Inicia sesión como paciente para reservar.';
+    final store = selectedBookingStore;
+    final current = session;
+    if (slot?.id == null || store?.id == null || current?.isAuthenticated != true || current?.isPatient != true) {
+      bookingError = 'Inicia sesión como paciente y selecciona un horario real.';
       notifyListeners();
       return false;
     }
+    if (bookingAppointment == null && !slot!.startsAt.isAfter(DateTime.now())) {
+      bookingError = 'Ese horario ya pasó. Elige otro.';
+      notifyListeners();
+      return false;
+    }
+    final request = ++_bookingRequest;
     bookingLoading = true;
     bookingError = null;
     notifyListeners();
     try {
-      await deps.bookAppointment(patientId: session!.patientId, opticalStoreId: store.id!, timeSlotId: slot.id!);
+      if (bookingAppointment == null) {
+        final created = await deps.bookAppointment(patientId: current!.patientId, opticalStoreId: store!.id!, timeSlotId: slot!.id!);
+        if (request != _bookingRequest || !identical(current, session)) return false;
+        bookingAppointment = created;
+        _appointmentsRequest++;
+        appointmentsLoading = false;
+        _putAppointment(created);
+      }
+      // The backend implements rescheduling as book-new, then cancel-old.
+      // Keep the new id if cancellation fails, so retry never books it twice.
+      if (reschedulingId != null) {
+        final cancelled = await deps.cancelAppointment(reschedulingId!);
+        if (request != _bookingRequest || !identical(current, session)) return false;
+        _putAppointment(cancelled);
+      }
       bookingStep = 4;
-      await refreshPatient();
       return true;
-    } on ApiException catch (e) {
-      bookingError = e.message;
+    } catch (e) {
+      if (request != _bookingRequest || !identical(current, session)) return false;
+      if (bookingAppointment != null && reschedulingId != null) {
+        bookingError = 'La nueva cita está reservada, pero no se pudo cancelar la anterior. Reintenta para completar la reprogramación; no se creará otra reserva.';
+      } else if (e is ApiException && e.statusCode == 409) {
+        bookingError = 'El horario ya no está disponible. Vuelve a elegir uno.';
+        slots = slots.where((s) => s.id != slot!.id).toList();
+        selectedSlot = null;
+        bookingStep = 2;
+      } else {
+        bookingError = e is ApiException ? e.message : 'No se pudo confirmar la reserva. Revisa tus citas antes de intentar de nuevo.';
+      }
       return false;
     } finally {
-      bookingLoading = false;
-      notifyListeners();
+      if (request == _bookingRequest && identical(current, session)) {
+        bookingLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -613,12 +694,4 @@ class OptiFlowController extends ChangeNotifier {
 
   static bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
-  static List<SlotOption> _demoSlots() {
-    final monday = _monday(DateTime.now().add(const Duration(days: 7)));
-    const times = ['09:00', '09:30', '10:30', '11:00', '15:00', '15:30', '16:00', '17:30'];
-    return [
-      for (var offset = 0; offset < 5; offset++)
-        for (final time in times) SlotOption(id: null, date: monday.add(Duration(days: offset)), time: time),
-    ];
-  }
 }

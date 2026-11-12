@@ -8,6 +8,11 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   final OptiFlowApi _api;
 
   @override
+  Future<Appointment> cancel(String appointmentId) async {
+    return (await _api.cancelAppointment(appointmentId)).toEntity();
+  }
+
+  @override
   Future<List<Appointment>> forPatient(String patientId) async {
     final items = await _api.appointments(patientId);
     return items.map((item) => item.toEntity()).toList();

@@ -9,6 +9,13 @@ class GetPatientAppointments {
   Future<List<Appointment>> call(String patientId) => _appointments.forPatient(patientId);
 }
 
+class CancelAppointment {
+  const CancelAppointment(this._appointments);
+  final AppointmentRepository _appointments;
+
+  Future<Appointment> call(String appointmentId) => _appointments.cancel(appointmentId);
+}
+
 class BookAppointment {
   const BookAppointment(this._appointments);
 
