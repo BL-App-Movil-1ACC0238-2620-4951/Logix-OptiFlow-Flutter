@@ -2,6 +2,8 @@ import '../../data/datasources/optiflow_api.dart';
 import '../../data/datasources/session_local_data_source.dart';
 import '../../data/repositories/appointment_repository_impl.dart';
 import '../../data/repositories/catalog_repository_impl.dart';
+import '../../data/repositories/clinical_repository_impl.dart';
+import '../../domain/repositories/clinical_repository.dart';
 import '../../data/repositories/inventory_repository_impl.dart';
 import '../../data/repositories/patient_repository_impl.dart';
 import '../../data/repositories/session_repository_impl.dart';
@@ -19,6 +21,7 @@ import '../../domain/usecases/store_usecases.dart';
 /// Composition root: API, repositories and use cases.
 class AppDependencies {
   AppDependencies({OptiFlowApi? api, SessionRepository? sessions}) : api = api ?? OptiFlowApi() {
+    clinical = ClinicalRepositoryImpl(this.api);
     final patients = PatientRepositoryImpl(this.api);
     final stores = StoreRepositoryImpl(this.api);
     final appointments = AppointmentRepositoryImpl(this.api);
@@ -64,6 +67,7 @@ class AppDependencies {
   }
 
   final OptiFlowApi api;
+  late final ClinicalRepository clinical;
   late final LoginPatient loginPatient;
   late final RegisterPatient registerPatient;
   late final LoadSession loadSession;

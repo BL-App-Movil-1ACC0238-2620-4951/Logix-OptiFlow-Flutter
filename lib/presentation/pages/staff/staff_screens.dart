@@ -331,6 +331,8 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                 ],
               ),
             ),
+            if (item.status == AgendaStatus.waiting && app.canOpen('/s/clinical') && item.appointmentId != null)
+              Padding(padding: const EdgeInsets.only(top: 8), child: SolidButton(label: 'Iniciar atención clínica', icon: Icons.visibility_outlined, onPressed: () => context.push(Uri(path: '/s/clinical', queryParameters: {'patientId': item.patientId, 'appointmentId': item.appointmentId!}).toString()))),
             const SizedBox(height: 8),
           ],
           SolidButton(label: 'Nueva cita', onPressed: () => context.push('/s/appointments/new')),

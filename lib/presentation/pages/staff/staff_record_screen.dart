@@ -109,6 +109,10 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
           ])),
           const SizedBox(height: 18),
           SolidButton(label: 'Nueva cita', icon: Icons.calendar_today_outlined, onPressed: () => context.push(Uri(path: '/s/appointments/new', queryParameters: {'patientId': id}).toString())),
+          if (appointment != null && app.canOpen('/s/clinical') && StoreTime.isoDay(StoreTime.day(appointment.start)) == StoreTime.isoDay(StoreTime.today())) ...[
+            const SizedBox(height: 10),
+            SolidButton(label: 'Iniciar atención', icon: Icons.visibility_outlined, onPressed: () => context.push(Uri(path: '/s/clinical', queryParameters: {'patientId': id, 'appointmentId': appointment.id}).toString())),
+          ],
           if (errors.isNotEmpty) TextButton(onPressed: () => app.loadStaffRecord(id), child: const Text('Volver a cargar la ficha')),
         ],
       ])),

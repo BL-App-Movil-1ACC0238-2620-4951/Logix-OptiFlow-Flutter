@@ -11,6 +11,8 @@ import '../../../domain/entities/production_order.dart';
 import '../../state/optiflow_controller.dart';
 import '../../widgets/chrome.dart';
 
+export 'staff_clinical_care_screen.dart';
+
 class NewPatientScreen extends StatefulWidget {
   const NewPatientScreen({super.key});
   @override
@@ -142,146 +144,6 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
     );
   }
 }
-class ClinicalCareScreen extends StatefulWidget {
-  const ClinicalCareScreen({super.key});
-
-  @override
-  State<ClinicalCareScreen> createState() => _ClinicalCareScreenState();
-}
-
-class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
-  final note = TextEditingController();
-  static const stages = [
-    _CareStage(Icons.check, 'En sala de espera', 'Llegada registrada a las 10:18'),
-    _CareStage(Icons.work_outline, 'En consulta optométrica', 'Anamnesis y biomicroscopía'),
-    _CareStage(Icons.remove_red_eye_outlined, 'Pruebas de graduación', 'Refracción y test cromático'),
-    _CareStage(Icons.grid_view, 'Elección de armazón y cristales', 'Asesoría y medidas pupilares'),
-    _CareStage(Icons.settings_outlined, 'Derivado a taller / laboratorio', 'Biselado, corte y montaje'),
-    _CareStage(Icons.description_outlined, 'Atención finalizada', 'Receta y comprobante clínico'),
-  ];
-
-  @override
-  void dispose() {
-    note.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final current = context.watch<OptiFlowController>().clinicalStage.clamp(0, stages.length - 1);
-    return StaffScaffold(
-      tab: StaffTab.agenda,
-      topBar: StaffTopBar(title: 'Atención clínica', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-            decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.schedule, color: AppColors.white, size: 14),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text('Atención en curso', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.white))),
-                    Text('Box 3 · Dra. Ramos', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(12)),
-                      child: Text('VS', style: GoogleFonts.inter(fontSize: 12, color: AppColors.electric)),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Valentina Silva Morales', style: GoogleFonts.inter(fontSize: 14, color: AppColors.white)),
-                        Text('Ficha #OPT-2024-849 · 10:30', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Icon(Icons.remove_red_eye_outlined, color: AppColors.white, size: 14),
-                    const SizedBox(width: 8),
-                    Text('Evaluación visual completa · Turno #04', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: Text('Actualizar estado de la consulta', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-              Text('Paso ${current + 1} de 6', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text('Selecciona la etapa actual para sincronizar recepción y taller.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
-          const SizedBox(height: 12),
-          for (var index = 0; index < stages.length; index++) ...[
-            _StageRow(
-              stages[index],
-              done: index < current,
-              active: index == current,
-              onTap: () => context.read<OptiFlowController>().setClinicalStage(index),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 12),
-          const _Label('Nota de transición', hint: 'Opcional'),
-          const SizedBox(height: 8),
-          TextField(
-            controller: note,
-            maxLines: 3,
-            decoration: _field('Añade una observación para la siguiente etapa...', Icons.notes_outlined),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5FF), borderRadius: BorderRadius.circular(14)),
-            child: Row(
-              children: [
-                const IconTile(icon: Icons.notifications_none, background: AppColors.lavender, color: AppColors.staffInk, size: 34, iconSize: 16),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Sincronización en tiempo real', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-                      Text('El cambio se notificará a recepción y a la pantalla de sala.', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          SolidButton(
-            label: 'Guardar y continuar atención',
-            icon: Icons.check,
-            onPressed: () {
-              context.read<OptiFlowController>().setClinicalStage((current + 1).clamp(0, stages.length - 1));
-              context.push('/s/evaluation');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class ProductionScreen extends StatefulWidget {
   const ProductionScreen({super.key});
 
@@ -331,13 +193,6 @@ class _ProductionScreenState extends State<ProductionScreen> {
       ),
     );
   }
-}
-
-class _CareStage {
-  const _CareStage(this.icon, this.title, this.subtitle);
-  final IconData icon;
-  final String title;
-  final String subtitle;
 }
 
 class _SelectRow extends StatelessWidget {
@@ -403,56 +258,6 @@ class _TimeChip extends StatelessWidget {
             border: Border.all(color: selected ? AppColors.staffAccent : AppColors.staffBorder),
           ),
           child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: selected ? AppColors.white : AppColors.staffInk)),
-        ),
-      ),
-    );
-  }
-}
-
-class _StageRow extends StatelessWidget {
-  const _StageRow(this.stage, {required this.done, required this.active, required this.onTap});
-  final _CareStage stage;
-  final bool done;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: active ? const Color(0xFFF0F4FF) : AppColors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: active ? AppColors.staffAccent : Colors.transparent, width: active ? 1.5 : 0),
-          ),
-          child: Row(
-            children: [
-              IconTile(icon: stage.icon, background: active ? const Color(0xFF0013C1) : const Color(0xFFF4F5FF), color: active ? AppColors.white : AppColors.staffAccent, size: 34, iconSize: 16),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(stage.title, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk, decoration: done ? TextDecoration.lineThrough : null)),
-                    Text(stage.subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-                  ],
-                ),
-              ),
-              if (done) const Icon(Icons.check, size: 16, color: AppColors.staffInk),
-              if (active) ...[
-                const Icon(Icons.check, size: 12, color: AppColors.staffAccent),
-                const SizedBox(width: 4),
-                Text('En proceso', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
-              ],
-            ],
-          ),
         ),
       ),
     );

@@ -8,6 +8,8 @@ class ClinicalRecordDto {
     this.id,
     this.appointmentId,
     this.status,
+    this.patientId,
+    this.medicalHistory,
   });
 
   final DateTime? examinationDate;
@@ -16,13 +18,28 @@ class ClinicalRecordDto {
   final String? id;
   final String? appointmentId;
   final String? status;
+  final String? patientId;
+  final MedicalHistory? medicalHistory;
 
   factory ClinicalRecordDto.fromJson(Map<String, dynamic> json) {
     final raw = json['prescription'];
-    PrescriptionValues? prescription;
-    if (raw is Map) {
-      final map = Map<String, dynamic>.from(raw);
-      prescription = PrescriptionValues(
+    final history = json['medicalHistory'];
+    final prescription = raw is Map ? parsePrescription(Map<String, dynamic>.from(raw)) : null;
+    return ClinicalRecordDto(
+      id: json['id'] as String?, appointmentId: json['appointmentId'] as String?, status: json['status'] as String?,
+      patientId: json['patientId'] as String?,
+      medicalHistory: history is Map ? MedicalHistory(
+        allergies: List<String>.from(history['allergies'] as List? ?? []),
+        previousConditions: List<String>.from(history['previousConditions'] as List? ?? []),
+        familyOcularHistory: history['familyOcularHistory'] as String?,
+      ) : null,
+      examinationDate: DateTime.tryParse('${json['examinationDate']}'),
+      observations: json['observations']?.toString(),
+      prescription: prescription,
+    );
+  }
+
+  static PrescriptionValues parsePrescription(Map<String, dynamic> map) => PrescriptionValues(
         sphereOd: _num(map['sphereOD']),
         cylinderOd: _num(map['cylinderOD']),
         axisOd: _num(map['axisOD']),
@@ -33,18 +50,11 @@ class ClinicalRecordDto {
         treatment: map['treatment']?.toString(),
         recommendedFrameType: map['recommendedFrameType']?.toString(),
       );
-    }
-    return ClinicalRecordDto(
-      id: json['id'] as String?, appointmentId: json['appointmentId'] as String?, status: json['status'] as String?,
-      examinationDate: DateTime.tryParse('${json['examinationDate']}'),
-      observations: json['observations']?.toString(),
-      prescription: prescription,
-    );
-  }
 
   ClinicalRecord toEntity() {
     return ClinicalRecord(
       id: id, appointmentId: appointmentId, status: status,
+      patientId: patientId, medicalHistory: medicalHistory,
       examinationDate: examinationDate,
       observations: observations,
       prescription: prescription,

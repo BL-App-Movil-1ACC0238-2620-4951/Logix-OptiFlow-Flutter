@@ -1,3 +1,10 @@
+class MedicalHistory {
+  const MedicalHistory({this.allergies = const [], this.previousConditions = const [], this.familyOcularHistory});
+  final List<String> allergies;
+  final List<String> previousConditions;
+  final String? familyOcularHistory;
+}
+
 class PrescriptionValues {
   const PrescriptionValues({
     this.sphereOd,
@@ -30,6 +37,8 @@ class ClinicalRecord {
     this.id,
     this.appointmentId,
     this.status,
+    this.patientId,
+    this.medicalHistory,
   });
 
   final DateTime? examinationDate;
@@ -38,4 +47,6 @@ class ClinicalRecord {
   final String? id;
   final String? appointmentId;
   final String? status;
+  final String? patientId;
+  final MedicalHistory? medicalHistory;
 }

@@ -14,6 +14,7 @@ import '../../domain/entities/staff_patient.dart';
 import '../../domain/entities/staff_order.dart';
 import '../../domain/entities/store_time.dart';
 import '../models/staff_dto.dart';
+import '../../domain/entities/clinical_record.dart';
 import '../../core/errors/api_exception.dart';
 
 /// Cliente HTTP del backend. La app lo usa solo desde los repositorios.
@@ -36,6 +37,29 @@ class OptiFlowApi {
     final trimmed = raw.trim().replaceAll(RegExp(r'/+$'), '');
     return trimmed.endsWith('/api/v1') ? '$trimmed/' : '$trimmed/api/v1/';
   }
+
+  Future<ClinicalRecord> examine({required String patientId, required String appointmentId, required String observations}) async =>
+      ClinicalRecordDto.fromJson(Map<String, dynamic>.from(await _send('POST', 'clinical-records', {
+        'patientId': patientId, 'appointmentId': appointmentId, 'observations': observations.isEmpty ? null : observations,
+      }) as Map)).toEntity();
+  Future<ClinicalRecord> saveMedicalHistory(String recordId, MedicalHistory history) async =>
+      ClinicalRecordDto.fromJson(Map<String, dynamic>.from(await _send('PUT', 'clinical-records/${Uri.encodeComponent(recordId)}/medical-history', {
+        'allergies': history.allergies, 'previousConditions': history.previousConditions, 'familyOcularHistory': history.familyOcularHistory,
+      }) as Map)).toEntity();
+  Future<PrescriptionValues> generatePrescription(String recordId, PrescriptionValues values) async {
+    final json = Map<String, dynamic>.from(await _send('POST', 'clinical-records/${Uri.encodeComponent(recordId)}/prescription', {
+      'sphereOD': values.sphereOd, 'cylinderOD': values.cylinderOd, 'axisOD': values.axisOd,
+      'sphereOS': values.sphereOs, 'cylinderOS': values.cylinderOs, 'axisOS': values.axisOs,
+      'addition': values.addition, 'treatment': values.treatment, 'recommendedFrameType': values.recommendedFrameType,
+    }) as Map);
+    if (json['clinicalRecordId'] != recordId) throw ApiException('La receta recibida no corresponde a esta ficha.');
+    final prescription = ClinicalRecordDto.parsePrescription(json);
+    final requiredValues = [prescription.sphereOd, prescription.cylinderOd, prescription.axisOd, prescription.sphereOs, prescription.cylinderOs, prescription.axisOs];
+    if (requiredValues.any((value) => value == null || !value.isFinite)) throw ApiException('El servidor devolvió una receta incompleta.');
+    return prescription;
+  }
+  Future<AppointmentDto> completeAppointment(String id) async => AppointmentDto.fromJson(Map<String, dynamic>.from(
+      await _send('PATCH', 'appointments/${Uri.encodeComponent(id)}/status', {'status': 'COMPLETED'}) as Map));
 
   Future<List<StaffPatient>> staffPatients() async => _staffList(await _get('patients')).map(StaffDto.patient).toList();
   Future<StaffPatient> staffPatient(String id) async {

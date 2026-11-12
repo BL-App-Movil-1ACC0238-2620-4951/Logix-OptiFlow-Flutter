@@ -9,6 +9,7 @@ import '../../domain/entities/inventory.dart';
 import '../../domain/entities/staff_order.dart';
 import '../../domain/entities/store_time.dart';
 import '../mappers/staff_view_mapper.dart';
+import 'clinical_care_flow.dart';
 import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
 import '../navigation/route_access.dart';
@@ -123,7 +124,7 @@ class OptiFlowController extends ChangeNotifier {
   int _movementsRequest = 0;
   bool inventoryMutationBusy = false;
   String? inventoryMutationError;
-  int clinicalStage = 1;
+  ClinicalCareFlow? clinicalCare;
 
   String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Valentina Silva');
   String get firstName => displayName.split(' ').first;
@@ -228,6 +229,8 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    clinicalCare?.dispose();
+    clinicalCare = null;
     session = null;
     deps.api.token = null;
     _appointmentsRequest++;
@@ -1201,9 +1204,25 @@ class OptiFlowController extends ChangeNotifier {
   }
   int stockOf(ProductItem product) => product.available;
 
-  void setClinicalStage(int index) {
-    clinicalStage = index;
-    notifyListeners();
+  Future<void> startClinicalCare(String patientId, String appointmentId) async {
+    if (!canOpen('/s/clinical')) return;
+    final current = session;
+    clinicalCare?.dispose();
+    final flow = ClinicalCareFlow(
+      repository: deps.clinical, patientId: patientId, appointmentId: appointmentId,
+      isActive: () => identical(current, session) && canOpen('/s/clinical'),
+      onChanged: notifyListeners,
+      onCompleted: () async { await Future.wait([refreshStaffAgenda(), loadStaffRecord(patientId)]); },
+    );
+    clinicalCare = flow;
+    await flow.load();
+  }
+
+  @override
+  void dispose() {
+    clinicalCare?.dispose();
+    deps.api.onUnauthorized = null;
+    super.dispose();
   }
 
   AppointmentUi? appointmentById(String id) {

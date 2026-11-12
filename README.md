@@ -40,7 +40,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api/v1/
 
 En un celular físico usa la IP de tu PC en lugar de `10.0.2.2`. En escritorio o web usa `http://localhost:8080/api/v1/`. También se acepta la URL del servidor sin `/api/v1`: el cliente agrega el prefijo una sola vez.
 
-Login, ópticas, horarios, reservas, catálogo e inventario consumen el backend. Las áreas clínicas, comerciales y de producción todavía tienen funciones de prototipo pendientes de migración.
+Login, ópticas, horarios, reservas, catálogo, inventario y atención clínica consumen el backend. Las áreas comerciales, de producción y administración todavía tienen funciones de prototipo pendientes de migración.
 
 ## Migración por bloques — bloque 1
 
@@ -107,10 +107,30 @@ La referencia funcional y visual es `Logix-OptiFlow-Movile`, especialmente `Staf
 - Ficha de consulta con perfil, última prescripción, próxima cita y orden de lentes real; los errores de cada sección no se muestran como datos de demostración. Un identificador inexistente nunca abre la ficha de otra persona.
 - Los formularios y la ficha ocultan la barra inferior como en Android. Los accesos y las consultas respetan el rol.
 
-La captura y edición de la atención clínica, las transiciones de producción, ventas, administración y los demás módulos se migrarán en los siguientes bloques. Los botones «Llamar» y «Mensaje» conservan el comportamiento sin acción que tienen en la pantalla de referencia de Movile.
+La captura de la atención clínica se incorpora en el bloque 5. Las transiciones de producción, ventas, administración y los demás módulos se migrarán después. Los botones «Llamar» y «Mensaje» conservan el comportamiento sin acción que tienen en la pantalla de referencia de Movile.
 
 Comprobaciones de contratos y reglas de paridad que no requieren Flutter Test:
 
 ```powershell
 dart --packages=.dart_tool/package_config.json test/support/staff_api_checks.dart
 ```
+
+## Migración por bloques — bloque 5: atención clínica
+
+Referencia: `ClinicalCareViewModel.kt` y `screens/ClinicalCareScreen.kt` de Movile. La atención se abre desde la sala de espera o la ficha del paciente con sus identificadores reales; el acceso general permite elegir una cita pendiente de hoy.
+
+1. **Examen:** `POST /clinical-records`, observaciones de hasta 500 caracteres.
+2. **Antecedentes:** `PUT /clinical-records/{id}/medical-history`. Alergias y enfermedades separadas por comas, punto y coma o líneas, sin duplicados; hasta 20 elementos de 100 caracteres por campo y antecedentes familiares de hasta 1000.
+3. **Receta:** `POST /clinical-records/{id}/prescription`, seguida de `PATCH /appointments/{id}/status` con `COMPLETED`.
+
+Se conservan los rangos del formulario de Movile y del backend: esfera ±30, cilindro ±10, eje entero 0–180, adición opcional 0–4, tratamiento y montura opcionales de hasta 255 caracteres.
+
+Una ficha ya abierta se retoma en su paso pendiente. Un 409 permite recuperar lo guardado desde otro intento o dispositivo. Si la receta se confirma y falla cerrar la cita, el formulario indica ese estado y reintenta únicamente el cierre. No vuelve a crear la receta ni muestra «Atención finalizada» antes de confirmar `COMPLETED`. Las citas canceladas, asociaciones de paciente/cita incorrectas y sesiones cerradas bloquean los envíos.
+
+El flujo se implementó separado de Flutter para ejecutar sus secuencias completas y errores con el cliente HTTP y repositorio reales, usando respuestas de servidor simuladas:
+
+```powershell
+dart --packages=.dart_tool/package_config.json test/support/clinical_flow_checks.dart
+```
+
+La compilación web y estas comprobaciones no sustituyen una prueba de usuario con una cuenta de personal y el backend desplegado. Ventas, transiciones de producción, administración y otras funciones de Movile siguen en los próximos bloques.
