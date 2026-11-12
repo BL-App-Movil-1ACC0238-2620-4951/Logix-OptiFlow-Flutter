@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import '../../domain/entities/commerce.dart';
+import '../models/commerce_dto.dart';
 
 import '../models/appointment_dto.dart';
 import '../models/clinical_record_dto.dart';
@@ -32,6 +34,17 @@ class OptiFlowApi {
   void Function()? onUnauthorized;
 
   static const _timeout = Duration(seconds: 60);
+
+  Future<List<Quotation>> recordQuotations(String recordId) async => _staffList(await _get('clinical-records/${Uri.encodeComponent(recordId)}/quotations')).map(CommerceDto.quotation).toList();
+  Future<Quotation> quotation(String id) async => CommerceDto.quotation(Map<String, dynamic>.from(await _get('quotations/${Uri.encodeComponent(id)}') as Map));
+  Future<Quotation> generateQuotation(String recordId, List<QuotationItem> items) async => CommerceDto.quotation(Map<String, dynamic>.from(await _send('POST', 'quotations', {'clinicalRecordId': recordId, 'items': items.map(CommerceDto.item).toList()}) as Map));
+  Future<Quotation> discountQuotation(String id, String type, num value, String? reason) async => CommerceDto.quotation(Map<String, dynamic>.from(await _send('PATCH', 'quotations/${Uri.encodeComponent(id)}/discount', {'type': type, 'value': value, 'reason': reason}) as Map));
+  Future<Quotation> updateQuotation(String id, QuotationStatus status, {String? reason}) async => CommerceDto.quotation(Map<String, dynamic>.from(await _send('PATCH', 'quotations/${Uri.encodeComponent(id)}/status', {'status': status.name.toUpperCase(), 'reason': reason}) as Map));
+  Future<List<Sale>> patientSales(String patientId) async => _staffList(await _get('patients/${Uri.encodeComponent(patientId)}/sales')).map(CommerceDto.sale).toList();
+  Future<Sale> sale(String id) async => CommerceDto.sale(Map<String, dynamic>.from(await _get('sales/${Uri.encodeComponent(id)}') as Map));
+  Future<Sale> registerSale(String quotationId) async => CommerceDto.sale(Map<String, dynamic>.from(await _send('POST', 'sales', {'quotationId': quotationId}) as Map));
+  Future<Sale> paySaleCash(String id, num amount) async => CommerceDto.sale(Map<String, dynamic>.from(await _send('POST', 'sales/${Uri.encodeComponent(id)}/payments', {'amount': amount}) as Map));
+  Future<Sale> closeSale(String id) async => CommerceDto.sale(Map<String, dynamic>.from(await _send('PATCH', 'sales/${Uri.encodeComponent(id)}/status', {'status': 'CLOSED'}) as Map));
 
   static String _normalize(String raw) {
     final trimmed = raw.trim().replaceAll(RegExp(r'/+$'), '');

@@ -10,6 +10,8 @@ import '../../domain/entities/staff_order.dart';
 import '../../domain/entities/store_time.dart';
 import '../mappers/staff_view_mapper.dart';
 import 'clinical_care_flow.dart';
+import 'quote_flow.dart';
+import 'sale_flow.dart';
 import '../mappers/patient_view_mapper.dart';
 import '../models/ui_models.dart';
 import '../navigation/route_access.dart';
@@ -125,6 +127,8 @@ class OptiFlowController extends ChangeNotifier {
   bool inventoryMutationBusy = false;
   String? inventoryMutationError;
   ClinicalCareFlow? clinicalCare;
+  QuoteFlow? quoteFlow;
+  SaleFlow? saleFlow;
 
   String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Valentina Silva');
   String get firstName => displayName.split(' ').first;
@@ -229,6 +233,8 @@ class OptiFlowController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    quoteFlow?.dispose(); quoteFlow = null;
+    saleFlow?.dispose(); saleFlow = null;
     clinicalCare?.dispose();
     clinicalCare = null;
     session = null;
@@ -1218,8 +1224,34 @@ class OptiFlowController extends ChangeNotifier {
     await flow.load();
   }
 
+  Future<void> startQuote(String patientId) async {
+    if (!canOpen('/s/quote')) return;
+    final current = session;
+    quoteFlow?.dispose();
+    final flow = QuoteFlow(repository: deps.commerce, patientId: patientId, storeId: current?.opticalStoreId,
+      isActive: () => identical(current, session) && canOpen('/s/quote'), onChanged: notifyListeners);
+    quoteFlow = flow;
+    await flow.load();
+  }
+
+  Future<void> openStaffSale(String patientId, {String? saleId}) async {
+    if (!canOpen('/s/sale')) return;
+    final current = session;
+    saleFlow?.dispose();
+    final flow = SaleFlow(repository: deps.commerce, patientId: patientId, saleId: saleId,
+      isActive: () => identical(current, session) && canOpen('/s/sale'), onChanged: notifyListeners,
+      onClosed: () async {
+        await loadStaffRecord(patientId);
+        if (identical(current, session) && canOpen('/s/inventory')) await refreshInventory();
+      });
+    saleFlow = flow;
+    await flow.refresh();
+  }
+
   @override
   void dispose() {
+    quoteFlow?.dispose();
+    saleFlow?.dispose();
     clinicalCare?.dispose();
     deps.api.onUnauthorized = null;
     super.dispose();

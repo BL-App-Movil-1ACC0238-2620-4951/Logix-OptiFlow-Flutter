@@ -108,6 +108,14 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
             const SizedBox(height: 8), Text(order.status == 'DELIVERED' ? 'Entregada' : 'Entrega estimada: ${order.dueDate ?? 'sin fecha'}${order.delayed ? ' (atrasada)' : ''}'),
           ])),
           const SizedBox(height: 18),
+          if (app.canOpen('/s/quote')) ...[
+            SolidButton(label: 'Nueva cotización', icon: Icons.description_outlined, onPressed: () => context.push(Uri(path: '/s/quote', queryParameters: {'patientId': id}).toString())),
+            const SizedBox(height: 10),
+          ],
+          if (app.canOpen('/s/sale')) ...[
+            SolidButton(label: 'Ventas y pagos', icon: Icons.credit_card, onPressed: () => context.push(Uri(path: '/s/sale', queryParameters: {'patientId': id}).toString())),
+            const SizedBox(height: 10),
+          ],
           SolidButton(label: 'Nueva cita', icon: Icons.calendar_today_outlined, onPressed: () => context.push(Uri(path: '/s/appointments/new', queryParameters: {'patientId': id}).toString())),
           if (appointment != null && app.canOpen('/s/clinical') && StoreTime.isoDay(StoreTime.day(appointment.start)) == StoreTime.isoDay(StoreTime.today())) ...[
             const SizedBox(height: 10),
