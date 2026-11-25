@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -100,10 +100,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     1 => 'Aún no tienes citas anteriores.',
                     _ => 'No tienes citas canceladas.',
                   },
-                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500),
+                  style: AppFonts.inter(fontSize: 14, color: AppColors.slate500),
                 ),
               for (final entry in grouped.entries) ...[
-                Text(entry.key, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
+                Text(entry.key, style: AppFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
                 const SizedBox(height: 12),
                 for (final item in entry.value) ...[
                   _AppointmentTile(item: item),
@@ -135,7 +135,7 @@ class _TabChip extends StatelessWidget {
         child: SizedBox(
           height: 38,
           child: Center(
-            child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
+            child: Text(label, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
           ),
         ),
       ),
@@ -166,8 +166,8 @@ class _AppointmentTile extends StatelessWidget {
                   background: cancelled ? AppColors.errorBg : AppColors.white,
                 ),
                 const SizedBox(height: 4),
-                Text(item.title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                Text('${item.storeName} · ${item.time}', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                Text(item.title, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text('${item.storeName} · ${item.time}', style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
               ],
             ),
           ),
@@ -228,8 +228,8 @@ class AppointmentDetailScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                              Text('${item.weekday} · ${item.time} a ${item.endTime}', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                              Text(item.title, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                              Text('${item.weekday} · ${item.time} a ${item.endTime}', style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
                             ],
                           ),
                         ),
@@ -264,8 +264,8 @@ class AppointmentDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Recordatorio activado', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                          Text('Te avisaremos 24 horas antes.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                          Text('Recordatorio activado', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                          Text('Te avisaremos 24 horas antes.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                         ],
                       ),
                     ),
@@ -297,7 +297,7 @@ class AppointmentDetailScreen extends StatelessWidget {
                     if (!context.mounted) return;
                     showAppMessage(context, cancelled ? 'Cita cancelada' : patientVm.state.appointmentActionError ?? 'No se pudo cancelar la cita.');
                   },
-                  child: Text(patientVm.state.appointmentActionLoading ? 'Cancelando…' : 'Cancelar cita', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.electric)),
+                  child: Text(patientVm.state.appointmentActionLoading ? 'Cancelando…' : 'Cancelar cita', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.electric)),
                 ),
               ],
             ],
@@ -326,9 +326,9 @@ class _DetailLine extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
-              Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-              if (extra != null && extra!.isNotEmpty) Text(extra!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+              Text(label, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+              Text(value, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              if (extra != null && extra!.isNotEmpty) Text(extra!, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
             ],
           ),
         ),

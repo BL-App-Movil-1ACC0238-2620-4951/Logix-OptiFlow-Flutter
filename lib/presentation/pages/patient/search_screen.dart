@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -121,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         }
                       },
                       selectedColor: AppColors.deepNavy,
-                      labelStyle: GoogleFonts.inter(fontSize: 13, color: selected ? AppColors.white : AppColors.deepNavy),
+                      labelStyle: AppFonts.inter(fontSize: 13, color: selected ? AppColors.white : AppColors.deepNavy),
                       backgroundColor: AppColors.white,
                       side: const BorderSide(color: AppColors.skyTint),
                     );
@@ -131,18 +131,18 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  Expanded(child: Text('Ópticas encontradas', style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
-                  Text('${stores.length}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                  Expanded(child: Text('Ópticas encontradas', style: AppFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
+                  Text('${stores.length}', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
                 ],
               ),
               const SizedBox(height: 12),
               if (storesVm.state.loading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.electric))),
               if (storesVm.state.error != null) ...[
-                Text(storesVm.state.error!, style: GoogleFonts.inter(color: AppColors.errorRed)),
+                Text(storesVm.state.error!, style: AppFonts.inter(color: AppColors.errorRed)),
                 TextButton(onPressed: storesVm.searchStores, child: const Text('Reintentar')),
               ],
               if (!storesVm.state.loading && storesVm.state.error == null && stores.isEmpty)
-                Text(storesVm.state.message ?? 'No encontramos ópticas con ese filtro.', style: GoogleFonts.inter(color: AppColors.slate500)),
+                Text(storesVm.state.message ?? 'No encontramos ópticas con ese filtro.', style: AppFonts.inter(color: AppColors.slate500)),
               if (!storesVm.state.loading && storesVm.state.error == null) for (var i = 0; i < stores.length; i++) ...[
                 StoreResultCard(store: stores[i]),
                 const SizedBox(height: 14),

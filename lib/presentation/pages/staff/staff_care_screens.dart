@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -205,16 +205,16 @@ class _ProductionScreenState extends State<ProductionScreen> {
                 ),
               ),
               const SizedBox(height: 26),
-              Text('${stage.label} · ${visible.length}', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+              Text('${stage.label} · ${visible.length}', style: AppFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
               const SizedBox(height: 14),
               if (productionVm.state.loading && orders.isEmpty)
                 const Center(child: CircularProgressIndicator())
               else if (productionVm.state.error != null && orders.isEmpty)
                 Column(children: [
-                  Text(productionVm.state.error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+                  Text(productionVm.state.error!, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
                   TextButton(onPressed: productionVm.refreshStaffOrders, child: const Text('Reintentar')),
                 ])
-              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
               for (final order in visible) ...[
                 _OrderCard(order, stage.label),
                 const SizedBox(height: 10),
@@ -253,12 +253,12 @@ class _SelectRow extends StatelessWidget {
                   height: 28,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(8)),
-                  child: Text(leading!, style: GoogleFonts.inter(fontSize: 10, color: AppColors.electric)),
+                  child: Text(leading!, style: AppFonts.inter(fontSize: 10, color: AppColors.electric)),
                 )
               else if (icon != null)
                 Icon(icon, size: 18, color: AppColors.staffAccent),
               const SizedBox(width: 10),
-              Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk))),
+              Expanded(child: Text(label, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk))),
               const Icon(Icons.expand_more, color: AppColors.staffInk),
             ],
           ),
@@ -289,7 +289,7 @@ class _TimeChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: selected ? AppColors.staffAccent : AppColors.staffBorder),
           ),
-          child: Text(label, style: GoogleFonts.inter(fontSize: 14, color: selected ? AppColors.white : AppColors.staffInk)),
+          child: Text(label, style: AppFonts.inter(fontSize: 14, color: selected ? AppColors.white : AppColors.staffInk)),
         ),
       ),
     );
@@ -322,9 +322,9 @@ class _StageChip extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('$count', style: GoogleFonts.inter(fontSize: 13, color: fg)),
+            Text('$count', style: AppFonts.inter(fontSize: 13, color: fg)),
             const SizedBox(height: 4),
-            Text(label, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 9, color: selected ? AppColors.white : AppColors.staffInk)),
+            Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 9, color: selected ? AppColors.white : AppColors.staffInk)),
           ],
         ),
       ),
@@ -353,24 +353,24 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Icon(order.needsAttention ? Icons.notifications_none : Icons.schedule, size: 12, color: AppColors.staffAccent),
                     const SizedBox(width: 4),
-                    Text(order.needsAttention ? 'Requiere atención' : stageLabel, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
+                    Text(order.needsAttention ? 'Requiere atención' : stageLabel, style: AppFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
                   ],
                 ),
               ),
               const Spacer(),
-              Text(order.code, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+              Text(order.code, style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(order.patient, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+          Text(order.patient, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
           const SizedBox(height: 4),
-          Text(order.detail, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
+          Text(order.detail, style: AppFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
           const SizedBox(height: 12),
           Row(
             children: [
               const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.staffAccent),
               const SizedBox(width: 8),
-              Text(order.due, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+              Text(order.due, style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
             ],
           ),
         ],
@@ -388,10 +388,10 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(text, style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffInk)),
+        Text(text, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk)),
         if (hint != null) ...[
           const Spacer(),
-          Text(hint!, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
+          Text(hint!, style: AppFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
         ],
       ],
     );

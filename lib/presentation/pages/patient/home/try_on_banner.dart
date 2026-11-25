@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class TryOnBanner extends StatelessWidget {
@@ -28,12 +28,12 @@ class TryOnBanner extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: AppColors.teal700, borderRadius: BorderRadius.circular(99)),
-                      child: Text('CATÁLOGO DE MONTURAS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.white)),
+                      child: Text('CATÁLOGO DE MONTURAS', style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.white)),
                     ),
                     const SizedBox(height: 6),
-                    Text('Encuentra tu próxima montura', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
+                    Text('Encuentra tu próxima montura', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
                     const SizedBox(height: 18),
-                    Text('Consulta modelos, materiales y precios', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.9))),
+                    Text('Consulta modelos, materiales y precios', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.9))),
                   ],
                 ),
               ),
@@ -47,7 +47,7 @@ class TryOnBanner extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Explorar catálogo', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                      Text('Explorar catálogo', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.electric)),
                       const Icon(Icons.chevron_right, size: 16, color: AppColors.electric),
                     ],
                   ),

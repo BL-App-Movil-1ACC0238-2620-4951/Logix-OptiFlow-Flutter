@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -49,7 +49,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           tab: StaffTab.home,
           topBar: StaffTopBar(
             title: 'Hola, ${sessionVm.firstName}',
-            subtitle: storesVm.staffStoreName,
+            eyebrow: storesVm.staffStoreName,
             trailing: sessionVm.canOpen('/s/alerts') ? IconButton(
               onPressed: () => context.push('/s/alerts'),
               icon: const Icon(Icons.notifications_none, color: AppColors.white),
@@ -67,11 +67,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.4)),
+                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: AppFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.4)),
                           const SizedBox(height: 10),
-                          Text('Tu jornada, de un vistazo', style: GoogleFonts.inter(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.white)),
+                          Text('Tu jornada, de un vistazo', style: AppFonts.inter(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.white)),
                           const SizedBox(height: 6),
-                          Text('Todo listo para comenzar.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate300)),
+                          Text('Todo listo para comenzar.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate300)),
                         ],
                       ),
                     ),
@@ -80,7 +80,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       height: 42,
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(color: AppColors.staffChip, shape: BoxShape.circle),
-                      child: Text(sessionVm.initials, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffHeader)),
+                      child: Text(sessionVm.initials, style: AppFonts.inter(fontSize: 10, color: AppColors.staffHeader)),
                     ),
                   ],
                 ),
@@ -102,10 +102,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               if (sessionVm.canOpen('/s/agenda')) ...[
               Row(
                 children: [
-                  Expanded(child: Text('Próxima atención', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
+                  Expanded(child: Text('Próxima atención', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
                   GestureDetector(
                     onTap: () => context.go('/s/agenda'),
-                    child: Text('Ver agenda', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
+                    child: Text('Ver agenda', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
                   ),
                 ],
               ),
@@ -122,7 +122,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       height: 43,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(12)),
-                      child: Text(next.name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2).map((s) => s[0]).join().toUpperCase(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.electric)),
+                      child: Text(next.name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2).map((s) => s[0]).join().toUpperCase(), style: AppFonts.inter(fontSize: 11, color: AppColors.electric)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -132,11 +132,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(color: AppColors.staffBlue50, borderRadius: BorderRadius.circular(20)),
-                            child: Text(next.status == AgendaStatus.waiting ? 'En sala de espera' : next.status == AgendaStatus.pending ? 'Por confirmar' : 'Confirmada', style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+                            child: Text(next.status == AgendaStatus.waiting ? 'En sala de espera' : next.status == AgendaStatus.pending ? 'Por confirmar' : 'Confirmada', style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
                           ),
                           const SizedBox(height: 4),
-                          Text(next.name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
-                          Text('${next.time} · ${next.service}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                          Text(next.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                          Text('${next.time} · ${next.service}', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
                         ],
                       ),
                     ),
@@ -146,7 +146,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
               const SizedBox(height: 24),
               ],
-              Text('Acciones frecuentes', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+              Text('Acciones frecuentes', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -237,7 +237,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
           tab: StaffTab.agenda,
           topBar: StaffTopBar(
             title: 'Citas y agenda',
-            subtitle: storesVm.staffStoreName,
+            eyebrow: storesVm.staffStoreName,
             trailing: sessionVm.canOpen('/s/alerts') ? IconButton(onPressed: () => context.push('/s/alerts'), icon: const Icon(Icons.notifications_none, color: AppColors.white)) : null,
           ),
           body: ListView(
@@ -252,11 +252,11 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
+                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: AppFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
                           const SizedBox(height: 8),
-                          Text('${agenda.length} pacientes', style: GoogleFonts.inter(fontSize: 20, color: AppColors.white)),
+                          Text('${agenda.length} pacientes', style: AppFonts.inter(fontSize: 20, color: AppColors.white)),
                           const SizedBox(height: 8),
-                          Text('${agenda.where((a) => a.status == AgendaStatus.done).length} consultas completadas · ${agenda.where((a) => a.status == AgendaStatus.waiting).length} en sala de espera', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate300)),
+                          Text('${agenda.where((a) => a.status == AgendaStatus.done).length} consultas completadas · ${agenda.where((a) => a.status == AgendaStatus.waiting).length} en sala de espera', style: AppFonts.inter(fontSize: 11, color: AppColors.slate300)),
                         ],
                       ),
                     ),
@@ -265,7 +265,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                       height: 34,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(10)),
-                      child: Text('${agenda.length}', style: GoogleFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
+                      child: Text('${agenda.length}', style: AppFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
                     ),
                   ],
                 ),
@@ -288,8 +288,8 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(DateFormat('E', 'es').format(days[i]).replaceAll('.', '').toUpperCase(), style: GoogleFonts.inter(fontSize: 8, color: day == i ? AppColors.white : AppColors.staffInk)),
-                              Text('${days[i].day}', style: GoogleFonts.inter(fontSize: 16, color: day == i ? AppColors.white : AppColors.staffInk)),
+                              Text(DateFormat('E', 'es').format(days[i]).replaceAll('.', '').toUpperCase(), style: AppFonts.inter(fontSize: 8, color: day == i ? AppColors.white : AppColors.staffInk)),
+                              Text('${days[i].day}', style: AppFonts.inter(fontSize: 16, color: day == i ? AppColors.white : AppColors.staffInk)),
                             ],
                           ),
                         ),
@@ -317,7 +317,7 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                   children: [
                     const Icon(Icons.filter_list, size: 14, color: AppColors.staffAccent),
                     const SizedBox(width: 6),
-                    Text('Filtro activo: ${filters[filter].toLowerCase()}', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
+                    Text('Filtro activo: ${filters[filter].toLowerCase()}', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
                   ],
                 ),
               ],
@@ -330,18 +330,18 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
               if (!agendaVm.state.loading && agendaVm.state.error == null && items.isEmpty) const Text('No hay citas con este filtro para el día seleccionado.'),
               for (final item in [...waitingItems, ...otherItems]) ...[
                 if (item == waitingItems.firstOrNull || item == otherItems.firstOrNull)
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(item.status == AgendaStatus.waiting ? 'En sala de espera' : 'Siguientes citas', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(item.status == AgendaStatus.waiting ? 'En sala de espera' : 'Siguientes citas', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
                 AppCard(
                   onTap: () => context.push('/s/patient/${item.patientId}'),
                   child: Row(
                     children: [
-                      SizedBox(width: 54, child: Text(item.time, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffHeader))),
+                      SizedBox(width: 54, child: Text(item.time, style: AppFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffHeader))),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                            Text('${item.duration} · ${item.service}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                            Text(item.name, style: AppFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+                            Text('${item.duration} · ${item.service}', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
                           ],
                         ),
                       ),
@@ -416,9 +416,9 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Expedientes de pacientes', style: GoogleFonts.inter(fontSize: 18, color: AppColors.white)),
+                    Text('Expedientes de pacientes', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
                     const SizedBox(height: 8),
-                    Text('Fichas optométricas, recetas y seguimientos al día.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
+                    Text('Fichas optométricas, recetas y seguimientos al día.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate300)),
                     const SizedBox(height: 22),
                     Row(
                       children: [
@@ -456,8 +456,8 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
               const SizedBox(height: 26),
               Row(
                 children: [
-                  Expanded(child: Text('Pacientes recientes', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-                  Text('Ordenar por fecha', style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+                  Expanded(child: Text('Pacientes recientes', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
+                  Text('Ordenar por fecha', style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -479,16 +479,16 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                         height: 52,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(color: tints[index % tints.length], borderRadius: BorderRadius.circular(16)),
-                        child: Text(patients[index].initials, style: GoogleFonts.inter(fontSize: 14, color: AppColors.electric)),
+                        child: Text(patients[index].initials, style: AppFonts.inter(fontSize: 14, color: AppColors.electric)),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(patients[index].name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
-                            Text(patients[index].email, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                            Text(patients[index].note, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                            Text(patients[index].name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                            Text(patients[index].email, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                            Text(patients[index].note, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
                           ],
                         ),
                       ),
@@ -519,9 +519,9 @@ class _HeroStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: GoogleFonts.inter(fontSize: 18, color: valueColor)),
+        Text(value, style: AppFonts.inter(fontSize: 18, color: valueColor)),
         const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate300)),
+        Text(label, style: AppFonts.inter(fontSize: 10, color: AppColors.slate300)),
       ],
     );
   }
@@ -544,7 +544,7 @@ class _StaffChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: selected ? AppColors.staffAccent : AppColors.lavender),
         ),
-        child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
+        child: Text(label, style: AppFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
       ),
     );
   }
@@ -633,7 +633,7 @@ class StaffMoreScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Text('Operación', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+              Text('Operación', style: AppFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
               const SizedBox(height: 8),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -647,7 +647,7 @@ class StaffMoreScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Gestión', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+              Text('Gestión', style: AppFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
               const SizedBox(height: 8),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -688,14 +688,14 @@ class _Stat extends StatelessWidget {
             children: [
               if (icon != null) Icon(icon, size: 18, color: AppColors.staffAccent),
               const Spacer(),
-              Text(value, style: GoogleFonts.inter(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.staffInk)),
+              Text(value, style: AppFonts.inter(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.staffInk)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+          Text(label, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
           if (detail != null) ...[
             const SizedBox(height: 4),
-            Text(detail!, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+            Text(detail!, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
           ],
         ],
       ),
@@ -719,7 +719,7 @@ class _Action extends StatelessWidget {
           children: [
             Icon(icon, size: 22, color: AppColors.staffInk),
             const SizedBox(height: 7),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, color: AppColors.staffInk)),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 10, color: AppColors.staffInk)),
           ],
         ),
       ),
@@ -740,7 +740,7 @@ class _Tool extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: IconTile(icon: icon, background: const Color(0xFFEEF2FF), color: AppColors.staffAccent),
-      title: Text(title, style: GoogleFonts.inter(color: AppColors.staffInk)),
+      title: Text(title, style: AppFonts.inter(color: AppColors.staffInk)),
       subtitle: subtitle == null ? null : Text(subtitle!),
       trailing: badge == null ? const Icon(Icons.chevron_right) : CircleAvatar(radius: 12, backgroundColor: AppColors.staffAccent, child: Text(badge!, style: const TextStyle(color: AppColors.white, fontSize: 11))),
     );

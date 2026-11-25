@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -35,11 +35,11 @@ class ProfileScreen extends StatelessWidget {
                     height: 84,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(24)),
-                    child: Text(sessionVm.initials, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                    child: Text(sessionVm.initials, style: AppFonts.poppins(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.electric)),
                   ),
                   const SizedBox(height: 14),
-                  Text(sessionVm.displayName, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                  Text(sessionVm.email, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                  Text(sessionVm.displayName, style: AppFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                  Text(sessionVm.email, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
                   const SizedBox(height: 12),
                   ActionChip(
                     avatar: const Icon(Icons.edit_outlined, size: 16),
@@ -49,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              Text('Mi salud visual', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Mi salud visual', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 8),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -62,7 +62,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Cuenta', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Cuenta', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 8),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -133,7 +133,7 @@ class _Menu extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: IconTile(icon: icon),
-      title: Text(title, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+      title: Text(title, style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
       subtitle: subtitle == null ? null : Text(subtitle!),
       trailing: const Icon(Icons.chevron_right, color: AppColors.slate500),
     );
@@ -168,9 +168,9 @@ class HistoryScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Último control', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.75))),
-                          Text(latest, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.white)),
-                          Text('Se recomienda un control al año', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                          Text('Último control', style: AppFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.75))),
+                          Text(latest, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.white)),
+                          Text('Se recomienda un control al año', style: AppFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
                         ],
                       ),
                     ),
@@ -178,10 +178,10 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              Text('Atenciones', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Atenciones', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 16),
               if (history.isEmpty)
-                Text('Aún no tienes atenciones registradas.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+                Text('Aún no tienes atenciones registradas.', style: AppFonts.inter(fontSize: 14, color: AppColors.slate500)),
               for (var index = 0; index < history.length; index++)
                 InkWell(
                   onTap: () => context.push('/p/prescription'),
@@ -207,13 +207,13 @@ class HistoryScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(history[index].date, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.5)),
+                            Text(history[index].date, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.5)),
                             const SizedBox(height: 6),
-                            Text(history[index].title, style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                            Text(history[index].title, style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                             const SizedBox(height: 6),
-                            Text(history[index].summary, style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+                            Text(history[index].summary, style: AppFonts.inter(fontSize: 14, color: AppColors.slate500)),
                             const SizedBox(height: 14),
-                            Text(history[index].professional, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                            Text(history[index].professional, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
                           ],
                         ),
                       ),
@@ -291,7 +291,7 @@ class SettingsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
-              Text('Preferencias', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Preferencias', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 10),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -307,7 +307,7 @@ class SettingsScreen extends StatelessWidget {
                     SwitchListTile(
                       value: sessionVm.state.settings.controlReminders,
                       onChanged: sessionVm.setControlReminders,
-                      title: Text('Recordatorios de control', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                      title: Text('Recordatorios de control', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                       subtitle: const Text('Avisos preventivos de salud visual'),
                     ),
                     const Divider(height: 1, color: AppColors.lavender),
@@ -318,7 +318,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 22),
-              Text('Aplicación', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Aplicación', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 10),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -331,7 +331,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 36),
-              Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate300)),
+              Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 12, color: AppColors.slate300)),
             ],
           ),
         );

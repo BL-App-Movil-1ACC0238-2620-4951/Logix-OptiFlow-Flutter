@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class CatalogPrompt extends StatelessWidget {
@@ -22,16 +22,16 @@ class CatalogPrompt extends StatelessWidget {
               height: 56,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(12)),
-              child: Text('?', style: GoogleFonts.poppins(fontSize: 24, color: AppColors.deepNavy)),
+              child: Text('?', style: AppFonts.poppins(fontSize: 24, color: AppColors.deepNavy)),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('¿YA SABES QUÉ TE GUSTA?', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.4)),
-                  Text('Busca por montura', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                  Text('Elige un modelo y descubre dónde está disponible.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                  Text('¿YA SABES QUÉ TE GUSTA?', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.electric, letterSpacing: 0.4)),
+                  Text('Busca por montura', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                  Text('Elige un modelo y descubre dónde está disponible.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                 ],
               ),
             ),

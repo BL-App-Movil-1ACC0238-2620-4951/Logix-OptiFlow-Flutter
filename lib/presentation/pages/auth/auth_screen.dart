@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -88,8 +88,8 @@ class _AuthScreenState extends State<AuthScreen> {
             padding: const EdgeInsets.fromLTRB(26, 27, 26, 32),
             children: [
               Center(child: Image.asset('assets/images/img_logo.png', width: 137, height: 108, fit: BoxFit.contain)),
-              Text('OptiFlow', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.brand)),
-              Text('Tu óptica, siempre cerca', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 16, color: AppColors.tagline)),
+              Text('OptiFlow', textAlign: TextAlign.center, style: AppFonts.poppins(fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.brand)),
+              Text('Tu óptica, siempre cerca', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 16, color: AppColors.tagline)),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
@@ -100,9 +100,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 child: Column(
                   children: [
-                    Text('Accede a OptiFlow', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.deepNavy, letterSpacing: -0.6)),
+                    Text('Accede a OptiFlow', style: AppFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.deepNavy, letterSpacing: -0.6)),
                     const SizedBox(height: 4),
-                    Text('Elige cómo usarás la plataforma para preparar tu espacio.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: AppColors.subtitle)),
+                    Text('Elige cómo usarás la plataforma para preparar tu espacio.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 12, color: AppColors.subtitle)),
                     const SizedBox(height: 14),
                     AuthModeSwitch(
                       register: register,
@@ -129,10 +129,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        Expanded(child: Text('Contraseña', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
+                        Expanded(child: Text('Contraseña', style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
                         Text(
                           register ? 'Mín. ${SessionViewModel.minPassword} caracteres' : '¿Olvidaste tu contraseña?',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: register ? FontWeight.w500 : FontWeight.w600, color: register ? AppColors.slate400 : AppColors.electric),
+                          style: AppFonts.plusJakartaSans(fontSize: 11, fontWeight: register ? FontWeight.w500 : FontWeight.w600, color: register ? AppColors.slate400 : AppColors.electric),
                         ),
                       ],
                     ),
@@ -163,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Text(
                           'Ingresa con tu cuenta de personal. Las cuentas y los permisos los asigna el administrador de la óptica.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500),
+                          style: AppFonts.inter(fontSize: 11, color: AppColors.slate500),
                         ),
                       ),
                   ],

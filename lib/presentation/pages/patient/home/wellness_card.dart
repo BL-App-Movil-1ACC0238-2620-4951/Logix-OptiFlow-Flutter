@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
@@ -24,11 +24,11 @@ class WellnessCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Es hora de descansar la vista', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text('Es hora de descansar la vista', style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                 const SizedBox(height: 2),
                 Text.rich(
                   TextSpan(
-                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppColors.slate600, height: 1.35),
+                    style: AppFonts.plusJakartaSans(fontSize: 11, color: AppColors.slate600, height: 1.35),
                     children: const [
                       TextSpan(text: 'Aplica la regla '),
                       TextSpan(text: '20-20-20', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navyBlue)),

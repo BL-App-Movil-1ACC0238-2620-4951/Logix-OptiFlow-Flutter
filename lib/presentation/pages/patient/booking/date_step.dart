@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -32,7 +32,7 @@ class BookingDateStep extends StatelessWidget {
                   child: Text(
                     month[0].toUpperCase() + month.substring(1),
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy),
+                    style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy),
                   ),
                 ),
                 _MonthArrow(Icons.chevron_right, () => bookingVm.shiftWeek(1)),
@@ -51,7 +51,7 @@ class BookingDateStep extends StatelessWidget {
             if (bookingVm.state.loading)
               const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: AppColors.electric)))
             else ...[
-              if (slots.isEmpty) Text('No hay horarios disponibles para este día.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+              if (slots.isEmpty) Text('No hay horarios disponibles para este día.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
               _SlotGroup('Mañana', morning),
               _SlotGroup('Tarde', afternoon),
             ],
@@ -67,8 +67,8 @@ class BookingDateStep extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(bookingVm.state.selectedSlot?.durationMinutes == null ? 'Selecciona un horario para ver su duración' : 'Duración: ${bookingVm.state.selectedSlot!.durationMinutes} min', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                        Text('Llega 10 minutos antes de tu cita.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                        Text(bookingVm.state.selectedSlot?.durationMinutes == null ? 'Selecciona un horario para ver su duración' : 'Duración: ${bookingVm.state.selectedSlot!.durationMinutes} min', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        Text('Llega 10 minutos antes de tu cita.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                       ],
                     ),
                   ),
@@ -77,7 +77,7 @@ class BookingDateStep extends StatelessWidget {
             ),
             if (bookingVm.state.error != null) ...[
               const SizedBox(height: 12),
-              Text(bookingVm.state.error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+              Text(bookingVm.state.error!, style: AppFonts.inter(fontSize: 13, color: AppColors.errorRed)),
               TextButton(onPressed: bookingVm.state.loading ? null : bookingVm.continueFromStore, child: const Text('Actualizar horarios')),
             ],
             const SizedBox(height: 28),
@@ -137,8 +137,8 @@ class _DayCell extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(weekday, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: selected ? AppColors.white : (enabled ? AppColors.slate600 : AppColors.slate300))),
-                Text('${day.day}', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: fg)),
+                Text(weekday, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: selected ? AppColors.white : (enabled ? AppColors.slate600 : AppColors.slate300))),
+                Text('${day.day}', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: fg)),
                 if (selected) Container(width: 4, height: 4, margin: const EdgeInsets.only(top: 2), decoration: const BoxDecoration(color: AppColors.white, shape: BoxShape.circle)),
               ],
             ),
@@ -166,7 +166,7 @@ class _SlotGroup extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+            Text(title, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
             const SizedBox(height: 10),
             for (var i = 0; i < slots.length; i += 4) ...[
               Row(
@@ -211,7 +211,7 @@ class _SlotChip extends StatelessWidget {
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: active ? AppColors.navyBlue : AppColors.lavender)),
-          child: Text(slot.label, style: GoogleFonts.inter(fontSize: 13, color: active ? AppColors.white : AppColors.deepNavy)),
+          child: Text(slot.label, style: AppFonts.inter(fontSize: 13, color: active ? AppColors.white : AppColors.deepNavy)),
         ),
       ),
     );
