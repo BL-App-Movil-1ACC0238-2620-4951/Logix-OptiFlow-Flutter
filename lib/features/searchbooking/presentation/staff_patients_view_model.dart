@@ -9,6 +9,7 @@ import 'package:logix_optiflow/features/clinical/application/get_patients_with_r
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/staff_order.dart';
+import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_staff_patient_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_staff_patients_use_case.dart';
@@ -28,6 +29,7 @@ class StaffPatientsViewModel extends ChangeNotifier {
     required this.getPatientClinicalRecordsUseCase,
     required this.getPatientAppointmentsUseCase,
     required this.getStaffOrdersUseCase,
+    required this.cancelAppointmentUseCase,
   }) {
     session.addLogoutListener(_reset);
   }
@@ -40,6 +42,7 @@ class StaffPatientsViewModel extends ChangeNotifier {
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
   final GetPatientAppointmentsUseCase getPatientAppointmentsUseCase;
   final GetStaffOrdersUseCase getStaffOrdersUseCase;
+  final CancelAppointmentUseCase cancelAppointmentUseCase;
 
   StaffPatientsUiState _state = const StaffPatientsUiState();
   StaffPatientsUiState get state => _state;
@@ -167,6 +170,22 @@ class StaffPatientsViewModel extends ChangeNotifier {
       if (active()) _state = _state.copyWith(recordErrors: {..._state.recordErrors, id: _message(e, 'No se encontró al paciente.')});
     } finally {
       if (active()) _emit(_state.copyWith(recordLoading: {..._state.recordLoading}..remove(id)));
+    }
+  }
+
+  /// Cancela una cita desde la ficha y vuelve a leer la ficha. Devuelve el error, o null si salió bien.
+  Future<String?> cancelRecordAppointment(String patientId, String appointmentId) async {
+    if (_state.cancelling) return null;
+    final current = _current;
+    _emit(_state.copyWith(cancelling: true));
+    try {
+      await cancelAppointmentUseCase.execute(appointmentId);
+      if (identical(current, _current)) await loadStaffRecord(patientId);
+      return null;
+    } catch (e) {
+      return _message(e, 'No se pudo cancelar la cita.');
+    } finally {
+      if (identical(current, _current)) _emit(_state.copyWith(cancelling: false));
     }
   }
 }

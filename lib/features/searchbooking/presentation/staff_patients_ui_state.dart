@@ -21,6 +21,7 @@ class StaffPatientsUiState {
     this.recordClinical = const {},
     this.recordAppointments = const {},
     this.recordOrders = const {},
+    this.cancelling = false,
   });
 
   final List<StaffPatient> patients;
@@ -39,6 +40,7 @@ class StaffPatientsUiState {
   final Map<String, List<ClinicalRecord>> recordClinical;
   final Map<String, List<Appointment>> recordAppointments;
   final Map<String, List<StaffOrder>> recordOrders;
+  final bool cancelling;
 
   StaffPatientsUiState copyWith({
     List<StaffPatient>? patients,
@@ -55,6 +57,7 @@ class StaffPatientsUiState {
     Map<String, List<ClinicalRecord>>? recordClinical,
     Map<String, List<Appointment>>? recordAppointments,
     Map<String, List<StaffOrder>>? recordOrders,
+    bool? cancelling,
   }) {
     return StaffPatientsUiState(
       patients: patients ?? this.patients,
@@ -71,6 +74,7 @@ class StaffPatientsUiState {
       recordClinical: recordClinical ?? this.recordClinical,
       recordAppointments: recordAppointments ?? this.recordAppointments,
       recordOrders: recordOrders ?? this.recordOrders,
+      cancelling: cancelling ?? this.cancelling,
     );
   }
 }

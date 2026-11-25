@@ -17,6 +17,7 @@ import 'package:logix_optiflow/features/auth/presentation/session_view_model.dar
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart' show SearchField;
 import 'package:logix_optiflow/presentation/widgets/staff_widgets.dart';
 
 export 'package:logix_optiflow/presentation/pages/staff/staff_care_screens.dart';
@@ -578,6 +579,13 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
   String query = '';
   int filter = 0;
   static const tints = [AppColors.lavender, Color(0xFFDBEAFE), Color(0xFFF3F4FF), Color(0xFFE0E7FF)];
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -598,151 +606,124 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
           final matches = filter == 0 || (filter == 1 && agendaVm.waitingPatientIds.contains(patient.id)) || (filter == 2 && productionVm.workshopPatientIds.contains(patient.id));
           return matches && (q.isEmpty || patient.fullName.toLowerCase().contains(q) || patient.email.toLowerCase().contains(q) || patient.phone.contains(q));
         }).toList();
+        final waitingCount = patientsVm.state.patients.where((p) => agendaVm.waitingPatientIds.contains(p.id)).length;
+        final workshopCount = patientsVm.state.patients.where((p) => productionVm.workshopPatientIds.contains(p.id)).length;
+        final chips = ['Todos (${patientsVm.state.patients.length})', 'En atención ($waitingCount)', 'En taller ($workshopCount)'];
         return StaffScaffold(
           tab: StaffTab.patients,
           topBar: StaffTopBar(
             title: 'Pacientes',
-            trailing: IconButton(onPressed: () => context.push('/s/patients/new'), icon: const Icon(Icons.add, color: AppColors.white)),
+            trailing: StaffCircleAction(icon: LucideIcons.plus, onTap: () => context.push('/s/patients/new')),
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          body: Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-                decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Expedientes de pacientes', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
-                    const SizedBox(height: 8),
-                    Text('Fichas optométricas, recetas y seguimientos al día.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate300)),
-                    const SizedBox(height: 22),
-                    Row(
+              ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                children: [
+                  StaffHero(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _HeroStat('${patientsVm.state.patients.length}', 'Total pacientes')),
-                        Expanded(child: _HeroStat('${patientsVm.newPatientsThisMonth}', 'Nuevos este mes', valueColor: const Color(0xFF34D399))),
-                        Expanded(child: _HeroStat(patientsVm.state.patientsWithRecords?.toString() ?? '—', 'Con ficha vigente')),
+                        Text('Expedientes de pacientes', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
+                        const SizedBox(height: 8),
+                        Text('Fichas optométricas, recetas y seguimientos al día.', style: AppFonts.inter(fontSize: 11, color: AppColors.slate300)),
+                        const SizedBox(height: 22),
+                        Row(
+                          children: [
+                            Expanded(child: _StatColumn('${patientsVm.state.patients.length}', 'Total pacientes')),
+                            Expanded(child: _StatColumn('${patientsVm.newPatientsThisMonth}', 'Nuevos este mes', color: const Color(0xFF34D399))),
+                            Expanded(child: _StatColumn(patientsVm.state.patientsWithRecords?.toString() ?? '—', 'Con ficha vigente')),
+                          ],
+                        ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  SearchField(controller: _search, placeholder: 'Buscar por nombre, correo o teléfono', onChanged: (value) => setState(() => query = value)),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < chips.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          StaffChip(chips[i], selected: filter == i, onTap: () => setState(() => filter = i)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  const StaffSectionTitle('Pacientes recientes', action: 'Ordenar por fecha'),
+                  const SizedBox(height: 12),
+                  if (patientsVm.state.loading && patientsVm.state.patients.isEmpty)
+                    Text('Cargando pacientes...', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  if (patientsVm.state.error != null) ...[
+                    ErrorBanner(patientsVm.state.error),
+                    TextButton(onPressed: patientsVm.refreshStaffPatients, child: const Text('Reintentar')),
                   ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                onChanged: (value) => setState(() => query = value),
-                decoration: InputDecoration(
-                  hintText: 'Buscar por nombre, correo o teléfono',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: AppColors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.staffBorder)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < 3; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      _StaffChip(['Todos (${patientsVm.state.patients.length})', 'En atención (${patientsVm.state.patients.where((p) => agendaVm.waitingPatientIds.contains(p.id)).length})', 'En taller (${patientsVm.state.patients.where((p) => productionVm.workshopPatientIds.contains(p.id)).length})'][i], filter == i, () => setState(() => filter = i)),
-                    ],
+                  if (patientsVm.state.summaryError != null) ...[
+                    ErrorBanner(patientsVm.state.summaryError),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ),
-              const SizedBox(height: 26),
-              Row(
-                children: [
-                  Expanded(child: Text('Pacientes recientes', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-                  Text('Ordenar por fecha', style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (patientsVm.state.loading) const LinearProgressIndicator(),
-              if (patientsVm.state.error != null) ...[
-                Text(patientsVm.state.error!, style: const TextStyle(color: AppColors.errorRed)),
-                TextButton(onPressed: patientsVm.refreshStaffPatients, child: const Text('Reintentar')),
-              ],
-              if (patientsVm.state.summaryError != null) Text(patientsVm.state.summaryError!, style: const TextStyle(color: AppColors.errorRed)),
-              if (!patientsVm.state.loading && patientsVm.state.error == null && patients.isEmpty) const Text('No hay pacientes con esos criterios.'),
-              for (var index = 0; index < patients.length; index++) ...[
-                AppCard(
-                  onTap: () => context.push('/s/patient/${patients[index].id}'),
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(color: tints[index % tints.length], borderRadius: BorderRadius.circular(16)),
-                        child: Text(patients[index].initials, style: AppFonts.inter(fontSize: 14, color: AppColors.electric)),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  if (!patientsVm.state.loading && patientsVm.state.error == null && patients.isEmpty)
+                    Text('No hay pacientes con esos criterios.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  for (var index = 0; index < patients.length; index++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _StaffCard(
+                        onTap: () => context.push('/s/patient/${patients[index].id}'),
+                        child: Row(
                           children: [
-                            Text(patients[index].name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
-                            Text(patients[index].email, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                            Text(patients[index].note, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                            StaffInitials(patients[index].initials, size: 52, background: tints[index % tints.length], fontSize: 14),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(patients[index].fullName, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                                  const SizedBox(height: 3),
+                                  Text(patients[index].email, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                  const SizedBox(height: 3),
+                                  Text(patients[index].note, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                ],
+                              ),
+                            ),
+                            const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: AppColors.staffInk),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              const SizedBox(height: 8),
-              SolidButton(label: 'Nuevo paciente', icon: Icons.add, onPressed: () => context.push('/s/patients/new')),
+                    ),
+                ],
+              ),
+              Positioned(
+                right: 16,
+                bottom: 22,
+                child: StaffFab(text: 'Nuevo paciente', onTap: () => context.push('/s/patients/new')),
+              ),
             ],
           ),
         );
-        },
+      },
     );
   }
 }
 
-class _HeroStat extends StatelessWidget {
-  const _HeroStat(this.value, this.label, {this.valueColor = AppColors.white});
+class _StatColumn extends StatelessWidget {
+  const _StatColumn(this.value, this.label, {this.color = AppColors.white});
   final String value;
   final String label;
-  final Color valueColor;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: AppFonts.inter(fontSize: 18, color: valueColor)),
+        Text(value, style: AppFonts.inter(fontSize: 18, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: AppFonts.inter(fontSize: 10, color: AppColors.slate300)),
+        Text(label, style: AppFonts.inter(fontSize: 9, color: AppColors.slate300)),
       ],
-    );
-  }
-}
-
-class _StaffChip extends StatelessWidget {
-  const _StaffChip(this.label, this.selected, this.onTap);
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.staffAccent : AppColors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.staffAccent : AppColors.lavender),
-        ),
-        child: Text(label, style: AppFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
-      ),
     );
   }
 }

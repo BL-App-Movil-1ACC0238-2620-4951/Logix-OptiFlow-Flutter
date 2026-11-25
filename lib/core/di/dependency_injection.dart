@@ -294,6 +294,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getPatientClinicalRecordsUseCase: getIt(),
         getPatientAppointmentsUseCase: getIt(),
         getStaffOrdersUseCase: getIt(),
+        cancelAppointmentUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => ProductionViewModel(
         session: getIt(), patients: getIt(), getStaffOrdersUseCase: getIt(), getStaffPatientUseCase: getIt()));
