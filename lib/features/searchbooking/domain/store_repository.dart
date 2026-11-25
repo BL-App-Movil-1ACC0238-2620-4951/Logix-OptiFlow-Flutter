@@ -15,6 +15,11 @@ abstract class StoreRepository {
 
   Future<List<TimeSlot>> availability(String storeId);
 
+  /// Todos los turnos publicados de la óptica, libres y reservados.
+  Future<List<TimeSlot>> timeSlots(String storeId);
+
+  Future<List<TimeSlot>> publishTimeSlots(String storeId, List<(DateTime, DateTime)> slots);
+
   Future<List<OpticalStore>> nearby(double latitude, double longitude, double radiusKm);
 
   Future<void> saveFavorite(String patientId, String opticalStoreId);

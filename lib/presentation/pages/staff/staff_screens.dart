@@ -23,6 +23,7 @@ import 'package:logix_optiflow/presentation/widgets/frame_photos.dart';
 import 'package:logix_optiflow/features/inventory/domain/frame.dart';
 import 'package:logix_optiflow/features/inventory/domain/product.dart';
 
+export 'package:logix_optiflow/presentation/pages/staff/staff_admin_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_care_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_evaluation_screen.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_insight_screens.dart';
@@ -982,6 +983,9 @@ class StaffMoreScreen extends StatelessWidget {
                   children: [
                     if (sessionVm.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', 'Stock crítico y órdenes', () => context.push('/s/alerts')),
                     if (sessionVm.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', 'Ventas, producción e inventario del mes', () => context.push('/s/reports')),
+                    if (sessionVm.canOpen('/s/admin/staff')) _Tool(Icons.person_outline, 'Personal', 'Altas, roles y accesos', () => context.push('/s/admin/staff')),
+                    if (sessionVm.canOpen('/s/admin/suppliers')) _Tool(Icons.inventory_2_outlined, 'Proveedores', null, () => context.push('/s/admin/suppliers')),
+                    if (sessionVm.canOpen('/s/admin/schedule')) _Tool(Icons.calendar_today_outlined, 'Horarios de atención', 'Abrir turnos para reservar', () => context.push('/s/admin/schedule')),
                     _Tool(Icons.settings_outlined, 'Configuración y permisos', sessionVm.session?.role.label, () => context.push('/s/settings')),
                     _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
                     _Tool(Icons.logout, 'Cerrar sesión', sessionVm.session?.email, () async { await sessionVm.logout(); }),

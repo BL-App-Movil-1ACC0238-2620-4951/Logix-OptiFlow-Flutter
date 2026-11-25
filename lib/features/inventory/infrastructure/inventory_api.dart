@@ -30,6 +30,9 @@ class InventoryApi {
 
   Future<List<Supplier>> suppliers() async => _list(await _client.get('suppliers')).map(InventoryDto.supplier).toList();
 
+  Future<Supplier> registerSupplier(String name, String? contact) async =>
+      InventoryDto.supplier(Map<String, dynamic>.from(await _client.send('POST', 'suppliers', {'name': name, 'contact': contact}) as Map));
+
   Future<List<StockMovement>> stockMovements({required String opticalStoreId, required DateTime from, required DateTime to, String? sku}) async =>
       _list(await _client.get('inventory/movements', {
         'opticalStoreId': opticalStoreId, 'from': from.toIso8601String().substring(0, 10),
