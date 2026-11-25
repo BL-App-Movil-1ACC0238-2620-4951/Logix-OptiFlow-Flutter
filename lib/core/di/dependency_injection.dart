@@ -73,6 +73,7 @@ import 'package:logix_optiflow/features/production/application/update_work_order
 import 'package:logix_optiflow/features/production/domain/production_repository.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_api.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_repository_impl.dart';
+import 'package:logix_optiflow/features/report/application/export_report_use_case.dart';
 import 'package:logix_optiflow/features/report/application/get_monthly_report_use_case.dart';
 import 'package:logix_optiflow/features/report/domain/report_repository.dart';
 import 'package:logix_optiflow/features/report/infrastructure/report_api.dart';
@@ -233,6 +234,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   // report
   getIt.registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(api: getIt<ReportApi>()));
   getIt.registerLazySingleton(() => GetMonthlyReportUseCase(repository: getIt<ReportRepository>()));
+  getIt.registerLazySingleton(() => ExportReportUseCase(repository: getIt<ReportRepository>()));
 
   // ViewModels: uno por área, compartidos por las pantallas.
   getIt.registerLazySingleton(() => SessionViewModel(
@@ -340,7 +342,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         bookAppointmentUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => ReportViewModel(
-        session: getIt(), production: getIt(), getLowStockAlertsUseCase: getIt(), getMonthlyReportUseCase: getIt()));
+        session: getIt(), production: getIt(), getLowStockAlertsUseCase: getIt(), getMonthlyReportUseCase: getIt(), exportReportUseCase: getIt()));
   getIt.registerLazySingleton(() => ClinicalCareViewModel(
         session: getIt(), repository: getIt(), agenda: getIt(), patients: getIt()));
   getIt.registerLazySingleton(() => QuoteViewModel(session: getIt(), repository: getIt()));

@@ -13,4 +13,6 @@ class ReportRepositoryImpl implements ReportRepository {
   Future<ProductionMetrics> production(DateTime from, DateTime to) => api.production(from, to);
   @override
   Future<InventoryMetrics> inventory(String opticalStoreId, DateTime from, DateTime to) => api.inventory(opticalStoreId, from, to);
+  @override
+  Future<String> csv(ReportKind kind, DateTime from, DateTime to, String? opticalStoreId) => api.csv(kind, from, to, opticalStoreId);
 }

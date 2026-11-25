@@ -980,8 +980,8 @@ class StaffMoreScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    if (sessionVm.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', null, () => context.push('/s/alerts'), badge: '3'),
-                    if (sessionVm.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', null, () => context.push('/s/reports')),
+                    if (sessionVm.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', 'Stock crítico y órdenes', () => context.push('/s/alerts')),
+                    if (sessionVm.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', 'Ventas, producción e inventario del mes', () => context.push('/s/reports')),
                     _Tool(Icons.settings_outlined, 'Configuración y permisos', sessionVm.session?.role.label, () => context.push('/s/settings')),
                     _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
                     _Tool(Icons.logout, 'Cerrar sesión', sessionVm.session?.email, () async { await sessionVm.logout(); }),

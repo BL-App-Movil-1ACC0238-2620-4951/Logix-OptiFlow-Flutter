@@ -6,7 +6,9 @@ import 'package:logix_optiflow/features/auth/presentation/session_view_model.dar
 import 'package:logix_optiflow/features/inventory/application/get_low_stock_alerts_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/production_order.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
+import 'package:logix_optiflow/features/report/application/export_report_use_case.dart';
 import 'package:logix_optiflow/features/report/application/get_monthly_report_use_case.dart';
+import 'package:logix_optiflow/features/report/domain/report_metrics.dart';
 import 'package:logix_optiflow/features/report/domain/staff_alert.dart';
 import 'package:logix_optiflow/features/report/presentation/report_ui_state.dart';
 
@@ -17,6 +19,7 @@ class ReportViewModel extends ChangeNotifier {
     required this.production,
     required this.getLowStockAlertsUseCase,
     required this.getMonthlyReportUseCase,
+    required this.exportReportUseCase,
   }) {
     session.addLogoutListener(_reset);
   }
@@ -25,6 +28,7 @@ class ReportViewModel extends ChangeNotifier {
   final ProductionViewModel production;
   final GetLowStockAlertsUseCase getLowStockAlertsUseCase;
   final GetMonthlyReportUseCase getMonthlyReportUseCase;
+  final ExportReportUseCase exportReportUseCase;
 
   ReportUiState _state = ReportUiState(month: _thisMonth());
   ReportUiState get state => _state;
@@ -61,14 +65,14 @@ class ReportViewModel extends ChangeNotifier {
     return [
       for (final item in _state.lowStock)
         StaffAlert(
-          kind: 'Inventario', title: 'Stock bajo', action: 'Revisar stock', route: '/s/stock/${Uri.encodeComponent(item.sku)}',
+          kind: 'Inventario', title: item.quantity == 0 ? 'Sin stock' : 'Stock bajo', action: 'Reponer', route: '/s/stock/${Uri.encodeComponent(item.sku)}',
           message: '${item.name} tiene ${item.quantity} ${item.quantity == 1 ? 'unidad' : 'unidades'} (mínimo ${item.minimumStock}).',
         ),
       for (final order in open.where((o) => o.needsAttention))
-        StaffAlert(kind: 'Producción', title: 'Orden con retraso', action: 'Ver producción', route: '/s/production',
-            message: '${order.code} de ${order.patient} está atrasada.'),
+        StaffAlert(kind: 'Producción', title: 'Orden con retraso', action: 'Ver orden', route: '/s/work-order/${order.id}',
+            message: '${order.code} de ${order.patient}: ${order.due}.'),
       if (ready > 0)
-        StaffAlert(kind: 'Producción', title: 'Pedidos listos', action: 'Ver producción', route: '/s/production',
+        StaffAlert(kind: 'Producción', title: 'Pedidos listos', action: 'Ver pedidos', route: '/s/production/READY_FOR_DELIVERY',
             message: ready == 1 ? '1 pedido espera ser entregado.' : '$ready pedidos esperan ser entregados.'),
     ];
   }
@@ -96,7 +100,7 @@ class ReportViewModel extends ChangeNotifier {
   Future<void> changeMonth(int delta) async {
     final next = DateTime(_state.month.year, _state.month.month + delta);
     if (next.isAfter(_thisMonth())) return;
-    _state = _state.copyWith(month: next);
+    _state = _state.copyWith(month: next, exportMessage: () => null, exportError: () => null);
     await refreshReport();
   }
 
@@ -115,5 +119,31 @@ class ReportViewModel extends ChangeNotifier {
     } finally {
       if (active()) _emit(_state.copyWith(reportLoading: false));
     }
+  }
+
+  /// Pide el CSV del mes; la pantalla lo guarda donde el usuario elija. Devuelve null si falló.
+  Future<String?> export(ReportKind kind) async {
+    if (_state.exporting != null || !session.canOpen('/s/reports')) return null;
+    final current = session.session;
+    _emit(_state.copyWith(exporting: () => kind, exportMessage: () => null, exportError: () => null));
+    try {
+      final csv = await exportReportUseCase.execute(kind, _state.month, _storeId);
+      if (identical(current, session.session)) _emit(_state.copyWith(exporting: () => null));
+      return csv;
+    } catch (e) {
+      if (identical(current, session.session)) {
+        _emit(_state.copyWith(exporting: () => null, exportError: () => _message(e, 'No se pudo exportar el reporte.')));
+      }
+      return null;
+    }
+  }
+
+  /// Resultado de guardar el archivo: null si el usuario canceló el selector.
+  void saved(bool? ok) {
+    if (ok == null) return;
+    _emit(_state.copyWith(
+      exportMessage: () => ok ? 'Reporte guardado.' : null,
+      exportError: () => ok ? null : 'No se pudo guardar el archivo.',
+    ));
   }
 }
