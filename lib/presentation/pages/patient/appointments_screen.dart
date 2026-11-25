@@ -536,8 +536,6 @@ class _RescheduleScreenState extends State<RescheduleScreen> {
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365)),
       helpText: 'Elige una fecha',
-      cancelText: 'Cancelar',
-      confirmText: 'Aceptar',
     );
     if (picked != null) _vm.selectDate(picked);
   }

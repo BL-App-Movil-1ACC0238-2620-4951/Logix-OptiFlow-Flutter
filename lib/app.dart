@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
@@ -97,6 +98,10 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
     return MaterialApp.router(
       title: 'OptiFlow',
       debugShowCheckedModeBanner: false,
+      // Textos de Material (calendario, diálogos) en español.
+      locale: const Locale('es'),
+      supportedLocales: const [Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.screenBg,
