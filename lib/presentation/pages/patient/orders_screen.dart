@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -56,7 +57,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               const SizedBox(height: 48),
               Column(
                 children: [
-                  const IconTile(icon: Icons.inventory_2_outlined, background: AppColors.white, color: AppColors.navyBlue, size: 56, iconSize: 22),
+                  const IconTile(icon: LucideIcons.box, background: AppColors.white, color: AppColors.navyBlue, size: 56, iconSize: 22),
                   const SizedBox(height: 14),
                   Text(
                     tab == 0 ? 'No tienes más pedidos activos' : 'No tienes más pedidos entregados',
@@ -116,7 +117,7 @@ class _OrderCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const IconTile(icon: Icons.remove_red_eye_outlined, background: AppColors.periwinkle, color: AppColors.deepNavy, size: 50, iconSize: 22),
+              const IconTile(icon: LucideIcons.eye, background: AppColors.periwinkle, color: AppColors.deepNavy, size: 50, iconSize: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -128,7 +129,7 @@ class _OrderCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.inventory_2_outlined, size: 12, color: AppColors.electric),
+                          const Icon(LucideIcons.package, size: 12, color: AppColors.electric),
                           const SizedBox(width: 4),
                           Text(order.delivered ? 'Entregado' : order.statusLabel, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.electric)),
                         ],
@@ -140,7 +141,7 @@ class _OrderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.slate500, size: 20),
+              const Icon(LucideIcons.chevronRight, color: AppColors.slate500, size: 20),
             ],
           ),
           const SizedBox(height: 14),
@@ -192,10 +193,15 @@ class OrderTrackingScreen extends StatelessWidget {
           return const PatientScaffold(tab: PatientTab.orders, topBar: DarkTopBar(title: 'Pedido'), body: Center(child: Text('Pedido no encontrado.')));
         }
         final steps = [
-          ('Pedido recibido', order.history.isNotEmpty ? order.history[0] : '—', Icons.check),
-          ('Pago confirmado', order.history.length > 1 ? order.history[1] : (order.history.isNotEmpty ? order.history[0] : '—'), Icons.check),
-          ('En producción', 'Trabajando en tus lentes', Icons.remove_red_eye_outlined),
-          ('Listo para retirar', 'Próximamente', Icons.inventory_2_outlined),
+          ('Pedido recibido', order.history.firstOrNull ?? '—', LucideIcons.check),
+          // La orden nace al cerrar la venta, ya pagada.
+          ('Pago confirmado', order.statusDates['PENDING'] ?? order.history.firstOrNull ?? '—', LucideIcons.check),
+          ('En producción', order.statusDates['IN_WORKSHOP'] ?? (order.step >= 2 ? 'Trabajando en tus lentes' : 'Pendiente'), LucideIcons.eye),
+          (
+            order.delivered ? 'Entregado' : 'Listo para retirar',
+            order.statusDates[order.delivered ? 'DELIVERED' : 'READY_FOR_DELIVERY'] ?? 'Pendiente',
+            LucideIcons.package,
+          ),
         ];
         return PatientScaffold(
           tab: PatientTab.orders,
@@ -212,7 +218,7 @@ class OrderTrackingScreen extends StatelessWidget {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(14), boxShadow: const [BoxShadow(color: Color(0x1400135B), blurRadius: 6, offset: Offset(0, 2))]),
-                      child: const Icon(Icons.remove_red_eye_outlined, color: AppColors.navyBlue, size: 24),
+                      child: const Icon(LucideIcons.eye, color: AppColors.navyBlue, size: 24),
                     ),
                     const SizedBox(height: 10),
                     Container(
@@ -221,16 +227,25 @@ class OrderTrackingScreen extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check, size: 14, color: AppColors.navyBlue),
+                          const Icon(LucideIcons.check, size: 14, color: AppColors.navyBlue),
                           const SizedBox(width: 6),
                           Text(order.delivered ? 'Entregado' : order.statusLabel, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navyBlue)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Text(order.delivered ? 'Tus lentes fueron entregados' : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                    Text(
+                      order.delivered
+                          ? 'Tus lentes fueron entregados'
+                          : order.step >= 3
+                              ? 'Tus lentes están listos para retirar'
+                              : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                     const SizedBox(height: 6),
-                    Text('Entrega estimada entre el ${order.estimate}.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                    Text(order.delivered ? 'Gracias por confiar en nosotros.' : 'Entrega estimada: ${order.estimate}.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                    if (order.delayReason != null) ...[
+                      const SizedBox(height: 6),
+                      Text('Tu pedido tiene un retraso: ${order.delayReason}', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+                    ],
                   ],
                 ),
               ),
@@ -252,18 +267,18 @@ class OrderTrackingScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Column(
                   children: [
-                    _InfoLine(Icons.remove_red_eye_outlined, 'PRODUCTO', order.product, order.productDetail),
+                    _InfoLine(LucideIcons.eye, 'PRODUCTO', order.product, order.productDetail),
                     const SizedBox(height: 12),
                     const Divider(height: 1, color: AppColors.lavender),
                     const SizedBox(height: 12),
-                    _InfoLine(Icons.place_outlined, 'RETIRO EN', order.pickup, null),
+                    _InfoLine(LucideIcons.mapPin, 'RETIRO EN', order.pickup, null),
                   ],
                 ),
               ),
               const SizedBox(height: 22),
               SolidButton(
                 label: '¿Necesitas ayuda?',
-                icon: Icons.help_outline,
+                icon: LucideIcons.circleQuestionMark,
                 background: AppColors.white,
                 foreground: AppColors.navyBlue,
                 border: AppColors.skyTint,
@@ -303,7 +318,7 @@ class _TrackStep extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: active ? AppColors.navyBlue : const Color(0xFFE2E8F0)),
               ),
-              child: Icon(reached ? Icons.check : icon, size: 14, color: active ? AppColors.white : AppColors.slate400),
+              child: Icon(reached ? LucideIcons.check : icon, size: 14, color: active ? AppColors.white : AppColors.slate400),
             ),
             if (!last) Container(width: 2, height: 27, color: lineOn ? AppColors.navyBlue : const Color(0xFFE2E8F0)),
           ],

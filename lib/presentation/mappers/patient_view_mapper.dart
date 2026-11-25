@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/time_slot.dart';
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
@@ -73,28 +74,62 @@ abstract final class PatientViewMapper {
     );
   }
 
-  static OrderUi order(WorkOrder order) {
-    final status = order.status.toUpperCase();
-    final step = switch (status) {
+  static OrderUi order(WorkOrder order, {List<QuotationItem> items = const [], String? storeName}) {
+    final step = switch (order.status.toUpperCase()) {
       'PENDING' => 1,
-      'IN_WORKSHOP' || 'QUALITY_CONTROL' || 'IN_PRODUCTION' || 'PRODUCTION' => 2,
-      'READY_FOR_DELIVERY' || 'READY' => 3,
+      'IN_WORKSHOP' || 'QUALITY_CONTROL' => 2,
+      'READY_FOR_DELIVERY' => 3,
       'DELIVERED' => 4,
       _ => 0,
     };
     final id = order.id;
+    final created = order.createdAt ?? DateTime.now();
+    final delivery = DateTime.tryParse(order.estimatedDelivery ?? '');
+    final frame = items.where((i) => i.type == 'FRAME').firstOrNull?.description;
+    final lenses = items.where((i) => i.type != 'FRAME').map((i) => i.description).join(' · ');
+    String shortDateTime(DateTime at) => DateFormat("d MMM · HH:mm", 'es').format(at.toLocal());
+    final history = [for (final change in order.statusHistory) shortDateTime(change.changedAt)];
     return OrderUi(
       id: id,
       code: 'OF-${id.substring(0, id.length < 4 ? id.length : 4).toUpperCase()}',
-      title: 'Lentes ópticos + montura',
-      dateLabel: DateFormat('d MMM', 'es').format(order.createdAt ?? DateTime.now()),
+      title: frame != null ? 'Lentes ópticos + montura' : 'Lentes ópticos',
+      dateLabel: DateFormat('d MMM', 'es').format(created),
       step: step,
-      estimate: order.estimatedDelivery ?? 'por confirmar',
-      product: 'Lentes ópticos',
-      productDetail: order.lensSpecification ?? 'Especificación por confirmar',
-      pickup: 'Tu óptica',
-      history: const [],
+      estimate: delivery == null ? 'por confirmar' : DateFormat("d 'de' MMMM", 'es').format(delivery),
+      product: frame ?? 'Lentes',
+      productDetail: lenses.isNotEmpty ? lenses : (order.lensSpecification ?? 'Lentes'),
+      pickup: storeName ?? 'Óptica OptiFlow',
+      history: history.isEmpty ? [shortDateTime(created)] : history,
       fromApi: true,
+      statusDates: {for (final change in order.statusHistory) change.status: shortDateTime(change.changedAt)},
+      delayReason: order.delayReason,
+    );
+  }
+
+  static PurchaseUi purchase(Sale sale, num? pendingTotal) {
+    final date = sale.paidAt ?? sale.closedAt ?? sale.issuedAt;
+    final amount = sale.amount ?? pendingTotal;
+    final method = sale.paymentMethod?.toUpperCase();
+    final pending = sale.status == SaleStatus.pendingPayment;
+    return PurchaseUi(
+      id: sale.id,
+      date: date == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(date.toLocal()),
+      amount: amount == null ? '—' : soles(amount),
+      paymentMethod: switch (method) {
+        null => 'Pago pendiente',
+        'CASH' => 'Efectivo',
+        'CARD' => 'Tarjeta',
+        'YAPE' => 'Yape',
+        _ => _cap(method.toLowerCase()),
+      },
+      status: switch (sale.status) {
+        SaleStatus.paid => 'Pagada',
+        SaleStatus.pendingPayment => 'Pendiente de pago',
+        SaleStatus.closed => 'Completada',
+      },
+      receiptNumber: sale.receiptNumber,
+      payable: pending,
+      paymentRejected: pending && sale.paymentStatus == 'REJECTED',
     );
   }
 

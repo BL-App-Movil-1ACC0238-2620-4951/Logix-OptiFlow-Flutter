@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/purchases_view_model.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
@@ -68,6 +69,21 @@ class ProfileScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
+                    ListenableBuilder(
+                      listenable: getIt<PurchasesViewModel>(),
+                      builder: (context, _) {
+                        final purchases = getIt<PurchasesViewModel>().state;
+                        return _Menu(
+                          icon: Icons.receipt_long_outlined,
+                          title: 'Mis compras',
+                          subtitle: purchases.loading
+                              ? 'Consultando...'
+                              : switch (purchases.purchases.length) { 0 => 'Aún no tienes compras', 1 => '1 compra', final n => '$n compras' },
+                          onTap: () => context.push('/p/purchases'),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1, color: AppColors.lavender),
                     _Menu(icon: Icons.settings_outlined, title: 'Configuración', onTap: () => context.push('/p/settings')),
                     const Divider(height: 1, color: AppColors.lavender),
                     _Menu(icon: Icons.help_outline, title: 'Ayuda y soporte', onTap: () => context.push('/p/settings')),

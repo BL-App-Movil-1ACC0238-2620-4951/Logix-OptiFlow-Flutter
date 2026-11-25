@@ -21,6 +21,11 @@ import 'package:logix_optiflow/features/auth/infrastructure/session_repository_i
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patients_with_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/create_payment_link_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_patient_sales_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_sale_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/purchases_view_model.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_repository.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/clinical_api.dart';
@@ -175,6 +180,10 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   );
   getIt.registerLazySingleton(() => GetPatientClinicalRecordsUseCase(repository: getIt<ClinicalRepository>()));
   getIt.registerLazySingleton(() => GetPrescriptionUseCase(repository: getIt<ClinicalRepository>()));
+  getIt.registerLazySingleton(() => GetPatientSalesUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => GetSaleUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => GetQuotationUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => CreatePaymentLinkUseCase(repository: getIt<CommerceRepository>()));
   getIt.registerLazySingleton(() => GetPatientsWithRecordsUseCase(repository: getIt<ClinicalRepository>()));
 
   // production
@@ -231,6 +240,14 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getPatientClinicalRecordsUseCase: getIt(),
         rateOpticalStoreUseCase: getIt(),
         getPrescriptionUseCase: getIt(),
+        getSaleUseCase: getIt(),
+        getQuotationUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => PurchasesViewModel(
+        session: getIt(),
+        getPatientSalesUseCase: getIt(),
+        getQuotationUseCase: getIt(),
+        createPaymentLinkUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => NotificationsViewModel(
         session: getIt(),

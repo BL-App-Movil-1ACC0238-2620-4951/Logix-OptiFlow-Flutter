@@ -7,6 +7,9 @@ import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_sale_use_case.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
@@ -30,6 +33,8 @@ class PatientViewModel extends ChangeNotifier {
     required this.getPatientClinicalRecordsUseCase,
     required this.rateOpticalStoreUseCase,
     required this.getPrescriptionUseCase,
+    required this.getSaleUseCase,
+    required this.getQuotationUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -43,6 +48,8 @@ class PatientViewModel extends ChangeNotifier {
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
   final RateOpticalStoreUseCase rateOpticalStoreUseCase;
   final GetPrescriptionUseCase getPrescriptionUseCase;
+  final GetSaleUseCase getSaleUseCase;
+  final GetQuotationUseCase getQuotationUseCase;
 
   PatientUiState _state = PatientUiState();
   PatientUiState get state => _state;
@@ -134,9 +141,14 @@ class PatientViewModel extends ChangeNotifier {
     if (!identical(current, _current)) return;
     try { records = await getPatientClinicalRecordsUseCase.execute(current.patientId); } catch (_) {}
     await appointmentsRequest;
+    final products = await Future.wait(apiOrders.map(_productsOf));
     if (!identical(current, _current)) return;
     final name = session.displayName;
-    final orders = apiOrders.map(PatientViewMapper.order).toList();
+    final storeNames = {for (final store in stores.state.stores) store.id: store.name};
+    final orders = [
+      for (final (i, order) in apiOrders.indexed)
+        PatientViewMapper.order(order, items: products[i], storeName: storeNames[order.opticalStoreId]),
+    ];
     final history = records.map(PatientViewMapper.history).toList();
     _recordsById = {for (final r in records) if (r.id != null) r.id!: r};
     _emit(_state.copyWith(
@@ -146,6 +158,18 @@ class PatientViewModel extends ChangeNotifier {
       prescriptions: PatientViewMapper.prescriptionItems(records),
       patientLoading: false,
     ));
+  }
+
+  /// Productos del pedido: venta → cotización → ítems. Sin venta o si falla, lista vacía.
+  Future<List<QuotationItem>> _productsOf(WorkOrder order) async {
+    final saleId = order.saleId;
+    if (saleId == null) return const [];
+    try {
+      final sale = await getSaleUseCase.execute(saleId);
+      return (await getQuotationUseCase.execute(sale.quotationId)).items;
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// Carga una receta con `GET clinical-records/{id}/prescription`.
