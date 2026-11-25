@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
-import 'package:logix_optiflow/features/searchbooking/presentation/purchases_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/patient_account_view_model.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
@@ -18,7 +18,7 @@ class PurchasesScreen extends StatefulWidget {
 }
 
 class _PurchasesScreenState extends State<PurchasesScreen> {
-  final _vm = getIt<PurchasesViewModel>();
+  final _vm = getIt<PatientAccountViewModel>();
   late final AppLifecycleListener _lifecycle;
 
   @override

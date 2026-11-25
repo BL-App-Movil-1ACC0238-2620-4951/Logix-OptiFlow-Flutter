@@ -5,5 +5,7 @@ abstract class NotificationRepository {
 
   Future<void> markRead(String id);
 
+  Future<int> loyaltyBalance(String patientId);
+
   Future<void> answerSurvey(String id, int rating, String? comment);
 }

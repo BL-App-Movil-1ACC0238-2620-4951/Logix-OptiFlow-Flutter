@@ -8,11 +8,13 @@ import 'package:logix_optiflow/features/clinical/application/create_payment_link
 import 'package:logix_optiflow/features/clinical/application/get_patient_sales_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
+import 'package:logix_optiflow/features/notification/application/get_loyalty_points_use_case.dart';
 import 'package:logix_optiflow/presentation/mappers/patient_view_mapper.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 
-class PurchasesUiState {
-  const PurchasesUiState({
+class PatientAccountUiState {
+  const PatientAccountUiState({
+    this.points,
     this.purchases = const [],
     this.loading = true,
     this.error,
@@ -20,6 +22,8 @@ class PurchasesUiState {
     this.paymentError,
   });
 
+  /// Saldo de puntos; null mientras se consulta o si falló.
+  final int? points;
   final List<PurchaseUi> purchases;
   final bool loading;
   final String? error;
@@ -27,14 +31,16 @@ class PurchasesUiState {
   final String? payingSaleId;
   final String? paymentError;
 
-  PurchasesUiState copyWith({
+  PatientAccountUiState copyWith({
+    ValueGetter<int?>? points,
     List<PurchaseUi>? purchases,
     bool? loading,
     ValueGetter<String?>? error,
     ValueGetter<String?>? payingSaleId,
     ValueGetter<String?>? paymentError,
   }) {
-    return PurchasesUiState(
+    return PatientAccountUiState(
+      points: points != null ? points() : this.points,
       purchases: purchases ?? this.purchases,
       loading: loading ?? this.loading,
       error: error != null ? error() : this.error,
@@ -44,13 +50,14 @@ class PurchasesUiState {
   }
 }
 
-/// Compras del paciente y pago de las pendientes con Mercado Pago.
-class PurchasesViewModel extends ChangeNotifier {
-  PurchasesViewModel({
+/// Puntos de fidelidad y compras del paciente, y pago de las pendientes con Mercado Pago.
+class PatientAccountViewModel extends ChangeNotifier {
+  PatientAccountViewModel({
     required this.session,
     required this.getPatientSalesUseCase,
     required this.getQuotationUseCase,
     required this.createPaymentLinkUseCase,
+    required this.getLoyaltyPointsUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -60,12 +67,13 @@ class PurchasesViewModel extends ChangeNotifier {
   final GetPatientSalesUseCase getPatientSalesUseCase;
   final GetQuotationUseCase getQuotationUseCase;
   final CreatePaymentLinkUseCase createPaymentLinkUseCase;
+  final GetLoyaltyPointsUseCase getLoyaltyPointsUseCase;
 
-  PurchasesUiState _state = const PurchasesUiState();
-  PurchasesUiState get state => _state;
+  PatientAccountUiState _state = const PatientAccountUiState();
+  PatientAccountUiState get state => _state;
   int _request = 0;
 
-  void _emit(PurchasesUiState value) {
+  void _emit(PatientAccountUiState value) {
     _state = value;
     notifyListeners();
   }
@@ -80,7 +88,7 @@ class PurchasesViewModel extends ChangeNotifier {
 
   void _reset() {
     _request++;
-    _emit(const PurchasesUiState(loading: false));
+    _emit(const PatientAccountUiState(loading: false));
   }
 
   Future<void> load() async {
@@ -88,6 +96,7 @@ class PurchasesViewModel extends ChangeNotifier {
     if (current?.isAuthenticated != true || !current!.isPatient) return;
     final request = ++_request;
     _emit(_state.copyWith(loading: true, error: () => null));
+    unawaited(_loadPoints(current.patientId, request));
     try {
       final sales = await getPatientSalesUseCase.execute(current.patientId);
       // Una venta pendiente aún no tiene pago ni boleta: el monto sale del total de su cotización.
@@ -108,6 +117,14 @@ class PurchasesViewModel extends ChangeNotifier {
       if (request != _request) return;
       _emit(_state.copyWith(loading: false, error: () => e is ApiException ? e.message : 'No se pudieron cargar tus compras.'));
     }
+  }
+
+  Future<void> _loadPoints(String patientId, int request) async {
+    int? points;
+    try {
+      points = await getLoyaltyPointsUseCase.execute(patientId);
+    } catch (_) {}
+    if (request == _request) _emit(_state.copyWith(points: () => points));
   }
 
   /// Pide el link de Checkout Pro (`POST sales/{id}/payment-preference`); null si falló.

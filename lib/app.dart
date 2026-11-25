@@ -11,6 +11,7 @@ import 'package:logix_optiflow/presentation/pages/patient/extra_screens.dart';
 import 'package:logix_optiflow/presentation/pages/patient/home_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/notifications_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/orders_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/account_screens.dart';
 import 'package:logix_optiflow/presentation/pages/patient/purchases_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
@@ -47,6 +48,8 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/p/orders', builder: (_, __) => const OrdersScreen()),
       GoRoute(path: '/p/purchases', builder: (_, __) => const PurchasesScreen()),
       GoRoute(path: '/p/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(path: '/p/profile/edit', builder: (_, __) => const EditProfileScreen()),
+      GoRoute(path: '/p/info/:topic', builder: (_, state) => InfoScreen(topic: InfoTopic.from(state.pathParameters['topic']))),
       GoRoute(path: '/p/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/p/catalog', builder: (_, __) => const CatalogScreen()),
       GoRoute(path: '/p/frame/:id', builder: (_, state) => FrameDetailScreen(id: state.pathParameters['id']!)),
