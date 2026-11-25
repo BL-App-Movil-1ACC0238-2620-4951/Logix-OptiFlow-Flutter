@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
@@ -9,11 +10,14 @@ import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
+import 'package:logix_optiflow/features/production/domain/production_order.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
+import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/widgets/staff_widgets.dart';
 
 export 'package:logix_optiflow/presentation/pages/staff/staff_care_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_evaluation_screen.dart';
@@ -21,6 +25,31 @@ export 'package:logix_optiflow/presentation/pages/staff/staff_insight_screens.da
 export 'package:logix_optiflow/presentation/pages/staff/staff_inventory_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_record_screen.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_sale_screens.dart';
+
+String _greeting() {
+  final hour = StoreTime.clock(DateTime.now()).hour;
+  if (hour >= 5 && hour <= 11) return 'Buenos días';
+  if (hour >= 12 && hour <= 18) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+String _initialsOf(String name) => name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2).map((s) => s[0].toUpperCase()).join();
+
+String _agendaDateLabel(DateTime date) => DateFormat("EEEE d 'de' MMMM", 'es').format(date).toUpperCase();
+
+/// Tarjeta blanca del personal con el borde de Kotlin.
+class _StaffCard extends StatelessWidget {
+  const _StaffCard({required this.child, this.onTap, this.radius = 18, this.color = AppColors.white, this.border = AppColors.staffBorder, this.padding = const EdgeInsets.all(14)});
+  final Widget child;
+  final VoidCallback? onTap;
+  final double radius;
+  final Color color;
+  final Color border;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) => AppCard(onTap: onTap, radius: radius, color: color, borderColor: border, padding: padding, child: child);
+}
 
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});
@@ -32,7 +61,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) getIt<AgendaViewModel>().refreshStaffOverview(); });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      getIt<AgendaViewModel>().refreshStaffOverview();
+      if (getIt<SessionViewModel>().canOpen('/s/alerts')) getIt<ReportViewModel>().refreshAlerts();
+    });
   }
 
   @override
@@ -41,35 +74,44 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     final productionVm = getIt<ProductionViewModel>();
     final sessionVm = getIt<SessionViewModel>();
     final storesVm = getIt<StoreSearchViewModel>();
+    final reportVm = getIt<ReportViewModel>();
     return ListenableBuilder(
-      listenable: Listenable.merge([agendaVm, productionVm, sessionVm, storesVm]),
+      listenable: Listenable.merge([agendaVm, productionVm, sessionVm, storesVm, reportVm]),
       builder: (context, _) {
-        final next = agendaVm.state.agenda.where((a) => a.status != AgendaStatus.done).firstOrNull;
+        final agenda = agendaVm.state.agenda;
+        final next = agenda.where((a) => a.status != AgendaStatus.done).firstOrNull;
+        final orders = productionVm.productionOrders;
+        final canAgenda = sessionVm.canOpen('/s/agenda');
+        final canProduction = sessionVm.canOpen('/s/production');
+        final actions = [
+          if (sessionVm.canOpen('/s/patients/new')) (LucideIcons.users, 'Nuevo paciente', '/s/patients/new'),
+          if (sessionVm.canOpen('/s/scanner')) (LucideIcons.scan, 'Escanear', '/s/scanner'),
+          if (sessionVm.canOpen('/s/quote')) (LucideIcons.fileText, 'Cotización', '/s/quote'),
+          if (sessionVm.canOpen('/s/sale')) (LucideIcons.creditCard, 'Nueva venta', '/s/quote'),
+          if (canProduction && !sessionVm.canOpen('/s/sale')) (LucideIcons.briefcase, 'Órdenes', '/s/production'),
+        ];
         return StaffScaffold(
           tab: StaffTab.home,
           topBar: StaffTopBar(
-            title: 'Hola, ${sessionVm.firstName}',
+            title: '${_greeting()}, ${sessionVm.firstName}',
             eyebrow: storesVm.staffStoreName,
-            trailing: sessionVm.canOpen('/s/alerts') ? IconButton(
-              onPressed: () => context.push('/s/alerts'),
-              icon: const Icon(Icons.notifications_none, color: AppColors.white),
-            ) : null,
+            trailing: sessionVm.canOpen('/s/alerts') ? StaffBell(onTap: () => context.push('/s/alerts')) : null,
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
-                decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(18)),
+              StaffHero(
+                background: AppColors.staffHero,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
                 child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: AppFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.4)),
+                          Text(_agendaDateLabel(agendaVm.state.date), style: AppFonts.inter(fontSize: 11, color: AppColors.slate300, letterSpacing: 1.54)),
                           const SizedBox(height: 10),
-                          Text('Tu jornada, de un vistazo', style: AppFonts.inter(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.white)),
+                          Text('Tu jornada, de un vistazo', style: AppFonts.inter(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.white, letterSpacing: -0.9)),
                           const SizedBox(height: 6),
                           Text('Todo listo para comenzar.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate300)),
                         ],
@@ -86,103 +128,185 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              if (agendaVm.state.loading || productionVm.state.loading) const LinearProgressIndicator(),
-              if (agendaVm.state.error != null) TextButton(onPressed: agendaVm.refreshStaffAgenda, child: Text(agendaVm.state.error!)),
-              if (productionVm.state.error != null) TextButton(onPressed: productionVm.refreshStaffOrders, child: Text(productionVm.state.error!)),
-              Row(
-                children: [
-                  if (sessionVm.canOpen('/s/agenda'))
-                    Expanded(child: _Stat('${agendaVm.state.agenda.length}', 'Citas del día', () => context.go('/s/agenda'), detail: '${agendaVm.state.agenda.where((a) => a.status != AgendaStatus.done).length} pendientes', icon: Icons.calendar_today_outlined)),
-                  if (sessionVm.canOpen('/s/agenda') && sessionVm.canOpen('/s/production')) const SizedBox(width: 14),
-                  if (sessionVm.canOpen('/s/production'))
-                    Expanded(child: _Stat('${productionVm.state.orders.where((o) => o.status != 'DELIVERED').length}', 'En producción', () => context.push('/s/production'), detail: '${productionVm.state.orders.where((o) => o.status == 'READY_FOR_DELIVERY').length} por entregar', icon: Icons.work_outline)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              if (sessionVm.canOpen('/s/agenda')) ...[
-              Row(
-                children: [
-                  Expanded(child: Text('Próxima atención', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-                  GestureDetector(
-                    onTap: () => context.go('/s/agenda'),
-                    child: Text('Ver agenda', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (next == null)
-                const Text('No hay más citas para este día.')
-              else
-              AppCard(
-                onTap: () => context.push('/s/patient/${next.patientId}'),
-                child: Row(
+              if (agendaVm.state.error != null) ErrorBanner(agendaVm.state.error),
+              if (productionVm.state.error != null) ErrorBanner(productionVm.state.error),
+              if (canAgenda || canProduction)
+                Row(
                   children: [
-                    Container(
-                      width: 43,
-                      height: 43,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(12)),
-                      child: Text(next.name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).take(2).map((s) => s[0]).join().toUpperCase(), style: AppFonts.inter(fontSize: 11, color: AppColors.electric)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.staffBlue50, borderRadius: BorderRadius.circular(20)),
-                            child: Text(next.status == AgendaStatus.waiting ? 'En sala de espera' : next.status == AgendaStatus.pending ? 'Por confirmar' : 'Confirmada', style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+                    if (canAgenda)
+                      Expanded(
+                        child: _StatCard(
+                          icon: LucideIcons.calendar,
+                          value: '${agenda.length}',
+                          title: 'Citas de hoy',
+                          subtitle: '${agenda.where((a) => a.status != AgendaStatus.done).length} pendientes',
+                          onTap: () => context.go('/s/agenda'),
+                        ),
+                      ),
+                    if (canAgenda && canProduction) const SizedBox(width: 14),
+                    if (canProduction)
+                      Expanded(
+                        child: _StatCard(
+                          icon: LucideIcons.briefcase,
+                          value: '${orders.where((o) => o.stage != ProductionStage.delivered).length}',
+                          title: 'En producción',
+                          subtitle: '${orders.where((o) => o.stage == ProductionStage.ready).length} por entregar',
+                          onTap: () => context.push('/s/production'),
+                        ),
+                      ),
+                  ],
+                ),
+              if (canAgenda) ...[
+                const SizedBox(height: 24),
+                StaffSectionTitle('Próxima atención', action: 'Ver agenda', onAction: () => context.go('/s/agenda')),
+                const SizedBox(height: 12),
+                if (agendaVm.state.loading && agenda.isEmpty)
+                  Text('Cargando la agenda...', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400))
+                else if (next == null)
+                  Text('No hay más citas para hoy.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400))
+                else
+                  _StaffCard(
+                    onTap: () => context.push('/s/patient/${next.patientId}'),
+                    child: Row(
+                      children: [
+                        StaffInitials(_initialsOf(next.name)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              StaffPill(switch (next.status) {
+                                AgendaStatus.waiting => 'En sala de espera',
+                                AgendaStatus.pending => 'Por confirmar',
+                                _ => 'Confirmada',
+                              }),
+                              const SizedBox(height: 4),
+                              Text(next.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                              const SizedBox(height: 4),
+                              Text('${next.time} · ${next.service}', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(next.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
-                          Text('${next.time} · ${next.service}', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                        ],
-                      ),
+                        ),
+                        const Icon(LucideIcons.chevronRight, size: 22, color: AppColors.staffInk),
+                      ],
                     ),
-                    const Icon(Icons.chevron_right, color: AppColors.staffInk),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                  ),
               ],
-              Text('Acciones frecuentes', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  if (sessionVm.canOpen('/s/patients/new')) _Action(Icons.people_outline, 'Nuevo paciente', () => context.push('/s/patients/new')),
-                  if (sessionVm.canOpen('/s/scanner')) _Action(Icons.qr_code_scanner, 'Escanear', () => context.push('/s/scanner')),
-                  if (sessionVm.canOpen('/s/quote')) _Action(Icons.description_outlined, 'Cotización', () => context.push('/s/quote')),
-                  if (sessionVm.canOpen('/s/sale')) _Action(Icons.credit_card, 'Nueva venta', () => context.push('/s/sale')),
-                  if (sessionVm.canOpen('/s/production') && !sessionVm.canOpen('/s/agenda')) _Action(Icons.work_outline, 'Producción', () => context.push('/s/production')),
-                ],
-              ),
-              const SizedBox(height: 18),
-              if (sessionVm.canOpen('/s/alerts'))
-              AppCard(
-                onTap: () => context.push('/s/alerts'),
-                color: AppColors.staffBlue50,
-                child: const Row(
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const StaffSectionTitle('Acciones frecuentes'),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    IconTile(icon: Icons.notifications_none, background: AppColors.lavender, color: AppColors.staffInk, size: 37),
-                    SizedBox(width: 11),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Alertas de la óptica', style: TextStyle(fontSize: 12, color: AppColors.staffInk)),
-                          Text('Stock bajo y órdenes con retraso.', style: TextStyle(fontSize: 11, color: AppColors.staffMuted)),
-                        ],
+                    for (final (i, (icon, label, route)) in actions.indexed) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      Expanded(
+                        child: _StaffCard(
+                          radius: 16,
+                          padding: EdgeInsets.zero,
+                          onTap: () => context.push(route),
+                          child: SizedBox(
+                            height: 82,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(icon, size: 22, color: AppColors.staffInk),
+                                const SizedBox(height: 7),
+                                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 10, color: AppColors.staffInk)),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Icon(Icons.chevron_right, color: AppColors.staffInk),
+                    ],
                   ],
                 ),
-              ),
+              ],
+              if (sessionVm.canOpen('/s/alerts')) ...[
+                const SizedBox(height: 18),
+                _AlertsCard(
+                  stock: reportVm.state.lowStock.length,
+                  production: reportVm.alerts.where((a) => a.kind == 'Producción').length,
+                  onTap: () => context.push('/s/alerts'),
+                ),
+              ],
             ],
           ),
         );
-        },
+      },
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.icon, required this.value, required this.title, required this.subtitle, this.onTap});
+  final IconData icon;
+  final String value;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StaffCard(
+      onTap: onTap,
+      child: SizedBox(
+        height: 96,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StaffIconTile(icon),
+                const Spacer(),
+                Text(value, style: AppFonts.inter(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.staffInk, height: 1)),
+              ],
+            ),
+            const Spacer(),
+            Text(title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+            const SizedBox(height: 4),
+            Text(subtitle, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AlertsCard extends StatelessWidget {
+  const _AlertsCard({required this.stock, required this.production, required this.onTap});
+  final int stock;
+  final int production;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = stock + production;
+    return _StaffCard(
+      radius: 16,
+      color: AppColors.staffBlue50,
+      border: AppColors.staffBlue200,
+      onTap: onTap,
+      child: Row(
+        children: [
+          const StaffIconTile(LucideIcons.bell, size: 37, background: AppColors.lavender, color: AppColors.staffInk, radius: 12),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  switch (total) { 0 => 'Sin alertas por ahora', 1 => '1 alerta requiere atención', _ => '$total alertas requieren atención' },
+                  style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk),
+                ),
+                Text('$stock de stock · $production de producción', style: AppFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
+              ],
+            ),
+          ),
+          const Icon(LucideIcons.chevronRight, size: 22, color: AppColors.staffInk),
+        ],
+      ),
     );
   }
 }
@@ -196,7 +320,13 @@ class StaffAgendaScreen extends StatefulWidget {
 
 class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
   int filter = 0;
-  static const filters = ['Todas', 'En espera', 'Confirmadas', 'Retiros'];
+  static const _weekDays = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+  static final _filters = <(String, bool Function(AgendaItem))>[
+    ('Todas', (_) => true),
+    ('En espera', (item) => item.status == AgendaStatus.waiting),
+    ('Confirmadas', (item) => item.status == AgendaStatus.confirmed),
+    ('Retiros', (item) => item.status == AgendaStatus.pickup),
+  ];
 
   @override
   void initState() {
@@ -213,161 +343,228 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
       listenable: Listenable.merge([agendaVm, sessionVm, storesVm]),
       builder: (context, _) {
         final agenda = agendaVm.state.agenda;
+        final date = agendaVm.state.date;
         final days = agendaVm.agendaWeek;
-        final day = days.indexWhere((date) => StoreTime.isoDay(date) == StoreTime.isoDay(agendaVm.state.date));
-        final items = agenda.where((item) {
-          return switch (filter) {
-            1 => item.status == AgendaStatus.waiting,
-            2 => item.status == AgendaStatus.confirmed,
-            3 => item.status == AgendaStatus.pickup,
-            _ => true,
-          };
-        }).toList();
-        int count(int index) => agenda.where((item) {
-              return switch (index) {
-                1 => item.status == AgendaStatus.waiting,
-                2 => item.status == AgendaStatus.confirmed,
-                3 => item.status == AgendaStatus.pickup,
-                _ => true,
-              };
-            }).length;
-        final waitingItems = items.where((item) => item.status == AgendaStatus.waiting).toList();
-        final otherItems = items.where((item) => item.status != AgendaStatus.waiting).toList();
+        final waiting = agenda.where((a) => a.status == AgendaStatus.waiting).toList();
+        final done = agenda.where((a) => a.status == AgendaStatus.done).length;
+        final predicate = _filters[filter].$2;
+        final next = agenda.where((a) => a.status != AgendaStatus.waiting && predicate(a)).toList();
+        final isToday = StoreTime.isoDay(date) == StoreTime.isoDay(StoreTime.today());
         return StaffScaffold(
           tab: StaffTab.agenda,
           topBar: StaffTopBar(
             title: 'Citas y agenda',
             eyebrow: storesVm.staffStoreName,
-            trailing: sessionVm.canOpen('/s/alerts') ? IconButton(onPressed: () => context.push('/s/alerts'), icon: const Icon(Icons.notifications_none, color: AppColors.white)) : null,
+            trailing: sessionVm.canOpen('/s/alerts') ? StaffBell(onTap: () => context.push('/s/alerts')) : null,
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
+          body: Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-                decoration: BoxDecoration(color: const Color(0xFF242E78), borderRadius: BorderRadius.circular(18)),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(DateFormat('EEEE d MMM', 'es').format(agendaVm.state.date).toUpperCase(), style: AppFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
-                          const SizedBox(height: 8),
-                          Text('${agenda.length} pacientes', style: AppFonts.inter(fontSize: 20, color: AppColors.white)),
-                          const SizedBox(height: 8),
-                          Text('${agenda.where((a) => a.status == AgendaStatus.done).length} consultas completadas · ${agenda.where((a) => a.status == AgendaStatus.waiting).length} en sala de espera', style: AppFonts.inter(fontSize: 11, color: AppColors.slate300)),
-                        ],
-                      ),
+              ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                children: [
+                  StaffHero(
+                    background: const Color(0xFF242E78),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_agendaDateLabel(date), style: AppFonts.inter(fontSize: 9, color: AppColors.slate300, letterSpacing: 1.2)),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${agenda.length} ${agenda.length == 1 ? 'paciente' : 'pacientes'}${isToday ? ' hoy' : ''}',
+                                style: AppFonts.inter(fontSize: 20, color: AppColors.white),
+                              ),
+                              const SizedBox(height: 8),
+                              Text('$done consultas completadas · ${waiting.length} en sala de espera', style: AppFonts.inter(fontSize: 11, color: AppColors.slate300)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(10)),
+                          child: Text('${agenda.length}', style: AppFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
+                        ),
+                      ],
                     ),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(10)),
-                      child: Text('${agenda.length}', style: AppFonts.inter(fontSize: 13, color: AppColors.staffHeader)),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      for (var i = 0; i < days.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => agendaVm.refreshStaffAgenda(date: days[i]),
+                            child: Builder(builder: (context) {
+                              final selected = StoreTime.isoDay(days[i]) == StoreTime.isoDay(date);
+                              return Container(
+                                height: 56,
+                                decoration: BoxDecoration(color: selected ? AppColors.staffAccent : AppColors.white, borderRadius: BorderRadius.circular(12)),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(_weekDays[i], style: AppFonts.inter(fontSize: 8, color: selected ? AppColors.white : AppColors.staffInk)),
+                                    Text('${days[i].day}', style: AppFonts.inter(fontSize: 16, color: selected ? AppColors.white : AppColors.staffInk)),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final (i, (label, test)) in _filters.indexed) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          StaffChip('$label (${agenda.where(test).length})', selected: filter == i, onTap: () => setState(() => filter = i)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (filter != 0) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.listFilter, size: 14, color: AppColors.staffAccent),
+                        const SizedBox(width: 6),
+                        Text('Filtro activo: ${_filters[filter].$1.toLowerCase()}', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
+                      ],
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  for (var i = 0; i < days.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => agendaVm.refreshStaffAgenda(date: days[i]),
-                        child: Container(
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: day == i ? AppColors.staffAccent : AppColors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: day == i ? AppColors.staffAccent : AppColors.staffBorder),
-                          ),
+                  if (agendaVm.state.loading) ...[
+                    const SizedBox(height: 16),
+                    Text('Cargando la agenda...', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  ],
+                  if (agendaVm.state.error != null) ...[
+                    const SizedBox(height: 16),
+                    ErrorBanner(agendaVm.state.error),
+                    TextButton(onPressed: agendaVm.refreshStaffAgenda, child: const Text('Reintentar')),
+                  ],
+                  if (filter == 0 || filter == 1) ...[
+                    const SizedBox(height: 26),
+                    const StaffSectionTitle('En sala de espera', action: 'Sala 1'),
+                    const SizedBox(height: 12),
+                    for (final item in waiting)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _StaffCard(
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(DateFormat('E', 'es').format(days[i]).replaceAll('.', '').toUpperCase(), style: AppFonts.inter(fontSize: 8, color: day == i ? AppColors.white : AppColors.staffInk)),
-                              Text('${days[i].day}', style: AppFonts.inter(fontSize: 16, color: day == i ? AppColors.white : AppColors.staffInk)),
+                              GestureDetector(
+                                onTap: () => context.push('/s/patient/${item.patientId}'),
+                                child: Row(
+                                  children: [
+                                    StaffInitials(_initialsOf(item.name)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const StaffPill('En sala', icon: LucideIcons.clock),
+                                          const SizedBox(height: 4),
+                                          Text(item.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                                          const SizedBox(height: 4),
+                                          Text('${item.time} · ${item.service}', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
+                                  ],
+                                ),
+                              ),
+                              if (sessionVm.canOpen('/s/clinical') && item.appointmentId != null) ...[
+                                const SizedBox(height: 14),
+                                StaffButton(
+                                  label: 'Iniciar atención clínica',
+                                  icon: LucideIcons.eye,
+                                  height: 48,
+                                  onPressed: () => context.push(Uri(path: '/s/clinical', queryParameters: {'patientId': item.patientId, 'appointmentId': item.appointmentId!}).toString()),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ),
-                    ),
+                  ],
+                  if (filter != 1) ...[
+                    const SizedBox(height: 26),
+                    StaffSectionTitle('Siguientes citas', action: '${next.length} por atender'),
+                    const SizedBox(height: 12),
+                    for (final item in next)
+                      Padding(padding: const EdgeInsets.only(bottom: 10), child: _AgendaRow(item, onTap: () => context.push('/s/patient/${item.patientId}'))),
                   ],
                 ],
               ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (var i = 0; i < filters.length; i++)
-                    ChoiceChip(
-                      label: Text('${filters[i]} (${count(i)})'),
-                      selected: filter == i,
-                      onSelected: (_) => setState(() => filter = i),
-                    ),
-                ],
+              Positioned(
+                right: 16,
+                bottom: 22,
+                child: StaffFab(text: 'Nueva cita', onTap: () => context.push('/s/appointments/new')),
               ),
-              if (filter != 0) ...[
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.filter_list, size: 14, color: AppColors.staffAccent),
-                    const SizedBox(width: 6),
-                    Text('Filtro activo: ${filters[filter].toLowerCase()}', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              if (agendaVm.state.loading) const LinearProgressIndicator(),
-              if (agendaVm.state.error != null) ...[
-                Text(agendaVm.state.error!, style: const TextStyle(color: AppColors.errorRed)),
-                TextButton(onPressed: agendaVm.refreshStaffAgenda, child: const Text('Reintentar')),
-              ],
-              if (!agendaVm.state.loading && agendaVm.state.error == null && items.isEmpty) const Text('No hay citas con este filtro para el día seleccionado.'),
-              for (final item in [...waitingItems, ...otherItems]) ...[
-                if (item == waitingItems.firstOrNull || item == otherItems.firstOrNull)
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(item.status == AgendaStatus.waiting ? 'En sala de espera' : 'Siguientes citas', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk))),
-                AppCard(
-                  onTap: () => context.push('/s/patient/${item.patientId}'),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 54, child: Text(item.time, style: AppFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffHeader))),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.name, style: AppFonts.inter(fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-                            Text('${item.duration} · ${item.service}', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
-                          ],
-                        ),
-                      ),
-                      StatusCapsule(_statusLabel(item.status), color: AppColors.staffAccent, background: AppColors.staffBlue50),
-                    ],
-                  ),
-                ),
-                if (item.status == AgendaStatus.waiting && sessionVm.canOpen('/s/clinical') && item.appointmentId != null)
-                  Padding(padding: const EdgeInsets.only(top: 8), child: SolidButton(label: 'Iniciar atención clínica', icon: Icons.visibility_outlined, onPressed: () => context.push(Uri(path: '/s/clinical', queryParameters: {'patientId': item.patientId, 'appointmentId': item.appointmentId!}).toString()))),
-                const SizedBox(height: 8),
-              ],
-              SolidButton(label: 'Nueva cita', onPressed: () => context.push('/s/appointments/new')),
             ],
           ),
         );
-        },
+      },
     );
   }
+}
 
-  String _statusLabel(AgendaStatus status) => switch (status) {
-        AgendaStatus.waiting => 'En espera',
-        AgendaStatus.confirmed => 'Confirmada',
-        AgendaStatus.pending => 'Pendiente',
-        AgendaStatus.pickup => 'Retiro',
-        AgendaStatus.done => 'Atendida',
-      };
+class _AgendaRow extends StatelessWidget {
+  const _AgendaRow(this.item, {required this.onTap});
+  final AgendaItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StaffCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 66,
+            height: 60,
+            decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(item.time, style: AppFonts.inter(fontSize: 15, color: AppColors.staffInk)),
+                Text(item.duration, style: AppFonts.inter(fontSize: 9, color: AppColors.staffMuted)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                switch (item.status) {
+                  AgendaStatus.confirmed => const StaffPill('Confirmada'),
+                  AgendaStatus.pending => const StaffPill('Por confirmar', icon: LucideIcons.clock),
+                  AgendaStatus.pickup => const StaffPill('Retiro', icon: LucideIcons.package),
+                  _ => const StaffPill('Atendida'),
+                },
+                const SizedBox(height: 4),
+                Text(item.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                const SizedBox(height: 4),
+                Text(item.service, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+              ],
+            ),
+          ),
+          const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
+        ],
+      ),
+    );
+  }
 }
 
 class StaffPatientsScreen extends StatefulWidget {
@@ -665,64 +862,6 @@ class StaffMoreScreen extends StatelessWidget {
           ),
         );
         },
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat(this.value, this.label, this.onTap, {this.detail, this.icon});
-  final String value;
-  final String label;
-  final String? detail;
-  final IconData? icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (icon != null) Icon(icon, size: 18, color: AppColors.staffAccent),
-              const Spacer(),
-              Text(value, style: AppFonts.inter(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.staffInk)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(label, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
-          if (detail != null) ...[
-            const SizedBox(height: 4),
-            Text(detail!, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Action extends StatelessWidget {
-  const _Action(this.icon, this.label, this.onTap);
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: AppCard(
-        onTap: onTap,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        child: Column(
-          children: [
-            Icon(icon, size: 22, color: AppColors.staffInk),
-            const SizedBox(height: 7),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 10, color: AppColors.staffInk)),
-          ],
-        ),
-      ),
     );
   }
 }
