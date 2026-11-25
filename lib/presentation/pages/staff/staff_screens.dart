@@ -26,6 +26,7 @@ export 'package:logix_optiflow/presentation/pages/staff/staff_insight_screens.da
 export 'package:logix_optiflow/presentation/pages/staff/staff_inventory_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_record_screen.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_sale_screens.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_scanner_screen.dart';
 
 String _greeting() {
   final hour = StoreTime.clock(DateTime.now()).hour;

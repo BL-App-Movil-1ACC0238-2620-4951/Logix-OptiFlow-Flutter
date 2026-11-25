@@ -9,45 +9,6 @@ import 'package:logix_optiflow/features/auth/presentation/session_view_model.dar
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/widgets/frame_image.dart';
 
-class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
-  @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
-}
-
-class _ScannerScreenState extends State<ScannerScreen> {
-  final sku = TextEditingController();
-  bool loading = false;
-  String? error;
-  @override
-  void dispose() { sku.dispose(); super.dispose(); }
-
-  Future<void> _lookup() async {
-    if (loading || sku.text.trim().isEmpty) return;
-    setState(() { loading = true; error = null; });
-    final catalogVm = getIt<CatalogViewModel>();
-    final selected = sku.text.trim();
-    final frame = await catalogVm.loadFrame(selected, forInventory: true);
-    if (!mounted) return;
-    setState(() { loading = false; error = frame == null ? catalogVm.state.frameErrors[selected] ?? 'No se encontró la montura.' : null; });
-    if (frame != null) context.push('/s/product/${Uri.encodeComponent(frame.sku)}');
-  }
-
-  @override
-  Widget build(BuildContext context) => StaffScaffold(
-    tab: StaffTab.inventory,
-    topBar: StaffTopBar(title: 'Buscar por SKU', onBack: () => context.canPop() ? context.pop() : context.go('/s/inventory')),
-    body: ListView(padding: const EdgeInsets.all(20), children: [
-      const Text('Ingresa el SKU que aparece en la etiqueta de la montura.'),
-      const SizedBox(height: 16),
-      TextField(controller: sku, enabled: !loading, onSubmitted: (_) => _lookup(), decoration: const InputDecoration(labelText: 'SKU', prefixIcon: Icon(Icons.qr_code))),
-      if (error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: const TextStyle(color: AppColors.errorRed))),
-      const SizedBox(height: 20),
-      SolidButton(label: 'Consultar montura', loading: loading, onPressed: _lookup),
-    ]),
-  );
-}
-
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key, required this.id});
   final String id;
