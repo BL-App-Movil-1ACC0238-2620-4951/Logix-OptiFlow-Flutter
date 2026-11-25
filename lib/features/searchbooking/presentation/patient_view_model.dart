@@ -89,41 +89,15 @@ class PatientViewModel extends ChangeNotifier {
         occurredAt: now.subtract(const Duration(hours: 2)),
       ));
     }
-    final realOrders = _state.orders.where((o) => o.fromApi);
-    if (realOrders.isEmpty) {
+    for (final order in _state.orders.where((o) => o.fromApi)) {
       items.add(NotificationItem(
-        id: 'demo-order-progress',
+        id: 'order-${order.id}',
         type: NotificationType.order,
         title: 'Tu pedido avanzó',
-        message: 'Tus lentes ya están en producción.',
+        message: order.statusLabel == 'En producción' ? 'Tus lentes ya están en producción.' : 'Estado del pedido: ${order.statusLabel}.',
         occurredAt: now.subtract(const Duration(hours: 5)),
       ));
-    } else {
-      for (final order in realOrders) {
-        items.add(NotificationItem(
-          id: 'order-${order.id}',
-          type: NotificationType.order,
-          title: 'Tu pedido avanzó',
-          message: order.statusLabel == 'En producción' ? 'Tus lentes ya están en producción.' : 'Estado del pedido: ${order.statusLabel}.',
-          occurredAt: now.subtract(const Duration(hours: 5)),
-        ));
-      }
     }
-    items.add(NotificationItem(
-      id: 'health-last-check',
-      type: NotificationType.health,
-      title: 'Cuida tu salud visual',
-      message: 'Han pasado 9 meses desde tu último control.',
-      occurredAt: now.subtract(const Duration(days: 1)),
-    ));
-    items.add(NotificationItem(
-      id: 'promo-season',
-      type: NotificationType.promo,
-      title: 'Descuento de Temporada',
-      message: 'Compra un armazón oftálmico y llévate el segundo al 50% de descuento.',
-      occurredAt: now.subtract(const Duration(hours: 25)),
-      navigable: true,
-    ));
     items.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
     return items;
   }
@@ -197,9 +171,9 @@ class PatientViewModel extends ChangeNotifier {
     final orders = apiOrders.map(PatientViewMapper.order).toList();
     final history = records.map(PatientViewMapper.history).toList();
     _emit(_state.copyWith(
-      orders: orders.isEmpty ? PatientDemo.orders() : orders,
-      history: history.isEmpty ? List.of(PatientDemo.history) : history,
-      prescription: PatientViewMapper.prescription(records, name) ?? PrescriptionUi.demo(name),
+      orders: orders,
+      history: history,
+      prescription: () => PatientViewMapper.prescription(records, name),
       patientLoading: false,
     ));
   }
@@ -225,7 +199,6 @@ class PatientViewModel extends ChangeNotifier {
     }
   }
 
-  void savePrescription(PrescriptionUi value) => _emit(_state.copyWith(prescription: value));
 
   Future<void> markNotificationsRead() async {
     final ids = notifications.map((n) => n.id).toSet();

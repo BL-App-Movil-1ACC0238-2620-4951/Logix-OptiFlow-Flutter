@@ -34,5 +34,8 @@ class InventoryApi {
         if (minimumStock != null) 'minimumStock': minimumStock,
       }) as Map));
 
+  Future<List<LowStockAlert>> lowStockAlerts(String opticalStoreId) async =>
+      _list(await _client.get('inventory/alerts', {'opticalStoreId': opticalStoreId})).map(InventoryDto.lowStockAlert).toList();
+
   List<Map<String, dynamic>> _list(Object? json) => _client.mapList(json, 'El servidor devolvió una lista de inventario inválida.');
 }

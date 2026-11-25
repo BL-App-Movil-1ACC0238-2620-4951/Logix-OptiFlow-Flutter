@@ -45,8 +45,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/p/catalog', builder: (_, __) => const CatalogScreen()),
       GoRoute(path: '/p/frame/:id', builder: (_, state) => FrameDetailScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/p/tryon/:id', builder: (_, state) => TryOnScreen(id: state.pathParameters['id']!)),
-      GoRoute(path: '/p/prescription', builder: (_, __) => const PrescriptionScreen(editable: false)),
-      GoRoute(path: '/p/prescription/edit', builder: (_, __) => const PrescriptionScreen(editable: true)),
+      GoRoute(path: '/p/prescription', builder: (_, __) => const PrescriptionScreen()),
       GoRoute(path: '/p/appointment/:id', builder: (_, state) => AppointmentDetailScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/p/reschedule/:id', builder: (_, state) => RescheduleScreen(id: state.pathParameters['id']!)),
       GoRoute(
@@ -70,7 +69,6 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/s/appointments/new', builder: (_, state) => NewAppointmentScreen(patientId: state.uri.queryParameters['patientId'])),
       GoRoute(path: '/s/clinical', builder: (_, state) => ClinicalCareScreen(patientId: state.uri.queryParameters['patientId'], appointmentId: state.uri.queryParameters['appointmentId'])),
       GoRoute(path: '/s/evaluation', builder: (_, state) => VisualEvaluationScreen(patientId: state.uri.queryParameters['patientId'], appointmentId: state.uri.queryParameters['appointmentId'])),
-      GoRoute(path: '/s/work-order', builder: (_, __) => const WorkOrderScreen()),
       GoRoute(path: '/s/production', builder: (_, __) => const ProductionScreen()),
       GoRoute(path: '/s/quote', builder: (_, state) => QuoteScreen(patientId: state.uri.queryParameters['patientId'])),
       GoRoute(path: '/s/sale', builder: (_, state) => ConfirmSaleScreen(patientId: state.uri.queryParameters['patientId'], saleId: state.uri.queryParameters['saleId'])),

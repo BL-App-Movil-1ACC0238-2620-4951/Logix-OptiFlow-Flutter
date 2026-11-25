@@ -29,3 +29,12 @@ class StockMovement {
   final int quantity;
   final DateTime createdAt;
 }
+
+/// Montura con menos unidades que su mínimo en la óptica.
+class LowStockAlert {
+  const LowStockAlert({required this.sku, required this.name, required this.quantity, required this.minimumStock});
+  final String sku;
+  final String name;
+  final int quantity;
+  final int minimumStock;
+}

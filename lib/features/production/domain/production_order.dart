@@ -11,6 +11,7 @@ enum ProductionStage {
 
 class ProductionOrder {
   const ProductionOrder({
+    required this.id,
     required this.code,
     required this.patient,
     required this.detail,
@@ -19,6 +20,7 @@ class ProductionOrder {
     this.needsAttention = false,
   });
 
+  final String id;
   final String code;
   final String patient;
   final String detail;
