@@ -59,6 +59,12 @@ import 'package:logix_optiflow/features/searchbooking/application/book_appointme
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_agenda_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_optical_stores_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_current_location_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_first_available_slots_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_nearby_optical_stores_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/save_favorite_store_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/location_provider.dart';
+import 'package:logix_optiflow/features/searchbooking/infrastructure/device_location_provider.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_staff_patient_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_staff_patients_use_case.dart';
@@ -133,6 +139,11 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<PatientRepository>(() => PatientRepositoryImpl(api: getIt<SearchBookingApi>()));
   getIt.registerLazySingleton(() => GetOpticalStoresUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => SearchOpticalStoresUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => GetNearbyOpticalStoresUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => GetFirstAvailableSlotsUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => SaveFavoriteStoreUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton<LocationProvider>(() => const DeviceLocationProvider());
+  getIt.registerLazySingleton(() => GetCurrentLocationUseCase(provider: getIt<LocationProvider>()));
   getIt.registerLazySingleton(() => GetStoreAvailabilityUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => GetPatientAppointmentsUseCase(repository: getIt<AppointmentRepository>()));
   getIt.registerLazySingleton(() => CancelAppointmentUseCase(repository: getIt<AppointmentRepository>()));
@@ -190,7 +201,14 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         saveAppSettingsUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => StoreSearchViewModel(
-        session: getIt(), getOpticalStoresUseCase: getIt(), searchOpticalStoresUseCase: getIt()));
+        session: getIt(),
+        getOpticalStoresUseCase: getIt(),
+        searchOpticalStoresUseCase: getIt(),
+        getNearbyOpticalStoresUseCase: getIt(),
+        getFirstAvailableSlotsUseCase: getIt(),
+        saveFavoriteStoreUseCase: getIt(),
+        getCurrentLocationUseCase: getIt(),
+      ));
   getIt.registerLazySingleton(() => PatientViewModel(
         session: getIt(),
         stores: getIt(),

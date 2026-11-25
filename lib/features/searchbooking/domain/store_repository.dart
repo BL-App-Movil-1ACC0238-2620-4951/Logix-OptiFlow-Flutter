@@ -14,4 +14,8 @@ abstract class StoreRepository {
   Future<StoreSearchResult> search({String? name, String? address, double? minRating});
 
   Future<List<TimeSlot>> availability(String storeId);
+
+  Future<List<OpticalStore>> nearby(double latitude, double longitude, double radiusKm);
+
+  Future<void> saveFavorite(String patientId, String opticalStoreId);
 }

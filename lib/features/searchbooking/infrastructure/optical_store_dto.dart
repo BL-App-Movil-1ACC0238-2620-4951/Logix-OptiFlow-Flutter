@@ -8,6 +8,8 @@ class OpticalStoreDto {
     required this.phone,
     required this.rating,
     required this.status,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -16,6 +18,8 @@ class OpticalStoreDto {
   final String phone;
   final double? rating;
   final String status;
+  final double? latitude;
+  final double? longitude;
 
   factory OpticalStoreDto.fromJson(Map<String, dynamic> json) {
     return OpticalStoreDto(
@@ -25,6 +29,8 @@ class OpticalStoreDto {
       phone: '${json['phone'] ?? ''}',
       rating: (json['rating'] as num?)?.toDouble(),
       status: '${json['status'] ?? ''}',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -36,6 +42,8 @@ class OpticalStoreDto {
       phone: phone,
       rating: rating,
       status: status,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

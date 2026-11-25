@@ -6,6 +6,8 @@ class OpticalStore {
     required this.phone,
     required this.rating,
     required this.status,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -14,4 +16,8 @@ class OpticalStore {
   final String phone;
   final double? rating;
   final String status;
+  final double? latitude;
+  final double? longitude;
+
+  bool get hasLocation => latitude != null && longitude != null;
 }
