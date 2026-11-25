@@ -26,7 +26,17 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) getIt<StaffPatientsViewModel>().loadStaffRecord(widget.id); });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      getIt<StaffPatientsViewModel>().loadStaffRecord(widget.id);
+      getIt<StaffPatientsViewModel>().loadOpenSales(widget.id);
+    });
+  }
+
+  /// Se relee al volver de la venta, para que desaparezca la que se acaba de cerrar.
+  Future<void> _openSale(String saleId) async {
+    await context.push(Uri(path: '/s/sale', queryParameters: {'patientId': widget.id, 'saleId': saleId}).toString());
+    if (mounted) getIt<StaffPatientsViewModel>().loadOpenSales(widget.id);
   }
 
   String _diopters(num? value) {
@@ -70,6 +80,7 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
         final canStartCare = appointment != null && StoreTime.isoDay(StoreTime.day(appointment.start)) == StoreTime.isoDay(StoreTime.today());
         final orders = [...?patientsVm.state.recordOrders[id]]..sort((a, b) => (b.createdAt ?? DateTime.utc(1970)).compareTo(a.createdAt ?? DateTime.utc(1970)));
         final order = orders.where((o) => o.status != 'DELIVERED').firstOrNull ?? orders.firstOrNull;
+        final openSales = sessionVm.canOpen('/s/sale') ? patientsVm.state.recordOpenSales[id] ?? const [] : const [];
         final lastVisit = examined.isEmpty ? 'Sin visitas' : _date(examined.first.examinationDate!);
         return StaffScaffold(
           tab: null, showBottomBar: false,
@@ -205,6 +216,28 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
                   style: AppFonts.inter(fontSize: 9, color: AppColors.staffAccent),
                 ),
               ])),
+              if (openSales.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const StaffSectionTitle('Ventas por cerrar'),
+                const SizedBox(height: 12),
+                for (final sale in openSales)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _StaffCard(
+                      onTap: () => _openSale(sale.id),
+                      child: Row(children: [
+                        const StaffIconTile(LucideIcons.fileText, size: 36, background: _StaffCard.soft),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          StaffPill(sale.statusLabel, icon: LucideIcons.clock),
+                          const SizedBox(height: 4),
+                          Text(sale.detail, style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk)),
+                        ])),
+                        const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
+                      ]),
+                    ),
+                  ),
+              ],
               const SizedBox(height: 18),
               Row(children: [
                 Expanded(child: StaffButton(label: 'Nueva cita', icon: LucideIcons.calendar, onPressed: () => context.push(Uri(path: '/s/appointments/new', queryParameters: {'patientId': id}).toString()))),
@@ -229,18 +262,6 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
               if (sessionVm.canOpen('/s/quote')) ...[
                 const SizedBox(height: 10),
                 StaffButton(label: 'Crear cotización', icon: LucideIcons.fileText, onPressed: () => context.push(Uri(path: '/s/quote', queryParameters: {'patientId': id}).toString())),
-              ],
-              // Hasta la rama de venta, la ficha abre las ventas del paciente desde aquí.
-              if (sessionVm.canOpen('/s/sale')) ...[
-                const SizedBox(height: 10),
-                StaffButton(
-                  label: 'Ventas y pagos',
-                  icon: LucideIcons.creditCard,
-                  background: AppColors.white,
-                  foreground: AppColors.staffInk,
-                  border: AppColors.staffBorder,
-                  onPressed: () => context.push(Uri(path: '/s/sale', queryParameters: {'patientId': id}).toString()),
-                ),
               ],
               if (errors.isNotEmpty) TextButton(onPressed: () => patientsVm.loadStaffRecord(id), child: const Text('Volver a cargar la ficha')),
             ],

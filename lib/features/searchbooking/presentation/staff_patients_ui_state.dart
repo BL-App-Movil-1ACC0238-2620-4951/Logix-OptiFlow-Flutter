@@ -5,6 +5,14 @@ import 'package:logix_optiflow/features/production/domain/staff_order.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
 
+/// Venta del paciente que todavía no se cerró, para "Ventas por cerrar" en la ficha.
+class StaffOpenSale {
+  const StaffOpenSale({required this.id, required this.statusLabel, required this.detail});
+  final String id;
+  final String statusLabel;
+  final String detail;
+}
+
 class StaffPatientsUiState {
   const StaffPatientsUiState({
     this.patients = const [],
@@ -22,6 +30,7 @@ class StaffPatientsUiState {
     this.recordAppointments = const {},
     this.recordOrders = const {},
     this.cancelling = false,
+    this.recordOpenSales = const {},
   });
 
   final List<StaffPatient> patients;
@@ -41,6 +50,7 @@ class StaffPatientsUiState {
   final Map<String, List<Appointment>> recordAppointments;
   final Map<String, List<StaffOrder>> recordOrders;
   final bool cancelling;
+  final Map<String, List<StaffOpenSale>> recordOpenSales;
 
   StaffPatientsUiState copyWith({
     List<StaffPatient>? patients,
@@ -58,6 +68,7 @@ class StaffPatientsUiState {
     Map<String, List<Appointment>>? recordAppointments,
     Map<String, List<StaffOrder>>? recordOrders,
     bool? cancelling,
+    Map<String, List<StaffOpenSale>>? recordOpenSales,
   }) {
     return StaffPatientsUiState(
       patients: patients ?? this.patients,
@@ -75,6 +86,7 @@ class StaffPatientsUiState {
       recordAppointments: recordAppointments ?? this.recordAppointments,
       recordOrders: recordOrders ?? this.recordOrders,
       cancelling: cancelling ?? this.cancelling,
+      recordOpenSales: recordOpenSales ?? this.recordOpenSales,
     );
   }
 }

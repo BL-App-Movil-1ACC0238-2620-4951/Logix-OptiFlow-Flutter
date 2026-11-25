@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 
 import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_patient_sales_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patients_with_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
@@ -30,6 +34,8 @@ class StaffPatientsViewModel extends ChangeNotifier {
     required this.getPatientAppointmentsUseCase,
     required this.getStaffOrdersUseCase,
     required this.cancelAppointmentUseCase,
+    required this.getPatientSalesUseCase,
+    required this.getQuotationUseCase,
   }) {
     session.addLogoutListener(_reset);
   }
@@ -43,6 +49,8 @@ class StaffPatientsViewModel extends ChangeNotifier {
   final GetPatientAppointmentsUseCase getPatientAppointmentsUseCase;
   final GetStaffOrdersUseCase getStaffOrdersUseCase;
   final CancelAppointmentUseCase cancelAppointmentUseCase;
+  final GetPatientSalesUseCase getPatientSalesUseCase;
+  final GetQuotationUseCase getQuotationUseCase;
 
   StaffPatientsUiState _state = const StaffPatientsUiState();
   StaffPatientsUiState get state => _state;
@@ -187,5 +195,44 @@ class StaffPatientsViewModel extends ChangeNotifier {
     } finally {
       if (identical(current, _current)) _emit(_state.copyWith(cancelling: false));
     }
+  }
+
+  /// Ventas sin cerrar del paciente (`GET patients/{id}/sales`), para cobrarlas o cerrarlas aunque sean de
+  /// una ficha anterior. Sin pago el backend no manda el monto: se toma el total de la cotización.
+  Future<void> loadOpenSales(String patientId) async {
+    if (!session.canOpen('/s/sale')) return;
+    final current = _current;
+    try {
+      final sales = (await getPatientSalesUseCase.execute(patientId)).where((s) => s.status != SaleStatus.closed).toList();
+      final totals = await Future.wait(sales.map((sale) async {
+        if (sale.amount != null) return sale.amount;
+        try {
+          return (await getQuotationUseCase.execute(sale.quotationId)).total;
+        } catch (_) {
+          return null;
+        }
+      }));
+      if (!identical(current, _current)) return;
+      final open = [
+        for (var i = 0; i < sales.length; i++)
+          StaffOpenSale(
+            id: sales[i].id,
+            statusLabel: sales[i].status == SaleStatus.paid ? 'Pagada · por cerrar' : 'Pendiente de pago',
+            detail: _saleDetail(sales[i], totals[i]),
+          ),
+      ];
+      _emit(_state.copyWith(recordOpenSales: {..._state.recordOpenSales, patientId: open}));
+    } catch (_) {
+      // Como en Kotlin: si falla, la sección simplemente no aparece.
+    }
+  }
+
+  String _saleDetail(Sale sale, num? total) {
+    final date = sale.paidAt ?? sale.closedAt ?? sale.issuedAt;
+    final parts = [
+      if (date != null) DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(date)),
+      if (total != null) soles(total),
+    ];
+    return parts.isEmpty ? 'Venta registrada' : parts.join(' · ');
   }
 }
