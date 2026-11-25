@@ -8,7 +8,7 @@ class NotificationApi {
   final ApiClient _client;
 
   Future<List<PatientNotification>> forPatient(String patientId) async {
-    final json = await _client.get('patients/$patientId/notifications');
+    final json = await _client.cachedGet('notifications/$patientId', 'patients/$patientId/notifications');
     if (json is! List) throw ApiException('El servidor devolvió notificaciones inválidas.');
     return [for (final item in json.whereType<Map>()) _fromJson(Map<String, dynamic>.from(item))];
   }

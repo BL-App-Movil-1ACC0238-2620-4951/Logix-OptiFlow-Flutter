@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import 'package:logix_optiflow/core/errors/api_exception.dart';
+import 'package:logix_optiflow/core/network/offline_cache.dart';
 
 /// Cliente HTTP compartido por las APIs de cada contexto. Guarda el token de la sesión.
 class ApiClient {
-  ApiClient({http.Client? client, String? baseUrl})
+  ApiClient({http.Client? client, String? baseUrl, this.offline})
       : _client = client ?? http.Client(),
         baseUrl = _normalize(baseUrl ?? const String.fromEnvironment(
           'API_BASE_URL',
@@ -16,6 +18,8 @@ class ApiClient {
   final http.Client _client;
   final String baseUrl;
   String? token;
+  /// Caché de lecturas para mostrar sin conexión; null en las pruebas.
+  final OfflineCache? offline;
   void Function()? onUnauthorized;
 
   static const _timeout = Duration(seconds: 60);
@@ -44,6 +48,22 @@ class ApiClient {
       return _decode(response, requestToken: requestToken);
     } catch (error) {
       throw _wrap(error);
+    }
+  }
+
+  /// GET que guarda la respuesta con [key]; sin conexión devuelve la última guardada.
+  Future<Object?> cachedGet(String key, String path, [Map<String, String?>? query]) async {
+    final cache = offline;
+    if (cache == null) return get(path, query);
+    try {
+      final json = await get(path, query);
+      await cache.save(key, json);
+      return json;
+    } on ApiException catch (error) {
+      if (!error.connection) rethrow;
+      final saved = await cache.read(key);
+      if (saved == null) rethrow;
+      return saved.$1;
     }
   }
 
@@ -126,8 +146,12 @@ class ApiClient {
     if (raw.contains('Failed host lookup') || raw.contains('Connection refused') || raw.contains('timed out') || raw.contains('SocketException')) {
       return ApiException(
         'No se pudo conectar al servidor. El backend en Render puede estar dormido: espera un minuto y vuelve a intentar, o abre Swagger para despertarlo.',
+        connection: true,
       );
     }
-    return ApiException(raw.isEmpty ? 'Error inesperado. Intenta de nuevo.' : raw);
+    return ApiException(
+      raw.isEmpty ? 'Error inesperado. Intenta de nuevo.' : raw,
+      connection: error is TimeoutException || error is http.ClientException,
+    );
   }
 }

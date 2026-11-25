@@ -3,6 +3,8 @@ import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:logix_optiflow/core/network/api_client.dart';
+import 'package:logix_optiflow/core/network/offline_cache.dart';
+import 'package:logix_optiflow/core/storage/app_database.dart';
 import 'package:logix_optiflow/core/storage/secure_token_storage.dart';
 import 'package:logix_optiflow/core/storage/token_storage.dart';
 import 'package:logix_optiflow/features/auth/application/clear_session_use_case.dart';
@@ -136,7 +138,10 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   await getIt.reset();
 
   // core
-  getIt.registerLazySingleton<ApiClient>(() => ApiClient(client: client, baseUrl: baseUrl));
+  getIt.registerLazySingleton(() => AppDatabase());
+  // Las pruebas usan su propio cliente HTTP y no guardan nada en el teléfono.
+  getIt.registerLazySingleton(() => OfflineCache(getIt<AppDatabase>().cachedResponseDao));
+  getIt.registerLazySingleton<ApiClient>(() => ApiClient(client: client, baseUrl: baseUrl, offline: client == null ? getIt<OfflineCache>() : null));
   getIt.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
   getIt.registerLazySingleton<TokenStorage>(
     () => tokenStorage ?? SecureTokenStorage(storage: getIt<FlutterSecureStorage>()),

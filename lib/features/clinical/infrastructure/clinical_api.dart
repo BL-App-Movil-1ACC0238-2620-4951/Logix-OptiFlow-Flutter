@@ -10,7 +10,7 @@ class ClinicalApi {
   final ApiClient _client;
 
   Future<List<ClinicalRecordDto>> clinicalRecords(String patientId) async {
-    final json = await _client.get('patients/$patientId/clinical-records');
+    final json = await _client.cachedGet('clinical-records/$patientId', 'patients/$patientId/clinical-records');
     final list = json is List ? json : const [];
     return list.whereType<Map>().map((e) => ClinicalRecordDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }

@@ -16,7 +16,10 @@ class SearchBookingApi {
   final ApiClient _client;
 
   Future<List<OpticalStoreDto>> listStores({String? name, String? address}) async {
-    final json = await _client.get('optical-stores', {'name': name, 'address': address});
+    // Sin filtros es la lista completa, la que se guarda para verla sin conexión.
+    final json = name == null && address == null
+        ? await _client.cachedGet('optical-stores', 'optical-stores')
+        : await _client.get('optical-stores', {'name': name, 'address': address});
     return _stores(json);
   }
 
@@ -105,7 +108,7 @@ class SearchBookingApi {
   }
 
   Future<List<AppointmentDto>> appointments(String patientId) async {
-    final json = await _client.get('patients/$patientId/appointments');
+    final json = await _client.cachedGet('appointments/$patientId', 'patients/$patientId/appointments');
     final list = json is List ? json : (json is Map ? json['value'] as List? : null) ?? const [];
     return list.whereType<Map>().map((e) => AppointmentDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
