@@ -156,26 +156,6 @@ class PrescriptionUi {
   final String observations;
 }
 
-enum NotificationType { appointment, order, health, promo }
-
-class NotificationItem {
-  const NotificationItem({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.message,
-    required this.occurredAt,
-    this.navigable = false,
-  });
-
-  final String id;
-  final NotificationType type;
-  final String title;
-  final String message;
-  final DateTime occurredAt;
-  final bool navigable;
-}
-
 class StoreOption {
   const StoreOption({
     required this.id,

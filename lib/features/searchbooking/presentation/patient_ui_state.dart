@@ -13,7 +13,6 @@ class PatientUiState {
     this.history = const [],
     this.prescription,
     this.patientLoading = true,
-    this.readNotificationIds = const {},
   });
 
   final List<AppointmentUi> appointments;
@@ -25,7 +24,6 @@ class PatientUiState {
   final List<HistoryEntry> history;
   final PrescriptionUi? prescription;
   final bool patientLoading;
-  final Set<String> readNotificationIds;
 
   PatientUiState copyWith({
     List<AppointmentUi>? appointments,
@@ -37,7 +35,6 @@ class PatientUiState {
     List<HistoryEntry>? history,
     ValueGetter<PrescriptionUi?>? prescription,
     bool? patientLoading,
-    Set<String>? readNotificationIds,
   }) {
     return PatientUiState(
       appointments: appointments ?? this.appointments,
@@ -49,7 +46,6 @@ class PatientUiState {
       history: history ?? this.history,
       prescription: prescription != null ? prescription() : this.prescription,
       patientLoading: patientLoading ?? this.patientLoading,
-      readNotificationIds: readNotificationIds ?? this.readNotificationIds,
     );
   }
 }

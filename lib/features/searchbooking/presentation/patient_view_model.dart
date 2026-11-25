@@ -7,8 +7,6 @@ import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
-import 'package:logix_optiflow/features/notification/application/load_read_notifications_use_case.dart';
-import 'package:logix_optiflow/features/notification/application/save_read_notifications_use_case.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
@@ -28,8 +26,6 @@ class PatientViewModel extends ChangeNotifier {
     required this.cancelAppointmentUseCase,
     required this.getPatientWorkOrdersUseCase,
     required this.getPatientClinicalRecordsUseCase,
-    required this.loadReadNotificationsUseCase,
-    required this.saveReadNotificationsUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -41,13 +37,10 @@ class PatientViewModel extends ChangeNotifier {
   final CancelAppointmentUseCase cancelAppointmentUseCase;
   final GetPatientWorkOrdersUseCase getPatientWorkOrdersUseCase;
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
-  final LoadReadNotificationsUseCase loadReadNotificationsUseCase;
-  final SaveReadNotificationsUseCase saveReadNotificationsUseCase;
 
   PatientUiState _state = PatientUiState();
   PatientUiState get state => _state;
   int _appointmentsRequest = 0;
-  bool _readIdsLoaded = false;
 
   PatientSession? get _current => session.session;
 
@@ -58,51 +51,18 @@ class PatientViewModel extends ChangeNotifier {
 
   Future<void> _onSessionReady() async {
     if (_current?.isPatient != true) _emit(_state.copyWith(patientLoading: false));
-    if (!_readIdsLoaded) {
-      _readIdsLoaded = true;
-      final ids = await loadReadNotificationsUseCase.execute();
-      _emit(_state.copyWith(readNotificationIds: ids));
-    }
     if (_current?.isPatient == true) unawaited(refreshPatient());
   }
 
   void _reset() {
     _appointmentsRequest++;
     _emit(PatientUiState(patientLoading: false));
-    unawaited(saveReadNotificationsUseCase.execute({}));
   }
 
   List<AppointmentUi> get upcoming => _state.appointments
       .where((a) => !a.isPast && a.status != AppointmentStatus.cancelled && a.status != AppointmentStatus.completed)
       .toList();
   AppointmentUi? get nextAppointment => upcoming.isEmpty ? null : upcoming.first;
-
-  List<NotificationItem> get notifications {
-    final items = <NotificationItem>[];
-    final now = DateTime.now();
-    for (final appt in upcoming.where((a) => a.fromApi)) {
-      items.add(NotificationItem(
-        id: 'appt-${appt.id}',
-        type: NotificationType.appointment,
-        title: 'Recordatorio de cita',
-        message: 'Tu evaluación visual es el ${appt.weekday.toLowerCase()} a las ${appt.time}.',
-        occurredAt: now.subtract(const Duration(hours: 2)),
-      ));
-    }
-    for (final order in _state.orders.where((o) => o.fromApi)) {
-      items.add(NotificationItem(
-        id: 'order-${order.id}',
-        type: NotificationType.order,
-        title: 'Tu pedido avanzó',
-        message: order.statusLabel == 'En producción' ? 'Tus lentes ya están en producción.' : 'Estado del pedido: ${order.statusLabel}.',
-        occurredAt: now.subtract(const Duration(hours: 5)),
-      ));
-    }
-    items.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
-    return items;
-  }
-
-  int get unreadCount => notifications.where((n) => !_state.readNotificationIds.contains(n.id)).length;
 
   AppointmentUi? appointmentById(String id) => _state.appointments.where((item) => item.id == id).firstOrNull;
 
@@ -197,19 +157,5 @@ class PatientViewModel extends ChangeNotifier {
     } finally {
       if (identical(current, _current)) _emit(_state.copyWith(appointmentActionLoading: false));
     }
-  }
-
-
-  Future<void> markNotificationsRead() async {
-    final ids = notifications.map((n) => n.id).toSet();
-    await saveReadNotificationsUseCase.execute(ids);
-    _emit(_state.copyWith(readNotificationIds: ids));
-  }
-
-  Future<void> markNotificationRead(String id) async {
-    if (_state.readNotificationIds.contains(id)) return;
-    final ids = {..._state.readNotificationIds, id};
-    await saveReadNotificationsUseCase.execute(ids);
-    _emit(_state.copyWith(readNotificationIds: ids));
   }
 }

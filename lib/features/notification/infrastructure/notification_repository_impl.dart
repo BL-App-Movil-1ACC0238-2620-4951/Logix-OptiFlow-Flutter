@@ -1,14 +1,18 @@
 import 'package:logix_optiflow/features/notification/domain/notification_repository.dart';
-import 'package:logix_optiflow/features/notification/infrastructure/notification_local_data_source.dart';
+import 'package:logix_optiflow/features/notification/domain/patient_notification.dart';
+import 'package:logix_optiflow/features/notification/infrastructure/notification_api.dart';
 
 class NotificationRepositoryImpl implements NotificationRepository {
-  const NotificationRepositoryImpl({required this.local});
+  const NotificationRepositoryImpl({required this.api});
 
-  final NotificationLocalDataSource local;
-
-  @override
-  Future<Set<String>> readNotificationIds() => local.readNotificationIds();
+  final NotificationApi api;
 
   @override
-  Future<void> saveNotificationIds(Set<String> ids) => local.saveNotificationIds(ids);
+  Future<List<PatientNotification>> forPatient(String patientId) => api.forPatient(patientId);
+
+  @override
+  Future<void> markRead(String id) => api.markRead(id);
+
+  @override
+  Future<void> answerSurvey(String id, int rating, String? comment) => api.answerSurvey(id, rating, comment);
 }

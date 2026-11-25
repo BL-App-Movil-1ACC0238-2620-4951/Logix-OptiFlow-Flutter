@@ -8,6 +8,7 @@ import 'package:logix_optiflow/presentation/pages/patient/booking_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/catalog_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/extra_screens.dart';
 import 'package:logix_optiflow/presentation/pages/patient/home_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/notifications_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/orders_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
