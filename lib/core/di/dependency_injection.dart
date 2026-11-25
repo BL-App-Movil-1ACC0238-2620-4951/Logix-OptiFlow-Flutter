@@ -41,6 +41,7 @@ import 'package:logix_optiflow/features/inventory/application/get_frame_stock_us
 import 'package:logix_optiflow/features/inventory/application/toggle_favorite_frame_use_case.dart';
 import 'package:logix_optiflow/features/inventory/domain/favorite_frame_repository.dart';
 import 'package:logix_optiflow/features/inventory/infrastructure/favorite_frame_repository_impl.dart';
+import 'package:logix_optiflow/features/inventory/application/add_frame_model_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_low_stock_alerts_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
@@ -105,6 +106,7 @@ import 'package:logix_optiflow/features/clinical/presentation/clinical_care_view
 import 'package:logix_optiflow/features/clinical/presentation/quote_view_model.dart';
 import 'package:logix_optiflow/features/clinical/presentation/sale_view_model.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
+import 'package:logix_optiflow/features/inventory/presentation/new_frame_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/work_order_view_model.dart';
 import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
@@ -226,6 +228,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetStockMovementsUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => ReplenishStockUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetLowStockAlertsUseCase(repository: getIt<InventoryRepository>()));
+  getIt.registerLazySingleton(() => AddFrameModelUseCase(catalog: getIt<CatalogRepository>(), inventory: getIt<InventoryRepository>()));
 
   // report
   getIt.registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(api: getIt<ReportApi>()));
@@ -300,6 +303,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getFavoriteFramesUseCase: getIt(),
         toggleFavoriteFrameUseCase: getIt(),
       ));
+  getIt.registerFactory(() => NewFrameViewModel(session: getIt(), catalog: getIt(), addFrameModelUseCase: getIt(), getSuppliersUseCase: getIt()));
   getIt.registerLazySingleton(() => StaffPatientsViewModel(
         session: getIt(),
         getStaffPatientsUseCase: getIt(),

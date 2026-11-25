@@ -14,6 +14,14 @@ class InventoryApi {
   Future<FrameModelDto> frameModel(String sku, {String? opticalStoreId}) async => FrameModelDto(
       Map<String, dynamic>.from(await _client.get('inventory/frames/${Uri.encodeComponent(sku)}', {'opticalStoreId': opticalStoreId}) as Map));
 
+  Future<FrameModelDto> addFrame({required String sku, required String name, String? material, String? shape, String? color, required num price}) async =>
+      FrameModelDto(Map<String, dynamic>.from(await _client.send('POST', 'inventory/frames', {
+        'sku': sku, 'name': name, 'price': price,
+        if (material != null) 'material': material,
+        if (shape != null) 'shape': shape,
+        if (color != null) 'color': color,
+      }) as Map));
+
   Future<FrameModelDto> updateFramePrice(String sku, num price) async => FrameModelDto(
       Map<String, dynamic>.from(await _client.send('PATCH', 'inventory/frames/${Uri.encodeComponent(sku)}/price', {'price': price}) as Map));
 

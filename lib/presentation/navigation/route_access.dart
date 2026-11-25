@@ -19,6 +19,7 @@ bool canAccessPath(PatientSession? session, String path) {
     '/s/clinical' || '/s/evaluation' => StaffFeature.clinical,
     '/s/inventory' || '/s/scanner' => StaffFeature.stock,
     '/s/movement' => StaffFeature.inventory,
+    '/s/inventory/new' => StaffFeature.catalog,
     '/s/production' => StaffFeature.production,
     '/s/quote' => StaffFeature.quotes,
     '/s/sale' || '/s/sale/done' => StaffFeature.sales,
