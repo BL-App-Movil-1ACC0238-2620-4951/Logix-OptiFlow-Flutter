@@ -61,6 +61,8 @@ class PatientAccountViewModel extends ChangeNotifier {
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
+    // Se crea al abrir el perfil, después del login: ese aviso ya pasó.
+    if (session.state.bootstrapped) _onSessionReady();
   }
 
   final SessionViewModel session;
