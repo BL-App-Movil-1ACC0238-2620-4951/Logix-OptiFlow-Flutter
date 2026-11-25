@@ -156,6 +156,15 @@ class PrescriptionUi {
   final String observations;
 }
 
+/// Una receta de "Mis recetas"; [recordId] es la ficha clínica que la contiene.
+class PrescriptionItemUi {
+  const PrescriptionItemUi({required this.recordId, required this.date, required this.summary});
+
+  final String recordId;
+  final String date;
+  final String summary;
+}
+
 class StoreOption {
   const StoreOption({
     required this.id,

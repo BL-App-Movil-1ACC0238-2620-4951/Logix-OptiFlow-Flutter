@@ -57,7 +57,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     _Menu(icon: Icons.favorite_border, title: 'Historial clínico', subtitle: 'Controles y antecedentes', onTap: () => context.push('/p/history')),
                     const Divider(height: 1, color: AppColors.lavender),
-                    _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: patientVm.state.prescription == null ? 'Aún no tienes recetas' : 'Tu última receta', onTap: () => context.push('/p/prescription')),
+                    _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: switch (patientVm.state.prescriptions.length) { 0 => 'Aún no tienes recetas', 1 => '1 receta disponible', final n => '$n recetas disponibles' }, onTap: () => context.push('/p/prescriptions')),
                   ],
                 ),
               ),

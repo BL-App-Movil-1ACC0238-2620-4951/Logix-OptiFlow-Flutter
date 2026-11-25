@@ -6,6 +6,7 @@ import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
@@ -28,6 +29,7 @@ class PatientViewModel extends ChangeNotifier {
     required this.getPatientWorkOrdersUseCase,
     required this.getPatientClinicalRecordsUseCase,
     required this.rateOpticalStoreUseCase,
+    required this.getPrescriptionUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -40,10 +42,12 @@ class PatientViewModel extends ChangeNotifier {
   final GetPatientWorkOrdersUseCase getPatientWorkOrdersUseCase;
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
   final RateOpticalStoreUseCase rateOpticalStoreUseCase;
+  final GetPrescriptionUseCase getPrescriptionUseCase;
 
   PatientUiState _state = PatientUiState();
   PatientUiState get state => _state;
   int _appointmentsRequest = 0;
+  Map<String, ClinicalRecord> _recordsById = const {};
 
   PatientSession? get _current => session.session;
 
@@ -59,6 +63,7 @@ class PatientViewModel extends ChangeNotifier {
 
   void _reset() {
     _appointmentsRequest++;
+    _recordsById = const {};
     _emit(PatientUiState(patientLoading: false));
   }
 
@@ -133,12 +138,26 @@ class PatientViewModel extends ChangeNotifier {
     final name = session.displayName;
     final orders = apiOrders.map(PatientViewMapper.order).toList();
     final history = records.map(PatientViewMapper.history).toList();
+    _recordsById = {for (final r in records) if (r.id != null) r.id!: r};
     _emit(_state.copyWith(
       orders: orders,
       history: history,
       prescription: () => PatientViewMapper.prescription(records, name),
+      prescriptions: PatientViewMapper.prescriptionItems(records),
       patientLoading: false,
     ));
+  }
+
+  /// Carga una receta con `GET clinical-records/{id}/prescription`.
+  Future<void> loadPrescription(String recordId) async {
+    final record = _recordsById[recordId];
+    _emit(_state.copyWith(selectedPrescription: () => null, selectedPrescriptionError: () => null));
+    try {
+      final values = await getPrescriptionUseCase.execute(recordId);
+      _emit(_state.copyWith(selectedPrescription: () => PatientViewMapper.prescriptionUi(values, record?.examinationDate, record?.observations, session.displayName)));
+    } catch (error) {
+      _emit(_state.copyWith(selectedPrescriptionError: () => error is ApiException ? error.message : 'No se pudo cargar la receta.'));
+    }
   }
 
   Future<bool> cancelAppointment(String id) async {

@@ -20,6 +20,7 @@ import 'package:logix_optiflow/features/auth/infrastructure/session_local_data_s
 import 'package:logix_optiflow/features/auth/infrastructure/session_repository_impl.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patients_with_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_repository.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/clinical_api.dart';
@@ -173,6 +174,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
     ),
   );
   getIt.registerLazySingleton(() => GetPatientClinicalRecordsUseCase(repository: getIt<ClinicalRepository>()));
+  getIt.registerLazySingleton(() => GetPrescriptionUseCase(repository: getIt<ClinicalRepository>()));
   getIt.registerLazySingleton(() => GetPatientsWithRecordsUseCase(repository: getIt<ClinicalRepository>()));
 
   // production
@@ -228,6 +230,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getPatientWorkOrdersUseCase: getIt(),
         getPatientClinicalRecordsUseCase: getIt(),
         rateOpticalStoreUseCase: getIt(),
+        getPrescriptionUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => NotificationsViewModel(
         session: getIt(),

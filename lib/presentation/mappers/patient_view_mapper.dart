@@ -119,30 +119,48 @@ abstract final class PatientViewMapper {
     }
     final values = chosen?.prescription;
     if (values == null) return null;
-    String fmt(num? value, {bool plus = false}) {
-      if (value == null) return '—';
-      final text = value.toStringAsFixed(2);
-      if (plus && value > 0) return '+$text';
-      return text.replaceAll('-', '−');
-    }
+    return prescriptionUi(values, chosen?.examinationDate, chosen?.observations, name);
+  }
 
-    final date = chosen?.examinationDate?.toLocal() ?? DateTime.now();
+  /// Recetas de "Mis recetas", de la más reciente a la más antigua.
+  static List<PrescriptionItemUi> prescriptionItems(List<ClinicalRecord> records) {
+    final withRx = records.where((r) => r.prescription != null && r.id != null).toList()
+      ..sort((a, b) => (b.examinationDate ?? DateTime(0)).compareTo(a.examinationDate ?? DateTime(0)));
+    return [
+      for (final record in withRx)
+        PrescriptionItemUi(
+          recordId: record.id!,
+          date: record.examinationDate == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(record.examinationDate!.toLocal()),
+          summary: 'OD ${_rx(record.prescription!.sphereOd)} · OI ${_rx(record.prescription!.sphereOs)}',
+        ),
+    ];
+  }
+
+  static PrescriptionUi prescriptionUi(PrescriptionValues values, DateTime? examinationDate, String? observations, String name) {
+    final date = examinationDate?.toLocal() ?? DateTime.now();
     final treatment = values.treatment?.trim() ?? '';
-    final notes = chosen?.observations?.trim() ?? '';
+    final notes = observations?.trim() ?? '';
     return PrescriptionUi(
       patientName: name,
       date: DateFormat('dd/MM/yyyy').format(date),
       issuedLabel: 'Emitida el ${DateFormat('d MMM yyyy', 'es').format(date)}',
-      sphereOd: fmt(values.sphereOd),
-      cylinderOd: fmt(values.cylinderOd),
+      sphereOd: _rx(values.sphereOd),
+      cylinderOd: _rx(values.cylinderOd),
       axisOd: values.axisOd == null ? '—' : '${values.axisOd}°',
-      additionOd: fmt(values.addition, plus: true),
-      sphereOi: fmt(values.sphereOs),
-      cylinderOi: fmt(values.cylinderOs),
+      additionOd: _rx(values.addition, plus: true),
+      sphereOi: _rx(values.sphereOs),
+      cylinderOi: _rx(values.cylinderOs),
       axisOi: values.axisOs == null ? '—' : '${values.axisOs}°',
-      additionOi: fmt(values.addition, plus: true),
+      additionOi: _rx(values.addition, plus: true),
       observations: [if (treatment.isNotEmpty) treatment, if (notes.isNotEmpty) notes].join(' · '),
     );
+  }
+
+  static String _rx(num? value, {bool plus = false}) {
+    if (value == null) return '—';
+    final text = value.toStringAsFixed(2);
+    if (plus && value > 0) return '+$text';
+    return text.replaceAll('-', '−');
   }
 
   static String _cap(String value) => value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);

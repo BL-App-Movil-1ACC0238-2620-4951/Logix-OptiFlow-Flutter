@@ -25,6 +25,8 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<PrescriptionValues> prescribe(String recordId, PrescriptionValues values) => api.generatePrescription(recordId, values);
   @override
+  Future<PrescriptionValues> prescription(String recordId) => api.prescription(recordId);
+  @override
   Future<Appointment> complete(String appointmentId) async => (await bookingApi.completeAppointment(appointmentId)).toEntity();
   @override
   Future<int> patientsWithRecords() => api.patientsWithRecords();

@@ -50,6 +50,8 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/p/frame/:id', builder: (_, state) => FrameDetailScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/p/tryon/:id', builder: (_, state) => TryOnScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/p/prescription', builder: (_, __) => const PrescriptionScreen()),
+      GoRoute(path: '/p/prescriptions', builder: (_, __) => const PrescriptionListScreen()),
+      GoRoute(path: '/p/prescriptions/:id', builder: (_, state) => PrescriptionScreen(recordId: state.pathParameters['id']!)),
       GoRoute(path: '/p/appointment/:id', builder: (_, state) => AppointmentDetailScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/p/reschedule/:id', builder: (_, state) => RescheduleScreen(id: state.pathParameters['id']!)),
       GoRoute(
