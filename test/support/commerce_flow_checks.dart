@@ -5,8 +5,8 @@ import 'package:http/testing.dart';
 import 'test_apis.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_repository_impl.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
-import 'package:logix_optiflow/presentation/state/quote_flow.dart';
-import 'package:logix_optiflow/presentation/state/sale_flow.dart';
+import 'package:logix_optiflow/features/clinical/presentation/quote_flow.dart';
+import 'package:logix_optiflow/features/clinical/presentation/sale_flow.dart';
 
 void commerceCheck(bool value, String message) { if (!value) throw StateError(message); }
 http.Response commerceResponse(Object body, [int status = 200]) => http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json; charset=utf-8'});
@@ -73,7 +73,7 @@ class CommerceServer {
     if (request.method == 'PATCH' && path.endsWith('/discount')) {
       commerceCheck(quote['status'] == 'DRAFT', 'Only draft discounts are editable');
       final amount = body['type'] == 'PERCENTAGE' ? (subtotal * (body['value'] as num)).round() / 100 : body['value'];
-      quote['discount'] = {...body, 'amount': amount}; quote['total'] = subtotal - (amount as num);
+      quote['discount'] = {...body, 'amount': amount}; quote['total'] = ((subtotal - (amount as num)) * 100).round() / 100;
       return commerceResponse(quote);
     }
     if (request.method == 'PATCH' && path.startsWith('quotations/') && path.endsWith('/status')) {

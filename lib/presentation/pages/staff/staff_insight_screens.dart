@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class AlertsScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final alerts = context.read<OptiFlowController>().alerts.where((alert) {
+    final alerts = getIt<ReportViewModel>().state.alerts.where((alert) {
       return switch (filter) {
         1 => alert.kind == 'Inventario',
         2 => alert.kind == 'Producción',
@@ -123,7 +123,7 @@ class ReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bars = context.read<OptiFlowController>().reportBars;
+    final bars = getIt<ReportViewModel>().state.reportBars;
     return StaffScaffold(
       tab: StaffTab.more,
       topBar: StaffTopBar(title: 'Reportes', onBack: () => context.pop()),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/pages/patient/booking/confirm_step.dart';
 import 'package:logix_optiflow/presentation/pages/patient/booking/date_step.dart';
@@ -24,50 +24,55 @@ class _BookingScreenState extends State<BookingScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<OptiFlowController>().prepareBooking(widget.storeId, rescheduleId: widget.rescheduleId);
+      if (mounted) getIt<BookingViewModel>().prepareBooking(widget.storeId, rescheduleId: widget.rescheduleId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final title = switch (app.bookingStep) {
-      1 => 'Elige una óptica',
-      2 => 'Elige una fecha',
-      _ => 'Confirma tu reserva',
-    };
-    return PatientScaffold(
-      tab: PatientTab.appointments,
-      topBar: DarkTopBar(
-        title: title,
-        onBack: () {
-          if (app.bookingLoading) return;
-          if (app.bookingAppointment != null && app.bookingStep != 4) {
-            context.go('/p/appointments');
-            return;
-          }
-          if (app.bookingStep > 1 && app.bookingStep < 4) {
-            app.bookingBack();
-          } else if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go('/p/home');
-          }
+    final bookingVm = getIt<BookingViewModel>();
+    return ListenableBuilder(
+      listenable: bookingVm,
+      builder: (context, _) {
+        final title = switch (bookingVm.state.step) {
+          1 => 'Elige una óptica',
+          2 => 'Elige una fecha',
+          _ => 'Confirma tu reserva',
+        };
+        return PatientScaffold(
+          tab: PatientTab.appointments,
+          topBar: DarkTopBar(
+            title: title,
+            onBack: () {
+              if (bookingVm.state.loading) return;
+              if (bookingVm.state.appointment != null && bookingVm.state.step != 4) {
+                context.go('/p/appointments');
+                return;
+              }
+              if (bookingVm.state.step > 1 && bookingVm.state.step < 4) {
+                bookingVm.bookingBack();
+              } else if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/p/home');
+              }
+            },
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 26, 20, 28),
+            children: [
+              BookingStepper(step: bookingVm.state.step),
+              const SizedBox(height: 26),
+              if (bookingVm.state.reschedulingId != null && bookingVm.state.step < 4)
+                const Padding(padding: EdgeInsets.only(bottom: 16), child: Text('Reservaremos el nuevo horario y después cancelaremos la cita anterior.')),
+              if (bookingVm.state.step == 1) const BookingStoreStep(),
+              if (bookingVm.state.step == 2) const BookingDateStep(),
+              if (bookingVm.state.step == 3) const BookingConfirmStep(),
+              if (bookingVm.state.step == 4) const BookingDoneStep(),
+            ],
+          ),
+        );
         },
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 26, 20, 28),
-        children: [
-          BookingStepper(step: app.bookingStep),
-          const SizedBox(height: 26),
-          if (app.reschedulingId != null && app.bookingStep < 4)
-            const Padding(padding: EdgeInsets.only(bottom: 16), child: Text('Reservaremos el nuevo horario y después cancelaremos la cita anterior.')),
-          if (app.bookingStep == 1) const BookingStoreStep(),
-          if (app.bookingStep == 2) const BookingDateStep(),
-          if (app.bookingStep == 3) const BookingConfirmStep(),
-          if (app.bookingStep == 4) const BookingDoneStep(),
-        ],
-      ),
     );
   }
 }

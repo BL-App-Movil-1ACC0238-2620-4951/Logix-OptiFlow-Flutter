@@ -72,6 +72,18 @@ import 'package:logix_optiflow/features/searchbooking/infrastructure/appointment
 import 'package:logix_optiflow/features/searchbooking/infrastructure/patient_repository_impl.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/search_booking_api.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/store_repository_impl.dart';
+import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
+import 'package:logix_optiflow/features/clinical/presentation/clinical_care_view_model.dart';
+import 'package:logix_optiflow/features/clinical/presentation/quote_view_model.dart';
+import 'package:logix_optiflow/features/clinical/presentation/sale_view_model.dart';
+import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
+import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
+import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
 
 final getIt = GetIt.instance;
 
@@ -167,4 +179,82 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<ReportRepository>(() => const ReportRepositoryImpl());
   getIt.registerLazySingleton(() => GetStaffAlertsUseCase(repository: getIt<ReportRepository>()));
   getIt.registerLazySingleton(() => GetReportBarsUseCase(repository: getIt<ReportRepository>()));
+
+  // ViewModels: uno por área, compartidos por las pantallas.
+  getIt.registerLazySingleton(() => SessionViewModel(
+        api: getIt<ApiClient>(),
+        loadSessionUseCase: getIt(),
+        saveSessionUseCase: getIt(),
+        clearSessionUseCase: getIt(),
+        loginUseCase: getIt(),
+        registerPatientUseCase: getIt(),
+        loadAppSettingsUseCase: getIt(),
+        saveAppSettingsUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => StoreSearchViewModel(
+        session: getIt(), getOpticalStoresUseCase: getIt(), searchOpticalStoresUseCase: getIt()));
+  getIt.registerLazySingleton(() => PatientViewModel(
+        session: getIt(),
+        stores: getIt(),
+        getPatientAppointmentsUseCase: getIt(),
+        cancelAppointmentUseCase: getIt(),
+        getPatientWorkOrdersUseCase: getIt(),
+        getPatientClinicalRecordsUseCase: getIt(),
+        loadReadNotificationsUseCase: getIt(),
+        saveReadNotificationsUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => BookingViewModel(
+        session: getIt(),
+        patient: getIt(),
+        stores: getIt(),
+        getStoreAvailabilityUseCase: getIt(),
+        bookAppointmentUseCase: getIt(),
+        cancelAppointmentUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => CatalogViewModel(
+        session: getIt(),
+        getFramesUseCase: getIt(),
+        getFrameUseCase: getIt(),
+        updateFramePriceUseCase: getIt(),
+        getStoreStockUseCase: getIt(),
+        getSuppliersUseCase: getIt(),
+        getStockMovementsUseCase: getIt(),
+        replenishStockUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => StaffPatientsViewModel(
+        session: getIt(),
+        getStaffPatientsUseCase: getIt(),
+        getStaffPatientUseCase: getIt(),
+        registerPatientByStaffUseCase: getIt(),
+        getPatientsWithRecordsUseCase: getIt(),
+        getPatientClinicalRecordsUseCase: getIt(),
+        getPatientAppointmentsUseCase: getIt(),
+        getStaffOrdersUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => ProductionViewModel(
+        session: getIt(), getStaffOrdersUseCase: getIt(), getProductionOrdersUseCase: getIt()));
+  getIt.registerLazySingleton(() => AgendaViewModel(
+        session: getIt(),
+        patients: getIt(),
+        production: getIt(),
+        stores: getIt(),
+        getAgendaUseCase: getIt(),
+        getStaffPatientUseCase: getIt(),
+        getStoreAvailabilityUseCase: getIt(),
+        bookAppointmentUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => ReportViewModel(getStaffAlertsUseCase: getIt(), getReportBarsUseCase: getIt()));
+  getIt.registerLazySingleton(() => ClinicalCareViewModel(
+        session: getIt(), repository: getIt(), agenda: getIt(), patients: getIt()));
+  getIt.registerLazySingleton(() => QuoteViewModel(session: getIt(), repository: getIt()));
+  getIt.registerLazySingleton(() => SaleViewModel(
+        session: getIt(), repository: getIt(), patients: getIt(), catalog: getIt()));
+
+  // Se crean ya, para que se suscriban al cierre de sesión antes del primer login.
+  getIt<PatientViewModel>();
+  getIt<BookingViewModel>();
+  getIt<AgendaViewModel>();
+  getIt<ClinicalCareViewModel>();
+  getIt<QuoteViewModel>();
+  getIt<SaleViewModel>();
 }

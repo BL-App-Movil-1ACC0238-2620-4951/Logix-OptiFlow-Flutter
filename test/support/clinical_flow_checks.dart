@@ -5,7 +5,7 @@ import 'package:http/testing.dart';
 import 'test_apis.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/clinical_repository_impl.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
-import 'package:logix_optiflow/presentation/state/clinical_care_flow.dart';
+import 'package:logix_optiflow/features/clinical/presentation/clinical_care_flow.dart';
 
 void clinicalCheck(bool value, String message) {
   if (!value) throw StateError(message);

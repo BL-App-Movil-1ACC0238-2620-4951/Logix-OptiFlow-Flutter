@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/presentation/pages/auth/auth_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/appointments_screen.dart';
@@ -13,7 +12,8 @@ import 'package:logix_optiflow/presentation/pages/patient/orders_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
 import 'package:logix_optiflow/presentation/pages/staff/staff_screens.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/presentation/navigation/route_access.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 
@@ -27,11 +27,11 @@ class OptiFlowApp extends StatefulWidget {
 class _OptiFlowAppState extends State<OptiFlowApp> {
   late final GoRouter _router = GoRouter(
     initialLocation: '/',
-    refreshListenable: context.read<OptiFlowController>(),
+    refreshListenable: getIt<SessionViewModel>(),
     redirect: (context, state) async {
-      final app = context.read<OptiFlowController>();
-      await app.bootstrap();
-      return routeRedirect(app.session, state.uri);
+      final session = getIt<SessionViewModel>();
+      await session.bootstrap();
+      return routeRedirect(session.session, state.uri);
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const _BootScreen()),

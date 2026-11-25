@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 String commerceRoute(String path, String patientId, {String? saleId}) => Uri(path: path, queryParameters: {'patientId': patientId, if (saleId != null) 'saleId': saleId}).toString();
@@ -69,27 +69,32 @@ class _CommercePatientPickerState extends State<CommercePatientPicker> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) context.read<OptiFlowController>().refreshStaffPatients(); });
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) getIt<StaffPatientsViewModel>().refreshStaffPatients(); });
   }
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final search = query.trim().toLowerCase();
-    final patients = app.staffPatients.where((p) => '${p.fullName} ${p.email} ${p.phone}'.toLowerCase().contains(search));
-    return StaffScaffold(tab: null, showBottomBar: false,
-      topBar: StaffTopBar(title: widget.sales ? 'Ventas y pagos' : 'Nueva cotización', onBack: () => commerceBack(context)),
-      body: RefreshIndicator(onRefresh: app.refreshStaffPatients, child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
-        Text(widget.sales ? 'Elige al paciente para consultar sus ventas.' : '¿Para qué paciente es la cotización?', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        if (!widget.sales) const Text('Se usa su última receta.'),
-        const SizedBox(height: 14), TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Nombre, correo o teléfono'), onChanged: (v) => setState(() => query = v)),
-        const SizedBox(height: 14),
-        if (app.staffPatientsLoading) const LinearProgressIndicator(),
-        if (app.staffPatientsError != null) ...[CommerceNotice(app.staffPatientsError!), TextButton(onPressed: app.refreshStaffPatients, child: const Text('Reintentar'))]
-        else if (!app.staffPatientsLoading && patients.isEmpty) const Text('No hay pacientes que coincidan.'),
-        for (final patient in patients) Padding(padding: const EdgeInsets.only(bottom: 10), child: AppCard(onTap: () => context.push(commerceRoute(widget.sales ? '/s/sale' : '/s/quote', patient.id)), child: Row(children: [
-          CircleAvatar(child: Text(patient.initials)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(patient.fullName), Text(patient.email.isEmpty ? patient.phone : patient.email, style: const TextStyle(fontSize: 11))])), const Icon(Icons.chevron_right),
-        ]))),
-      ])),
+    final patientsVm = getIt<StaffPatientsViewModel>();
+    return ListenableBuilder(
+      listenable: patientsVm,
+      builder: (context, _) {
+        final search = query.trim().toLowerCase();
+        final patients = patientsVm.state.patients.where((p) => '${p.fullName} ${p.email} ${p.phone}'.toLowerCase().contains(search));
+        return StaffScaffold(tab: null, showBottomBar: false,
+          topBar: StaffTopBar(title: widget.sales ? 'Ventas y pagos' : 'Nueva cotización', onBack: () => commerceBack(context)),
+          body: RefreshIndicator(onRefresh: patientsVm.refreshStaffPatients, child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
+            Text(widget.sales ? 'Elige al paciente para consultar sus ventas.' : '¿Para qué paciente es la cotización?', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            if (!widget.sales) const Text('Se usa su última receta.'),
+            const SizedBox(height: 14), TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Nombre, correo o teléfono'), onChanged: (v) => setState(() => query = v)),
+            const SizedBox(height: 14),
+            if (patientsVm.state.loading) const LinearProgressIndicator(),
+            if (patientsVm.state.error != null) ...[CommerceNotice(patientsVm.state.error!), TextButton(onPressed: patientsVm.refreshStaffPatients, child: const Text('Reintentar'))]
+            else if (!patientsVm.state.loading && patients.isEmpty) const Text('No hay pacientes que coincidan.'),
+            for (final patient in patients) Padding(padding: const EdgeInsets.only(bottom: 10), child: AppCard(onTap: () => context.push(commerceRoute(widget.sales ? '/s/sale' : '/s/quote', patient.id)), child: Row(children: [
+              CircleAvatar(child: Text(patient.initials)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(patient.fullName), Text(patient.email.isEmpty ? patient.phone : patient.email, style: const TextStyle(fontSize: 11))])), const Icon(Icons.chevron_right),
+            ]))),
+          ])),
+        );
+        },
     );
   }
 }

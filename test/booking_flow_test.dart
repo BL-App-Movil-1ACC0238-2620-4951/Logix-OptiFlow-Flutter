@@ -9,7 +9,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 
 http.Response response(Object value, [int status = 200]) => http.Response(
       jsonEncode(value),
@@ -58,11 +57,11 @@ Map<String, Object> appointment(
       'status': status,
     };
 
-Future<OptiFlowController> controller(
+Future<TestApp> controller(
     Future<http.Response> Function(http.Request) handler) async {
   final api = await setupTestDependencies(MockClient(handler));
-  final app = OptiFlowController();
-  app.session = const PatientSession(
+  final app = TestApp();
+  app.sessionVm.session = const PatientSession(
       patientId: 'patient-1',
       name: 'Paciente',
       email: 'patient@optiflow.pe',
@@ -72,11 +71,11 @@ Future<OptiFlowController> controller(
   return app;
 }
 
-Future<void> chooseSlot(OptiFlowController app) async {
-  await app.prepareBooking('store-1');
-  await app.continueFromStore();
-  app.selectSlot(app.slots.first);
-  expect(app.continueFromDate(), isTrue);
+Future<void> chooseSlot(TestApp app) async {
+  await app.bookingVm.prepareBooking('store-1');
+  await app.bookingVm.continueFromStore();
+  app.bookingVm.selectSlot(app.bookingVm.state.slots.first);
+  expect(app.bookingVm.continueFromDate(), isTrue);
 }
 
 void main() {
@@ -92,13 +91,13 @@ void main() {
         return response(
             status == 200 ? [] : {'message': 'Servidor no disponible'}, status);
       });
-      await app.prepareBooking(null);
-      expect(app.bookingStores, isEmpty);
-      expect(app.bookingError, isNotNull);
-      app.bookingStep = 3;
-      expect(await app.confirmBooking(), isFalse);
+      await app.bookingVm.prepareBooking(null);
+      expect(app.bookingVm.state.stores, isEmpty);
+      expect(app.bookingVm.state.error, isNotNull);
+      app.bookingVm.step = 3;
+      expect(await app.bookingVm.confirmBooking(), isFalse);
       expect(posts, 0);
-      expect(app.bookingAppointment, isNull);
+      expect(app.bookingVm.state.appointment, isNull);
     }
   });
 
@@ -114,12 +113,12 @@ void main() {
                 slot(id: 'past', start: DateTime.utc(2000))
               ])
             : response([store]));
-    await app.prepareBooking('store-1');
-    await app.continueFromStore();
-    expect(app.slots, hasLength(1));
-    expect(app.selectedDate?.weekday, DateTime.sunday);
-    expect(app.hasSlots(app.weekStart.add(const Duration(days: 6))), isTrue);
-    expect(app.slots.first.durationMinutes, 30);
+    await app.bookingVm.prepareBooking('store-1');
+    await app.bookingVm.continueFromStore();
+    expect(app.bookingVm.state.slots, hasLength(1));
+    expect(app.bookingVm.state.selectedDate?.weekday, DateTime.sunday);
+    expect(app.bookingVm.hasSlots(app.bookingVm.state.weekStart.add(const Duration(days: 6))), isTrue);
+    expect(app.bookingVm.state.slots.first.durationMinutes, 30);
   });
 
   test('error al cargar horarios conserva lista vacía sin inventar horarios',
@@ -128,11 +127,11 @@ void main() {
         request.url.path.endsWith('/time-slots')
             ? response({'message': 'No se pudo consultar disponibilidad'}, 503)
             : response([store]));
-    await app.prepareBooking('store-1');
-    await app.continueFromStore();
-    expect(app.slots, isEmpty);
-    expect(app.bookingError, contains('disponibilidad'));
-    expect(app.continueFromDate(), isFalse);
+    await app.bookingVm.prepareBooking('store-1');
+    await app.bookingVm.continueFromStore();
+    expect(app.bookingVm.state.slots, isEmpty);
+    expect(app.bookingVm.state.error, contains('disponibilidad'));
+    expect(app.bookingVm.continueFromDate(), isFalse);
   });
 
   test(
@@ -156,14 +155,14 @@ void main() {
           : response([store]);
     });
     await chooseSlot(app);
-    final booking = app.confirmBooking();
-    expect(await app.confirmBooking(), isFalse);
+    final booking = app.bookingVm.confirmBooking();
+    expect(await app.bookingVm.confirmBooking(), isFalse);
     pending.complete(response(appointment(), 201));
     expect(await booking, isTrue);
     expect(posts, 1);
-    expect(app.bookingStep, 4);
-    expect(app.appointments.single.id, 'new-appointment');
-    expect(app.appointments.single.fromApi, isTrue);
+    expect(app.bookingVm.state.step, 4);
+    expect(app.patientVm.state.appointments.single.id, 'new-appointment');
+    expect(app.patientVm.state.appointments.single.fromApi, isTrue);
   });
 
   test('un conflicto 409 pide otro horario y no muestra reserva exitosa',
@@ -177,11 +176,11 @@ void main() {
           : response([store]);
     });
     await chooseSlot(app);
-    expect(await app.confirmBooking(), isFalse);
-    expect(app.bookingStep, 2);
-    expect(app.selectedSlot, isNull);
-    expect(app.bookingAppointment, isNull);
-    expect(app.appointments, isEmpty);
+    expect(await app.bookingVm.confirmBooking(), isFalse);
+    expect(app.bookingVm.state.step, 2);
+    expect(app.bookingVm.state.selectedSlot, isNull);
+    expect(app.bookingVm.state.appointment, isNull);
+    expect(app.patientVm.state.appointments, isEmpty);
   });
 
   test('cancelación PATCH solo cambia estado después de respuesta exitosa',
@@ -199,13 +198,13 @@ void main() {
           ? response([appointment(id: 'original')])
           : response([store]);
     });
-    await app.refreshAppointments();
-    expect(await app.cancelAppointment('original'), isFalse);
-    expect(app.appointments.single.status, AppointmentStatus.confirmed);
+    await app.patientVm.refreshAppointments();
+    expect(await app.patientVm.cancelAppointment('original'), isFalse);
+    expect(app.patientVm.state.appointments.single.status, AppointmentStatus.confirmed);
     allowCancel = true;
-    expect(await app.cancelAppointment('original'), isTrue);
-    expect(app.appointments.single.status, AppointmentStatus.cancelled);
-    expect(app.upcoming, isEmpty);
+    expect(await app.patientVm.cancelAppointment('original'), isTrue);
+    expect(app.patientVm.state.appointments.single.status, AppointmentStatus.cancelled);
+    expect(app.patientVm.upcoming, isEmpty);
   });
 
   test(
@@ -230,20 +229,20 @@ void main() {
       }
       return response([store]);
     });
-    await app.prepareBooking(null, rescheduleId: 'original');
-    await app.continueFromStore();
-    app.selectSlot(app.slots.first);
-    app.continueFromDate();
-    expect(await app.confirmBooking(), isFalse);
-    expect(app.bookingStep, 3);
-    expect(app.bookingAppointment?.id, 'new-appointment');
-    expect(app.bookingError, contains('nueva cita está reservada'));
-    expect(await app.confirmBooking(), isTrue);
+    await app.bookingVm.prepareBooking(null, rescheduleId: 'original');
+    await app.bookingVm.continueFromStore();
+    app.bookingVm.selectSlot(app.bookingVm.state.slots.first);
+    app.bookingVm.continueFromDate();
+    expect(await app.bookingVm.confirmBooking(), isFalse);
+    expect(app.bookingVm.state.step, 3);
+    expect(app.bookingVm.state.appointment?.id, 'new-appointment');
+    expect(app.bookingVm.state.error, contains('nueva cita está reservada'));
+    expect(await app.bookingVm.confirmBooking(), isTrue);
     expect(posts, 1);
     expect(patches, 2);
     expect(
-        app.appointmentById('original')?.status, AppointmentStatus.cancelled);
-    expect(app.bookingStep, 4);
+        app.patientVm.appointmentById('original')?.status, AppointmentStatus.cancelled);
+    expect(app.bookingVm.state.step, 4);
   });
 
   test('búsquedas fuera de orden no reemplazan el resultado más reciente',
@@ -255,16 +254,16 @@ void main() {
             : response([
                 {...store, 'name': 'Resultado nuevo'}
               ]));
-    app.setSearchQuery('anterior');
-    final previous = app.searchStores();
-    app.setSearchQuery('nueva');
-    await app.searchStores();
+    app.storesVm.setSearchQuery('anterior');
+    final previous = app.storesVm.searchStores();
+    app.storesVm.setSearchQuery('nueva');
+    await app.storesVm.searchStores();
     older.complete(response([
       {...store, 'name': 'Resultado viejo'}
     ]));
     await previous;
-    expect(app.searchResults.single.name, 'Resultado nuevo');
-    expect(app.searchLoading, isFalse);
+    expect(app.storesVm.state.results.single.name, 'Resultado nuevo');
+    expect(app.storesVm.state.loading, isFalse);
   });
 
   test('cerrar sesión mientras carga disponibilidad descarta la respuesta',
@@ -274,14 +273,14 @@ void main() {
         request.url.path.endsWith('/time-slots')
             ? pending.future
             : response([store]));
-    await app.prepareBooking('store-1');
-    final loading = app.continueFromStore();
-    await app.logout();
+    await app.bookingVm.prepareBooking('store-1');
+    final loading = app.bookingVm.continueFromStore();
+    await app.sessionVm.logout();
     pending.complete(response([slot()]));
     await loading;
-    expect(app.slots, isEmpty);
-    expect(app.bookingStores, isEmpty);
-    expect(app.bookingAppointment, isNull);
+    expect(app.bookingVm.state.slots, isEmpty);
+    expect(app.bookingVm.state.stores, isEmpty);
+    expect(app.bookingVm.state.appointment, isNull);
   });
 
   test('respuesta antigua de listado no borra una reserva recién confirmada',
@@ -295,10 +294,10 @@ void main() {
           : response([store]);
     });
     await chooseSlot(app);
-    final oldList = app.refreshAppointments();
-    expect(await app.confirmBooking(), isTrue);
+    final oldList = app.patientVm.refreshAppointments();
+    expect(await app.bookingVm.confirmBooking(), isTrue);
     pending.complete(response([]));
     await oldList;
-    expect(app.appointments.single.id, 'new-appointment');
+    expect(app.patientVm.state.appointments.single.id, 'new-appointment');
   });
 }

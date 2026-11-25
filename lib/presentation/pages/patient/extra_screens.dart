@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -14,32 +14,37 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final sections = _sections(app.notifications);
-    return PatientScaffold(
-      tab: PatientTab.home,
-      topBar: DarkTopBar(title: 'Notificaciones', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: app.markNotificationsRead,
-              child: Text('Marcar leídas', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
-            ),
+    final patientVm = getIt<PatientViewModel>();
+    return ListenableBuilder(
+      listenable: patientVm,
+      builder: (context, _) {
+        final sections = _sections(patientVm.notifications);
+        return PatientScaffold(
+          tab: PatientTab.home,
+          topBar: DarkTopBar(title: 'Notificaciones', onBack: () => context.pop()),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: patientVm.markNotificationsRead,
+                  child: Text('Marcar leídas', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                ),
+              ),
+              for (final section in sections) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(section.$1, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
+                ),
+                const SizedBox(height: 8),
+                for (final item in section.$2) _NotificationRow(item, patientVm.state.readNotificationIds.contains(item.id)),
+              ],
+            ],
           ),
-          for (final section in sections) ...[
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: Text(section.$1, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
-            ),
-            const SizedBox(height: 8),
-            for (final item in section.$2) _NotificationRow(item, app.readNotificationIds.contains(item.id)),
-          ],
-        ],
-      ),
+        );
+        },
     );
   }
 
@@ -82,7 +87,7 @@ class _NotificationRow extends StatelessWidget {
       children: [
         InkWell(
           onTap: () {
-            context.read<OptiFlowController>().markNotificationRead(item.id);
+            getIt<PatientViewModel>().markNotificationRead(item.id);
             final path = switch (item.type) {
               NotificationType.appointment => '/p/appointments',
               NotificationType.order => '/p/orders',
@@ -148,7 +153,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   @override
   void initState() {
     super.initState();
-    final rx = context.read<OptiFlowController>().prescription;
+    final rx = getIt<PatientViewModel>().state.prescription;
     final source = widget.editable
         ? List.filled(8, '')
         : [rx.sphereOd, rx.cylinderOd, rx.axisOd, rx.additionOd, rx.sphereOi, rx.cylinderOi, rx.axisOi, rx.additionOi];
@@ -168,214 +173,220 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final rx = context.watch<OptiFlowController>().prescription;
-    return PatientScaffold(
-      tab: PatientTab.profile,
-      topBar: DarkTopBar(title: 'Receta óptica', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(color: AppColors.infoBanner, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.skyTint)),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(color: AppColors.white, shape: BoxShape.circle),
-                  child: const Icon(Icons.verified_outlined, color: Color(0xFF0F766E), size: 30),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Tu receta está vigente', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                      Text('${rx.issuedLabel} · vence en 5 meses', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          AppCard(
-            radius: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFF4F6FD), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Paciente', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                            Text(rx.patientName, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('Fecha', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                          Text(rx.date, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _RxTable(values: values, editable: widget.editable),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(color: const Color(0xFFE7EEFC), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.remove_red_eye_outlined, size: 18, color: AppColors.deepNavy),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('Distancia pupilar (DP)', style: GoogleFonts.inter(fontSize: 13, color: AppColors.deepNavy))),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          widget.editable
-                              ? SizedBox(width: 72, child: TextField(controller: pd, textAlign: TextAlign.end, decoration: const InputDecoration(isDense: true, hintText: '0', border: InputBorder.none)))
-                              : Text('${pd.text} mm', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                          Text('31 / 31 mm', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate500)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const _Caption('DIAGNÓSTICOS ASOCIADOS'),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+    final patientVm = getIt<PatientViewModel>();
+    return ListenableBuilder(
+      listenable: patientVm,
+      builder: (context, _) {
+        final rx = patientVm.state.prescription;
+        return PatientScaffold(
+          tab: PatientTab.profile,
+          topBar: DarkTopBar(title: 'Receta óptica', onBack: () => context.pop()),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(color: AppColors.infoBanner, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.skyTint)),
+                child: Row(
                   children: [
-                    for (final diagnosis in rx.diagnoses) _Chip(diagnosis),
-                    if (widget.editable)
-                      Container(
-                        height: 30,
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                        decoration: BoxDecoration(color: const Color(0xFFDCE6FB), borderRadius: BorderRadius.circular(20)),
-                        child: const Icon(Icons.add, size: 16, color: AppColors.electric),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Divider(height: 1, color: Color(0xFFEEF2F7)),
-                const SizedBox(height: 10),
-                const _Caption('MEDIDAS DE LA MONTURA'),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    for (var i = 0; i < 4; i++)
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Icon([Icons.crop_square, Icons.architecture, Icons.straighten, Icons.height][i], size: 18, color: AppColors.navyBlue),
-                            const SizedBox(height: 6),
-                            widget.editable
-                                ? SizedBox(width: 44, child: TextField(controller: measures[i], textAlign: TextAlign.center, decoration: const InputDecoration(isDense: true, hintText: '0', border: InputBorder.none)))
-                                : Text(measures[i].text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                            Text(['Calibre', 'Puente', 'Patillas', 'Alto'][i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: Color(0xFFEEF2F7)),
-                const SizedBox(height: 10),
-                const _Caption('OBSERVACIONES E INDICACIÓN'),
-                const SizedBox(height: 8),
-                widget.editable
-                    ? TextField(controller: notes, maxLines: 3, decoration: const InputDecoration(hintText: 'Escriba observación', border: InputBorder.none))
-                    : Text(notes.text, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF374151), height: 1.45)),
-                const SizedBox(height: 14),
-                const _Dash(),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(color: AppColors.white, shape: BoxShape.circle),
+                      child: const Icon(Icons.verified_outlined, color: Color(0xFF0F766E), size: 30),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Dra. Fernanda Soto', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-                          Text('Oftalmología · Reg. 18452', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+                          Text('Tu receta está vigente', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                          Text('${rx.issuedLabel} · vence en 5 meses', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
                         ],
                       ),
                     ),
-                    Column(
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              AppCard(
+                radius: 24,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: const Color(0xFFF4F6FD), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Paciente', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                Text(rx.patientName, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('Fecha', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                              Text(rx.date, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _RxTable(values: values, editable: widget.editable),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(color: const Color(0xFFE7EEFC), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.remove_red_eye_outlined, size: 18, color: AppColors.deepNavy),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text('Distancia pupilar (DP)', style: GoogleFonts.inter(fontSize: 13, color: AppColors.deepNavy))),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              widget.editable
+                                  ? SizedBox(width: 72, child: TextField(controller: pd, textAlign: TextAlign.end, decoration: const InputDecoration(isDense: true, hintText: '0', border: InputBorder.none)))
+                                  : Text('${pd.text} mm', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                              Text('31 / 31 mm', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate500)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const _Caption('DIAGNÓSTICOS ASOCIADOS'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Container(width: 80, height: 1, color: const Color(0xFF111827)),
-                        const SizedBox(height: 4),
-                        Text('Firma profesional', style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate400)),
+                        for (final diagnosis in rx.diagnoses) _Chip(diagnosis),
+                        if (widget.editable)
+                          Container(
+                            height: 30,
+                            padding: const EdgeInsets.symmetric(horizontal: 22),
+                            decoration: BoxDecoration(color: const Color(0xFFDCE6FB), borderRadius: BorderRadius.circular(20)),
+                            child: const Icon(Icons.add, size: 16, color: AppColors.electric),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1, color: Color(0xFFEEF2F7)),
+                    const SizedBox(height: 10),
+                    const _Caption('MEDIDAS DE LA MONTURA'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        for (var i = 0; i < 4; i++)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Icon([Icons.crop_square, Icons.architecture, Icons.straighten, Icons.height][i], size: 18, color: AppColors.navyBlue),
+                                const SizedBox(height: 6),
+                                widget.editable
+                                    ? SizedBox(width: 44, child: TextField(controller: measures[i], textAlign: TextAlign.center, decoration: const InputDecoration(isDense: true, hintText: '0', border: InputBorder.none)))
+                                    : Text(measures[i].text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                                Text(['Calibre', 'Puente', 'Patillas', 'Alto'][i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: Color(0xFFEEF2F7)),
+                    const SizedBox(height: 10),
+                    const _Caption('OBSERVACIONES E INDICACIÓN'),
+                    const SizedBox(height: 8),
+                    widget.editable
+                        ? TextField(controller: notes, maxLines: 3, decoration: const InputDecoration(hintText: 'Escriba observación', border: InputBorder.none))
+                        : Text(notes.text, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF374151), height: 1.45)),
+                    const SizedBox(height: 14),
+                    const _Dash(),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Dra. Fernanda Soto', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                              Text('Oftalmología · Reg. 18452', style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            Container(width: 80, height: 1, color: const Color(0xFF111827)),
+                            const SizedBox(height: 4),
+                            Text('Firma profesional', style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate400)),
+                          ],
+                        ),
                       ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.verified_user_outlined, size: 16, color: AppColors.slate500),
-              const SizedBox(width: 8),
-              Text('Tus datos de salud se almacenan de forma segura.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.verified_user_outlined, size: 16, color: AppColors.slate500),
+                  const SizedBox(width: 8),
+                  Text('Tus datos de salud se almacenan de forma segura.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (widget.editable)
+                SolidButton(
+                  label: 'Guardar',
+                  onPressed: () {
+                    String axis(String raw) {
+                      final text = raw.trim().isEmpty ? '0' : raw.trim();
+                      return text.endsWith('°') ? text : '$text°';
+                    }
+
+                    String number(String raw) => raw.trim().isEmpty ? '0.00' : raw.trim();
+                    getIt<PatientViewModel>().savePrescription(rx.copyWith(
+                          sphereOd: number(values[0].text),
+                          cylinderOd: number(values[1].text),
+                          axisOd: axis(values[2].text),
+                          additionOd: number(values[3].text),
+                          sphereOi: number(values[4].text),
+                          cylinderOi: number(values[5].text),
+                          axisOi: axis(values[6].text),
+                          additionOi: number(values[7].text),
+                          pupillaryDistance: pd.text.trim().isEmpty ? '0' : pd.text.trim(),
+                          observations: notes.text,
+                        ));
+                    showAppMessage(context, 'Receta actualizada');
+                    context.pop();
+                  },
+                )
+              else
+                SolidButton(
+                  label: 'Actualizar receta',
+                  icon: Icons.refresh,
+                  background: AppColors.white,
+                  foreground: AppColors.electric,
+                  border: AppColors.skyTint,
+                  onPressed: () => context.push('/p/prescription/edit'),
+                ),
             ],
           ),
-          const SizedBox(height: 16),
-          if (widget.editable)
-            SolidButton(
-              label: 'Guardar',
-              onPressed: () {
-                String axis(String raw) {
-                  final text = raw.trim().isEmpty ? '0' : raw.trim();
-                  return text.endsWith('°') ? text : '$text°';
-                }
-
-                String number(String raw) => raw.trim().isEmpty ? '0.00' : raw.trim();
-                context.read<OptiFlowController>().savePrescription(rx.copyWith(
-                      sphereOd: number(values[0].text),
-                      cylinderOd: number(values[1].text),
-                      axisOd: axis(values[2].text),
-                      additionOd: number(values[3].text),
-                      sphereOi: number(values[4].text),
-                      cylinderOi: number(values[5].text),
-                      axisOi: axis(values[6].text),
-                      additionOi: number(values[7].text),
-                      pupillaryDistance: pd.text.trim().isEmpty ? '0' : pd.text.trim(),
-                      observations: notes.text,
-                    ));
-                showAppMessage(context, 'Receta actualizada');
-                context.pop();
-              },
-            )
-          else
-            SolidButton(
-              label: 'Actualizar receta',
-              icon: Icons.refresh,
-              background: AppColors.white,
-              foreground: AppColors.electric,
-              border: AppColors.skyTint,
-              onPressed: () => context.push('/p/prescription/edit'),
-            ),
-        ],
-      ),
+        );
+        },
     );
   }
 }

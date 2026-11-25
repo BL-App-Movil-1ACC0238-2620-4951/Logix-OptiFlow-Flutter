@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 
 enum PatientTab { home, search, appointments, orders, profile }
 
@@ -162,6 +162,7 @@ class StaffBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = getIt<SessionViewModel>();
     return Material(
       color: AppColors.white,
       child: Column(
@@ -175,7 +176,7 @@ class StaffBottomBar extends StatelessWidget {
               child: Row(
                 children: [
                   for (final tab in StaffTab.values)
-                    if (context.watch<OptiFlowController>().canOpen(tab.path))
+                    if (session.canOpen(tab.path))
                     Expanded(
                       child: _TabButton(
                         label: tab.label,
