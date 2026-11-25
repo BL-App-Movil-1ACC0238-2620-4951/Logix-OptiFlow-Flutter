@@ -13,6 +13,7 @@ class PatientUiState {
     this.history = const [],
     this.prescription,
     this.patientLoading = true,
+    this.ratedStoreIds = const {},
   });
 
   final List<AppointmentUi> appointments;
@@ -24,6 +25,8 @@ class PatientUiState {
   final List<HistoryEntry> history;
   final PrescriptionUi? prescription;
   final bool patientLoading;
+  /// Ópticas que el paciente ya calificó en esta sesión.
+  final Set<String> ratedStoreIds;
 
   PatientUiState copyWith({
     List<AppointmentUi>? appointments,
@@ -35,6 +38,7 @@ class PatientUiState {
     List<HistoryEntry>? history,
     ValueGetter<PrescriptionUi?>? prescription,
     bool? patientLoading,
+    Set<String>? ratedStoreIds,
   }) {
     return PatientUiState(
       appointments: appointments ?? this.appointments,
@@ -46,6 +50,7 @@ class PatientUiState {
       history: history ?? this.history,
       prescription: prescription != null ? prescription() : this.prescription,
       patientLoading: patientLoading ?? this.patientLoading,
+      ratedStoreIds: ratedStoreIds ?? this.ratedStoreIds,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
+import 'package:logix_optiflow/presentation/mappers/store_labels.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search/store_map.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 

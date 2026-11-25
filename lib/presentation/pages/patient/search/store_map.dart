@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -10,23 +9,6 @@ import 'package:logix_optiflow/features/searchbooking/domain/optical_store.dart'
 
 /// Centro de Lima, para cuando no hay ubicación del usuario ni ópticas con coordenadas.
 const _lima = LatLng(-12.1, -77.03);
-
-/// "Hoy · 10:30", "Mañana · 09:00" o "vie 14 · 16:00" para el primer turno libre de una óptica.
-String firstSlotLabel(DateTime start) {
-  final local = start.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(local.year, local.month, local.day);
-  final dayLabel = day == today
-      ? 'Hoy'
-      : day == today.add(const Duration(days: 1))
-          ? 'Mañana'
-          : DateFormat('EEE d', 'es').format(local).replaceAll('.', '');
-  return '$dayLabel · ${DateFormat('HH:mm').format(local)}';
-}
-
-/// "0,8 km" con coma decimal; desde 10 km sin decimales.
-String distanceLabel(double km) => '${km < 10 ? km.toStringAsFixed(1).replaceAll('.', ',') : km.toStringAsFixed(0)} km';
 
 /// Mapa de OpenStreetMap con un pin por óptica en sus coordenadas del backend y un punto azul en
 /// la ubicación del usuario. Con [interactive] en false es la vista previa de la búsqueda: no se

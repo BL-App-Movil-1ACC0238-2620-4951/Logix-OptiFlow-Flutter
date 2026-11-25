@@ -48,6 +48,10 @@ class SearchBookingApi {
     await _client.send('POST', 'patients/$patientId/favorites', {'opticalStoreId': opticalStoreId});
   }
 
+  Future<void> rateOpticalStore(String storeId, String patientId, int score, String? comment) async {
+    await _client.send('POST', 'optical-stores/$storeId/ratings', {'patientId': patientId, 'score': score, 'comment': comment});
+  }
+
   Future<List<TimeSlotDto>> availability(String storeId) async {
     final json = await _client.get('optical-stores/$storeId/time-slots');
     final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];

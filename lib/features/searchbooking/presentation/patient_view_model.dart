@@ -11,6 +11,7 @@ import 'package:logix_optiflow/features/production/application/get_patient_work_
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/rate_optical_store_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_ui_state.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
@@ -26,6 +27,7 @@ class PatientViewModel extends ChangeNotifier {
     required this.cancelAppointmentUseCase,
     required this.getPatientWorkOrdersUseCase,
     required this.getPatientClinicalRecordsUseCase,
+    required this.rateOpticalStoreUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -37,6 +39,7 @@ class PatientViewModel extends ChangeNotifier {
   final CancelAppointmentUseCase cancelAppointmentUseCase;
   final GetPatientWorkOrdersUseCase getPatientWorkOrdersUseCase;
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
+  final RateOpticalStoreUseCase rateOpticalStoreUseCase;
 
   PatientUiState _state = PatientUiState();
   PatientUiState get state => _state;
@@ -157,5 +160,29 @@ class PatientViewModel extends ChangeNotifier {
     } finally {
       if (identical(current, _current)) _emit(_state.copyWith(appointmentActionLoading: false));
     }
+  }
+
+  /// Califica la óptica de una cita atendida. Devuelve el error o null; un 409 significa que ya estaba calificada.
+  Future<String?> rateStore(String storeId, int score, String comment) async {
+    final current = _current;
+    if (current?.isAuthenticated != true || current?.isPatient != true) return 'Inicia sesión como paciente para calificar.';
+    String? error;
+    var rated = false;
+    try {
+      await rateOpticalStoreUseCase.execute(
+        opticalStoreId: storeId,
+        patientId: current!.patientId,
+        score: score,
+        comment: comment.trim().isEmpty ? null : comment.trim(),
+      );
+      rated = true;
+    } on ApiException catch (e) {
+      rated = e.statusCode == 409;
+      error = e.message;
+    } catch (_) {
+      error = 'No se pudo enviar la calificación.';
+    }
+    if (rated && identical(current, _current)) _emit(_state.copyWith(ratedStoreIds: {..._state.ratedStoreIds, storeId}));
+    return error;
   }
 }

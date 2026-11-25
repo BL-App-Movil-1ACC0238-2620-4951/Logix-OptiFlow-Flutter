@@ -727,9 +727,10 @@ class SectionHeader extends StatelessWidget {
 }
 
 class DateBadge extends StatelessWidget {
-  const DateBadge({super.key, required this.day, required this.month});
+  const DateBadge({super.key, required this.day, required this.month, this.background = AppColors.periwinkle});
   final String day;
   final String month;
+  final Color background;
 
   @override
   Widget build(BuildContext context) {
@@ -737,7 +738,7 @@ class DateBadge extends StatelessWidget {
       width: 56,
       height: 64,
       decoration: BoxDecoration(
-        color: AppColors.periwinkle,
+        color: background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.skyTint),
       ),

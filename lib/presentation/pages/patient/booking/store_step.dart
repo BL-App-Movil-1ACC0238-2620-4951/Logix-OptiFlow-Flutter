@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -87,11 +88,11 @@ class _StoreChoice extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Icon(Icons.place_outlined, size: 12, color: selected ? AppColors.electric : AppColors.slate500),
+                    Icon(LucideIcons.mapPin, size: 12, color: selected ? AppColors.electric : AppColors.slate500),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        store.availability,
+                        [if (store.distance.isNotEmpty) store.distance, store.availability].join(' · '),
                         style: AppFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: selected ? AppColors.electric : AppColors.slate500),
                       ),
                     ),

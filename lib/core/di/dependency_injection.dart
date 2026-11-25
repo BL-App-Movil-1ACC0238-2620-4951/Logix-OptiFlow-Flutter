@@ -68,6 +68,7 @@ import 'package:logix_optiflow/features/searchbooking/application/get_current_lo
 import 'package:logix_optiflow/features/searchbooking/application/get_first_available_slots_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_nearby_optical_stores_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/save_favorite_store_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/rate_optical_store_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/location_provider.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/device_location_provider.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
@@ -147,6 +148,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetNearbyOpticalStoresUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => GetFirstAvailableSlotsUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => SaveFavoriteStoreUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => RateOpticalStoreUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton<LocationProvider>(() => const DeviceLocationProvider());
   getIt.registerLazySingleton(() => GetCurrentLocationUseCase(provider: getIt<LocationProvider>()));
   getIt.registerLazySingleton(() => GetStoreAvailabilityUseCase(repository: getIt<StoreRepository>()));
@@ -225,6 +227,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         cancelAppointmentUseCase: getIt(),
         getPatientWorkOrdersUseCase: getIt(),
         getPatientClinicalRecordsUseCase: getIt(),
+        rateOpticalStoreUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => NotificationsViewModel(
         session: getIt(),
@@ -239,6 +242,8 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getStoreAvailabilityUseCase: getIt(),
         bookAppointmentUseCase: getIt(),
         cancelAppointmentUseCase: getIt(),
+        getCurrentLocationUseCase: getIt(),
+        getFirstAvailableSlotsUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => CatalogViewModel(
         session: getIt(),

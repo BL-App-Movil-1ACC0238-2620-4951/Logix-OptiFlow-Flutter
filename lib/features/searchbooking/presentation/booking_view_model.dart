@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:logix_optiflow/core/errors/api_exception.dart';
@@ -5,12 +7,17 @@ import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/application/book_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_current_location_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_first_available_slots_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_store_availability_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/geo_point.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/optical_store.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/booking_ui_state.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
 import 'package:logix_optiflow/presentation/mappers/patient_view_mapper.dart';
+import 'package:logix_optiflow/presentation/mappers/store_labels.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 
 /// Reserva y reprogramación de citas del paciente en cuatro pasos.
@@ -22,6 +29,8 @@ class BookingViewModel extends ChangeNotifier {
     required this.getStoreAvailabilityUseCase,
     required this.bookAppointmentUseCase,
     required this.cancelAppointmentUseCase,
+    required this.getCurrentLocationUseCase,
+    required this.getFirstAvailableSlotsUseCase,
   }) {
     session.addLogoutListener(_reset);
   }
@@ -32,6 +41,8 @@ class BookingViewModel extends ChangeNotifier {
   final GetStoreAvailabilityUseCase getStoreAvailabilityUseCase;
   final BookAppointmentUseCase bookAppointmentUseCase;
   final CancelAppointmentUseCase cancelAppointmentUseCase;
+  final GetCurrentLocationUseCase getCurrentLocationUseCase;
+  final GetFirstAvailableSlotsUseCase getFirstAvailableSlotsUseCase;
 
   BookingUiState _state = BookingUiState(weekStart: _monday(DateTime.now()));
   BookingUiState get state => _state;
@@ -74,22 +85,51 @@ class BookingViewModel extends ChangeNotifier {
       }
       final loaded = await stores.loadStores(); // Always load all stores, independent of search filters.
       if (!active()) return;
-      final options = [for (final store in loaded)
-        if (const {'ACTIVE', 'OPEN', 'ABIERTO'}.contains(store.status.toUpperCase()))
-          StoreOption(id: store.id, name: store.name, address: store.address,
-            distance: '', availability: 'Consultar horarios', availableToday: false),
-      ];
+      final open = [for (final store in loaded) if (const {'ACTIVE', 'OPEN', 'ABIERTO'}.contains(store.status.toUpperCase())) store];
+      final options = [for (final store in open) _option(store, null, null, pending: true)];
       final index = options.indexWhere((s) => s.id == storeId);
       _state = _state.copyWith(
         stores: options,
         selectedStoreIndex: index < 0 ? 0 : index,
         error: options.isEmpty ? () => 'No hay ópticas disponibles para reservar.' : null,
       );
+      // Distancia y primer turno llegan después, sin bloquear la lista.
+      if (open.isNotEmpty) unawaited(_completeOptions(open, active));
     } catch (e) {
       if (active()) _state = _state.copyWith(error: () => e is ApiException ? e.message : 'No se pudieron cargar las ópticas.');
     } finally {
       if (active()) _emit(_state.copyWith(loading: false));
     }
+  }
+
+  StoreOption _option(OpticalStore store, GeoPoint? user, DateTime? first, {bool pending = false}) {
+    final today = DateTime.now();
+    final firstLocal = first?.toLocal();
+    final label = first == null ? null : firstSlotLabel(first);
+    return StoreOption(
+      id: store.id,
+      name: store.name,
+      address: store.address,
+      distance: user != null && store.hasLocation ? distanceLabel(user.distanceKmTo(GeoPoint(store.latitude!, store.longitude!))) : '',
+      availability: pending
+          ? 'Consultando horarios…'
+          : label == null
+              ? 'Sin turnos libres' : 'Disponible ${label[0].toLowerCase()}${label.substring(1)}',
+      availableToday: firstLocal != null && firstLocal.year == today.year && firstLocal.month == today.month && firstLocal.day == today.day,
+    );
+  }
+
+  Future<void> _completeOptions(List<OpticalStore> open, bool Function() active) async {
+    GeoPoint? user;
+    Map<String, DateTime> first = const {};
+    try {
+      user = await getCurrentLocationUseCase.execute();
+    } catch (_) {}
+    try {
+      first = await getFirstAvailableSlotsUseCase.execute([for (final store in open) store.id]);
+    } catch (_) {}
+    if (!active() || _state.stores.length != open.length) return;
+    _emit(_state.copyWith(stores: [for (final store in open) _option(store, user, first[store.id])]));
   }
 
   void selectStore(int index) {
