@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/commerce.dart';
-import '../../../domain/entities/staff_patient.dart';
-import '../../state/optiflow_controller.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 String commerceRoute(String path, String patientId, {String? saleId}) => Uri(path: path, queryParameters: {'patientId': patientId, if (saleId != null) 'saleId': saleId}).toString();
 void commerceBack(BuildContext context) => context.canPop() ? context.pop() : context.go('/s/home');

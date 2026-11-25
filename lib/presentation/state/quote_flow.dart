@@ -1,9 +1,9 @@
-import '../../core/errors/api_exception.dart';
-import '../../domain/entities/clinical_record.dart';
-import '../../domain/entities/commerce.dart';
-import '../../domain/entities/frame.dart';
-import '../../domain/entities/staff_patient.dart';
-import '../../domain/repositories/commerce_repository.dart';
+import 'package:logix_optiflow/core/errors/api_exception.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
 
 /// Movile's QuoteViewModel, with persisted drafts and guarded HTTP retries.
 class QuoteFlow {
@@ -133,19 +133,19 @@ class QuoteFlow {
     final value = commerceAmount(discountValue);
     if (value == null || value <= 0 || (discountIsPercentage ? value > 100 : value > quote!.subtotal)) { error = discountIsPercentage ? 'Escribe un descuento mayor que cero y de hasta 100 %.' : 'El descuento debe ser mayor que cero y no superar el subtotal.'; _emit(); return; }
     if (discountReason.trim().length > 255) { error = 'El motivo admite hasta 255 caracteres.'; _emit(); return; }
-    await _save(() => repository.discount(quote!.id, discountIsPercentage ? 'PERCENTAGE' : 'FIXED_AMOUNT', value, discountReason.trim().isEmpty ? null : discountReason.trim()), expectedId: quote!.id);
+    await _save(() => repository.discount(quote.id, discountIsPercentage ? 'PERCENTAGE' : 'FIXED_AMOUNT', value, discountReason.trim().isEmpty ? null : discountReason.trim()), expectedId: quote!.id);
   }
   Future<void> approve() async {
     final quote = quotation;
     if (!canSave || quote?.status != QuotationStatus.draft) return;
-    await _save(() => repository.updateQuotation(quote!.id, QuotationStatus.approved), expectedId: quote!.id);
+    await _save(() => repository.updateQuotation(quote.id, QuotationStatus.approved), expectedId: quote!.id);
   }
   Future<void> reject() async {
     final quote = quotation;
     if (!canSave || quote?.status != QuotationStatus.draft) return;
     final reason = rejectReason.trim();
     if (reason.isEmpty || reason.length > 255) { error = 'Escribe un motivo del rechazo de hasta 255 caracteres.'; _emit(); return; }
-    await _save(() => repository.updateQuotation(quote!.id, QuotationStatus.rejected, reason: reason), expectedId: quote!.id);
+    await _save(() => repository.updateQuotation(quote.id, QuotationStatus.rejected, reason: reason), expectedId: quote!.id);
   }
   Future<void> _save(Future<Quotation?> Function() call, {String? expectedId}) async {
     if (!canSave) return;

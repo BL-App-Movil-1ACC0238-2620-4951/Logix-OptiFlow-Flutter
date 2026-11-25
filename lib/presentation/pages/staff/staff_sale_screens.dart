@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/commerce.dart';
-import '../../../domain/entities/store_time.dart';
-import '../../state/optiflow_controller.dart';
-import '../../state/quote_flow.dart';
-import '../../state/sale_flow.dart';
-import '../../widgets/chrome.dart';
-import 'staff_commerce_widgets.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/state/quote_flow.dart';
+import 'package:logix_optiflow/presentation/state/sale_flow.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/pages/staff/staff_commerce_widgets.dart';
 
 class QuoteScreen extends StatefulWidget {
   const QuoteScreen({super.key, this.patientId});

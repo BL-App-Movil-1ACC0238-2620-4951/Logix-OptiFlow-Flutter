@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:logix_optiflow/core/errors/api_exception.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/domain/entities/user_role.dart';
+import 'support/test_apis.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 
 http.Response jsonResponse(Object body, [int status = 200]) =>
     http.Response(jsonEncode(body), status,
@@ -27,7 +27,7 @@ void main() {
     test('login ${role.apiValue} carga perfil con bearer y conserva rol',
         () async {
       final requests = <http.Request>[];
-      final api = OptiFlowApi(
+      final api = TestApis(
           baseUrl: 'http://localhost:8080/',
           client: MockClient((request) async {
             requests.add(request);
@@ -51,7 +51,7 @@ void main() {
           }));
       api.token = 'previous-account';
       final session =
-          (await api.login(email: 'user@optiflow.pe', password: 'password123'))
+          (await api.auth.login(email: 'user@optiflow.pe', password: 'password123'))
               .toEntity();
       expect(requests.first.url.path, '/api/v1/auth/tokens');
       expect(requests, hasLength(2));
@@ -66,10 +66,10 @@ void main() {
   test('401 de login no dispara expiración de una sesión', () async {
     var expired = false;
     final api =
-        OptiFlowApi(client: MockClient((_) async => jsonResponse({}, 401)));
+        TestApis(client: MockClient((_) async => jsonResponse({}, 401)));
     api.onUnauthorized = () => expired = true;
     await expectLater(
-        api.login(email: 'bad@optiflow.pe', password: 'wrong'),
+        api.auth.login(email: 'bad@optiflow.pe', password: 'wrong'),
         throwsA(
             isA<ApiException>().having((e) => e.statusCode, 'status', 401)));
     expect(expired, isFalse);
@@ -80,13 +80,13 @@ void main() {
       () async {
     for (final status in [401, 403]) {
       var expired = false;
-      final api = OptiFlowApi(
+      final api = TestApis(
           client: MockClient((_) async =>
               jsonResponse({'detail': 'Acceso rechazado'}, status)));
       api.token = 'active-token';
       api.onUnauthorized = () => expired = true;
       await expectLater(
-          api.appointments('user-1'),
+          api.booking.appointments('user-1'),
           throwsA(isA<ApiException>()
               .having((e) => e.message, 'message', 'Acceso rechazado')));
       expect(expired, status == 401);
@@ -97,10 +97,10 @@ void main() {
   test('un 401 tardío de otra sesión no cierra la cuenta actual', () async {
     final pending = Completer<http.Response>();
     var expired = false;
-    final api = OptiFlowApi(client: MockClient((_) => pending.future));
+    final api = TestApis(client: MockClient((_) => pending.future));
     api.token = 'old-token';
     api.onUnauthorized = () => expired = true;
-    final request = api.appointments('old-user');
+    final request = api.booking.appointments('old-user');
     final assertion = expectLater(request, throwsA(isA<ApiException>()));
     api.token = 'new-token';
     pending.complete(jsonResponse({}, 401));
@@ -118,9 +118,9 @@ void main() {
       {...loginResponse('PATIENT'), 'expiresAt': '2000-01-01T00:00:00Z'},
     ]) {
       final api =
-          OptiFlowApi(client: MockClient((_) async => jsonResponse(response)));
+          TestApis(client: MockClient((_) async => jsonResponse(response)));
       await expectLater(
-          api.login(email: 'user@optiflow.pe', password: 'password123'),
+          api.auth.login(email: 'user@optiflow.pe', password: 'password123'),
           throwsA(isA<ApiException>()));
       expect(api.token, isNull);
     }
@@ -130,14 +130,14 @@ void main() {
       'mantiene /api/v1 una vez y usa endpoints actuales para búsqueda y horarios',
       () async {
     final urls = <Uri>[];
-    final api = OptiFlowApi(
+    final api = TestApis(
         baseUrl: 'http://localhost:8080/api/v1/',
         client: MockClient((request) async {
           urls.add(request.url);
           return jsonResponse([]);
         }));
-    await api.searchStores(name: ' Centro ', minRating: 4);
-    await api.availability('store-1');
+    await api.booking.searchStores(name: ' Centro ', minRating: 4);
+    await api.booking.availability('store-1');
     expect(urls[0].path, '/api/v1/optical-stores');
     expect(urls[0].queryParameters, {'name': 'Centro', 'minRating': '4.0'});
     expect(urls[1].path, '/api/v1/optical-stores/store-1/time-slots');

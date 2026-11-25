@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logix_optiflow/domain/entities/models.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/presentation/navigation/route_access.dart';
 
 PatientSession account(UserRole role) => PatientSession(

@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
-import '../../domain/entities/agenda_item.dart';
-import '../../domain/entities/appointment.dart';
-import '../../domain/entities/store_time.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
 
 abstract final class StaffViewMapper {
   static AgendaItem agenda(Appointment appointment, String name, {DateTime? now}) {

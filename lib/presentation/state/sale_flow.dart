@@ -1,7 +1,7 @@
-import '../../core/errors/api_exception.dart';
-import '../../domain/entities/commerce.dart';
-import '../../domain/entities/staff_patient.dart';
-import '../../domain/repositories/commerce_repository.dart';
+import 'package:logix_optiflow/core/errors/api_exception.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
 
 /// Movile's SaleViewModel. A confirmed payment survives a failed close.
 class SaleFlow {

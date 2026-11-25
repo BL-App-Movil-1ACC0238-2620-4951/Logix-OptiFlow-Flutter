@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../state/optiflow_controller.dart';
-import '../catalog_screen.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/pages/patient/catalog_screen.dart';
 
 class FeaturedFrames extends StatefulWidget {
   const FeaturedFrames({super.key});

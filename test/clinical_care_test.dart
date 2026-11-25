@@ -1,9 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'support/test_apis.dart';
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/core/di/dependencies.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/domain/entities/patient_session.dart';
-import 'package:logix_optiflow/domain/entities/user_role.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/clinical_flow_checks.dart';
@@ -17,11 +16,10 @@ void main() {
   test('un asesor no puede iniciar el flujo clínico ni realizar solicitudes',
       () async {
     var requests = 0;
-    final app = OptiFlowController(dependencies:
-        AppDependencies(api: OptiFlowApi(client: MockClient((_) async {
+    final app = await testController(MockClient((_) async {
       requests++;
       return clinicalResponse({});
-    }))));
+    }));
     app.session = const PatientSession(
         patientId: 'staff',
         name: 'Asesor',
@@ -36,9 +34,9 @@ void main() {
 
   test('logout descarta la atención de la cuenta anterior', () async {
     final server = ClinicalServer();
-    final api = OptiFlowApi(client: MockClient(server.respond))
-      ..token = 'staff-token';
-    final app = OptiFlowController(dependencies: AppDependencies(api: api));
+    (await setupTestDependencies(MockClient(server.respond))).token =
+        'staff-token';
+    final app = OptiFlowController();
     app.session = const PatientSession(
         patientId: 'staff',
         name: 'Optometrista',
