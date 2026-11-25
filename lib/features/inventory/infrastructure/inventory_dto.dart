@@ -23,6 +23,9 @@ class FrameModelDto {
       features: [material, shape].where((s) => s.isNotEmpty).toList(),
       colors: color.isEmpty ? [] : [color], size: 0,
       tryOnModelUrl: json['tryOnModelUrl'] as String?,
+      material: material.isEmpty ? null : material,
+      shape: shape.isEmpty ? null : shape,
+      color: color.isEmpty ? null : color,
     );
   }
 }

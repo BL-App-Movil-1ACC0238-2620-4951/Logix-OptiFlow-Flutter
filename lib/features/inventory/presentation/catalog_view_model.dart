@@ -4,14 +4,18 @@ import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
+import 'package:logix_optiflow/features/inventory/application/get_favorite_frames_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_frame_stock_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frame_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_store_stock_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_suppliers_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/replenish_stock_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/toggle_favorite_frame_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/update_frame_price_use_case.dart';
 import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame_stock.dart';
 import 'package:logix_optiflow/features/inventory/domain/inventory.dart';
 import 'package:logix_optiflow/features/inventory/domain/product.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_ui_state.dart';
@@ -27,6 +31,9 @@ class CatalogViewModel extends ChangeNotifier {
     required this.getSuppliersUseCase,
     required this.getStockMovementsUseCase,
     required this.replenishStockUseCase,
+    required this.getFrameStockUseCase,
+    required this.getFavoriteFramesUseCase,
+    required this.toggleFavoriteFrameUseCase,
   }) {
     session.addLogoutListener(_reset);
   }
@@ -39,6 +46,9 @@ class CatalogViewModel extends ChangeNotifier {
   final GetSuppliersUseCase getSuppliersUseCase;
   final GetStockMovementsUseCase getStockMovementsUseCase;
   final ReplenishStockUseCase replenishStockUseCase;
+  final GetFrameStockUseCase getFrameStockUseCase;
+  final GetFavoriteFramesUseCase getFavoriteFramesUseCase;
+  final ToggleFavoriteFrameUseCase toggleFavoriteFrameUseCase;
 
   CatalogUiState _state = const CatalogUiState();
   CatalogUiState get state => _state;
@@ -47,6 +57,7 @@ class CatalogViewModel extends ChangeNotifier {
   int _supplierRequest = 0;
   int _movementsRequest = 0;
   final Map<String, int> _frameRequests = {};
+  String? _stockSku;
 
   PatientSession? get _current => session.session;
 
@@ -61,6 +72,7 @@ class CatalogViewModel extends ChangeNotifier {
     _supplierRequest++;
     _movementsRequest++;
     for (final sku in _frameRequests.keys.toList()) { _frameRequests[sku] = _frameRequests[sku]! + 1; }
+    _stockSku = null;
     _emit(const CatalogUiState());
   }
 
@@ -108,6 +120,36 @@ class CatalogViewModel extends ChangeNotifier {
     } finally {
       if (active()) _emit(_state.copyWith(catalogLoading: false));
     }
+  }
+
+  /// Carga los favoritos del paciente guardados en el teléfono.
+  Future<void> loadFavorites() async {
+    final current = _current;
+    if (current == null || !current.isPatient || !current.isAuthenticated) return;
+    final favorites = await getFavoriteFramesUseCase.execute(current.patientId);
+    if (identical(current, _current)) _emit(_state.copyWith(favorites: favorites));
+  }
+
+  Future<void> toggleFavorite(String sku) async {
+    final current = _current;
+    if (current == null || !current.isPatient || !current.isAuthenticated) return;
+    final favorites = await toggleFavoriteFrameUseCase.execute(current.patientId, sku);
+    if (identical(current, _current)) _emit(_state.copyWith(favorites: favorites));
+  }
+
+  /// Consulta en qué ópticas hay stock de la montura; si ya se consultó, no repite.
+  Future<void> loadStock(String sku) async {
+    if (_stockSku == sku || !canUseCatalog) return;
+    _stockSku = sku;
+    final current = _current;
+    _emit(_state.copyWith(stock: () => null));
+    List<FrameStock> stock;
+    try {
+      stock = await getFrameStockUseCase.execute(sku);
+    } catch (_) {
+      stock = const [];
+    }
+    if (identical(current, _current) && _stockSku == sku) _emit(_state.copyWith(stock: () => stock));
   }
 
   Future<FrameItem?> loadFrame(String sku, {bool forInventory = false}) async {

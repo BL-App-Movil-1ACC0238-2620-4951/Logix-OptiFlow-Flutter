@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame_stock.dart';
 import 'package:logix_optiflow/features/inventory/domain/inventory.dart';
 import 'package:logix_optiflow/features/inventory/domain/product.dart';
 
@@ -24,6 +25,8 @@ class CatalogUiState {
     this.movementsError,
     this.mutationBusy = false,
     this.mutationError,
+    this.favorites = const {},
+    this.stock,
   });
 
   final List<FrameItem> frames;
@@ -44,6 +47,13 @@ class CatalogUiState {
   final String? movementsError;
   final bool mutationBusy;
   final String? mutationError;
+  /// SKUs favoritos del paciente.
+  final Set<String> favorites;
+  /// Stock por óptica de la montura abierta; null mientras se consulta.
+  final List<FrameStock>? stock;
+
+  /// Formas del catálogo, sin repetir, para los filtros.
+  List<String> get shapes => frames.map((f) => f.shape).whereType<String>().toSet().toList();
 
   CatalogUiState copyWith({
     List<FrameItem>? frames,
@@ -64,6 +74,8 @@ class CatalogUiState {
     ValueGetter<String?>? movementsError,
     bool? mutationBusy,
     ValueGetter<String?>? mutationError,
+    Set<String>? favorites,
+    ValueGetter<List<FrameStock>?>? stock,
   }) {
     return CatalogUiState(
       frames: frames ?? this.frames,
@@ -84,6 +96,8 @@ class CatalogUiState {
       movementsError: movementsError != null ? movementsError() : this.movementsError,
       mutationBusy: mutationBusy ?? this.mutationBusy,
       mutationError: mutationError != null ? mutationError() : this.mutationError,
+      favorites: favorites ?? this.favorites,
+      stock: stock != null ? stock() : this.stock,
     );
   }
 }

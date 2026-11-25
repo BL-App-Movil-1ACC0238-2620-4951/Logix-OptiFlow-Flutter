@@ -27,6 +27,11 @@ import 'package:logix_optiflow/features/clinical/infrastructure/clinical_reposit
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_api.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_repository_impl.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frame_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_favorite_frames_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_frame_stock_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/toggle_favorite_frame_use_case.dart';
+import 'package:logix_optiflow/features/inventory/domain/favorite_frame_repository.dart';
+import 'package:logix_optiflow/features/inventory/infrastructure/favorite_frame_repository_impl.dart';
 import 'package:logix_optiflow/features/inventory/application/get_low_stock_alerts_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
@@ -179,6 +184,10 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetFramesUseCase(repository: getIt<CatalogRepository>()));
   getIt.registerLazySingleton(() => GetFrameUseCase(repository: getIt<CatalogRepository>()));
   getIt.registerLazySingleton(() => UpdateFramePriceUseCase(repository: getIt<CatalogRepository>()));
+  getIt.registerLazySingleton<FavoriteFrameRepository>(() => const FavoriteFrameRepositoryImpl());
+  getIt.registerLazySingleton(() => GetFavoriteFramesUseCase(repository: getIt<FavoriteFrameRepository>()));
+  getIt.registerLazySingleton(() => ToggleFavoriteFrameUseCase(repository: getIt<FavoriteFrameRepository>()));
+  getIt.registerLazySingleton(() => GetFrameStockUseCase(stores: getIt<StoreRepository>(), catalog: getIt<CatalogRepository>()));
   getIt.registerLazySingleton(() => GetStoreStockUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetSuppliersUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetStockMovementsUseCase(repository: getIt<InventoryRepository>()));
@@ -240,6 +249,9 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getSuppliersUseCase: getIt(),
         getStockMovementsUseCase: getIt(),
         replenishStockUseCase: getIt(),
+        getFrameStockUseCase: getIt(),
+        getFavoriteFramesUseCase: getIt(),
+        toggleFavoriteFrameUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => StaffPatientsViewModel(
         session: getIt(),
