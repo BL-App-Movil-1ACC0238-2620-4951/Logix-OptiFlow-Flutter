@@ -39,6 +39,12 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
     if (mounted) getIt<StaffPatientsViewModel>().loadOpenSales(widget.id);
   }
 
+  /// Se relee al volver, por si el taller avanzó la orden.
+  Future<void> _openOrder(String orderId) async {
+    await context.push('/s/work-order/$orderId');
+    if (mounted) getIt<StaffPatientsViewModel>().loadStaffRecord(widget.id);
+  }
+
   String _diopters(num? value) {
     final number = value ?? 0;
     return '${number > 0 ? '+' : ''}${number.toStringAsFixed(2)}';
@@ -189,11 +195,15 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
                 ],
               ],
               const SizedBox(height: 24),
-              StaffSectionTitle('Proceso de sus lentes', action: order == null ? null : 'Orden OT-${order.id.substring(0, order.id.length < 4 ? order.id.length : 4).toUpperCase()}'),
+              StaffSectionTitle(
+                'Proceso de sus lentes',
+                action: order == null ? null : 'Orden OT-${order.id.substring(0, order.id.length < 4 ? order.id.length : 4).toUpperCase()}',
+                onAction: order == null ? null : () => _openOrder(order.id),
+              ),
               const SizedBox(height: 12),
               if (errors['orders'] != null) _EmptyCard(errors['orders']!, error: true)
               else if (order == null) _EmptyCard(loading ? 'Cargando...' : 'El paciente no tiene órdenes de trabajo.')
-              else _StaffCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              else _StaffCard(onTap: () => _openOrder(order.id), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   const StaffIconTile(LucideIcons.settings, size: 36, background: _StaffCard.soft),
                   const SizedBox(width: 12),
@@ -202,6 +212,7 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
                     const SizedBox(height: 4),
                     Text(order.detail, style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk)),
                   ])),
+                  const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
                 ]),
                 const SizedBox(height: 14),
                 Row(children: [

@@ -27,6 +27,7 @@ export 'package:logix_optiflow/presentation/pages/staff/staff_inventory_screens.
 export 'package:logix_optiflow/presentation/pages/staff/staff_record_screen.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_sale_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_scanner_screen.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_work_order_screen.dart';
 
 String _greeting() {
   final hour = StoreTime.clock(DateTime.now()).hour;
@@ -803,9 +804,11 @@ class StaffMoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sessionVm = getIt<SessionViewModel>();
+    final productionVm = getIt<ProductionViewModel>();
     return ListenableBuilder(
-      listenable: sessionVm,
+      listenable: Listenable.merge([sessionVm, productionVm]),
       builder: (context, _) {
+        final openOrders = productionVm.state.orders.where((o) => o.status != 'DELIVERED').length;
         return StaffScaffold(
           tab: StaffTab.more,
           topBar: const StaffTopBar(title: 'Más herramientas'),
@@ -820,7 +823,7 @@ class StaffMoreScreen extends StatelessWidget {
                   children: [
                     if (sessionVm.canOpen('/s/sale')) _Tool(Icons.credit_card, 'Ventas y pagos', 'Historial y nueva venta', () => context.push('/s/sale')),
                     if (sessionVm.canOpen('/s/quote')) _Tool(Icons.description_outlined, 'Cotizaciones', 'Pendientes y enviadas', () => context.push('/s/quote')),
-                    if (sessionVm.canOpen('/s/production')) _Tool(Icons.work_outline, 'Órdenes de trabajo', 'Producción y entregas', () => context.push('/s/production'), badge: '5'),
+                    if (sessionVm.canOpen('/s/production')) _Tool(Icons.work_outline, 'Órdenes de trabajo', 'Producción y entregas', () => context.push('/s/production'), badge: openOrders > 0 ? '$openOrders' : null),
                     if (sessionVm.canOpen('/s/clinical')) _Tool(Icons.visibility_outlined, 'Atención clínica', 'Evaluación y receta', () => context.push('/s/clinical')),
                   ],
                 ),

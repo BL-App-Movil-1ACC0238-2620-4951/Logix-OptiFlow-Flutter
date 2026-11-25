@@ -8,6 +8,7 @@ import 'package:logix_optiflow/core/time/store_time.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/production/domain/production_order.dart';
+import 'package:logix_optiflow/features/production/domain/work_order_detail.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
@@ -281,15 +282,22 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
+/// Tablero del taller por etapas (`/s/production` y `/s/production/{ESTADO}`), igual a Kotlin.
 class ProductionScreen extends StatefulWidget {
-  const ProductionScreen({super.key});
+  const ProductionScreen({super.key, this.initialStage});
+
+  /// Estado del backend (PENDING, IN_WORKSHOP, …) de la pestaña con que se abre.
+  final String? initialStage;
 
   @override
   State<ProductionScreen> createState() => _ProductionScreenState();
 }
 
 class _ProductionScreenState extends State<ProductionScreen> {
-  ProductionStage stage = ProductionStage.inWorkshop;
+  late ProductionStage stage = switch (WorkOrderStatus.order.indexOf(widget.initialStage ?? '')) {
+    final index when index >= 0 => ProductionStage.values[index],
+    _ => ProductionStage.inWorkshop,
+  };
 
   @override
   void initState() {
@@ -306,8 +314,9 @@ class _ProductionScreenState extends State<ProductionScreen> {
         final orders = productionVm.productionOrders;
         final visible = orders.where((order) => order.stage == stage).toList();
         return StaffScaffold(
-          tab: StaffTab.more,
-          topBar: StaffTopBar(title: 'Producción', onBack: () => context.pop()),
+          tab: null,
+          showBottomBar: false,
+          topBar: StaffTopBar(title: 'Producción', onBack: () => context.canPop() ? context.pop() : context.go('/s/home')),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
             children: [
@@ -338,10 +347,17 @@ class _ProductionScreenState extends State<ProductionScreen> {
                   Text(productionVm.state.error!, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
                   TextButton(onPressed: productionVm.refreshStaffOrders, child: const Text('Reintentar')),
                 ])
-              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
+              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
               for (final order in visible) ...[
-                _OrderCard(order, stage.label),
+                _OrderCard(order, stage.label, onTap: () async {
+                  await context.push('/s/work-order/${order.id}');
+                  productionVm.refreshStaffOrders();
+                }),
                 const SizedBox(height: 10),
+              ],
+              if (orders.isNotEmpty || (!productionVm.state.loading && productionVm.state.error == null)) ...[
+                const SizedBox(height: 6),
+                Text('Órdenes sincronizadas con el backend.', style: AppFonts.inter(fontSize: 10, color: AppColors.slate400)),
               ],
             ],
           ),
@@ -379,7 +395,7 @@ class _StageChip extends StatelessWidget {
           children: [
             Text('$count', style: AppFonts.inter(fontSize: 13, color: fg)),
             const SizedBox(height: 4),
-            Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 9, color: selected ? AppColors.white : AppColors.staffInk)),
+            Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 8, color: selected ? AppColors.white : AppColors.staffInk)),
           ],
         ),
       ),
@@ -388,44 +404,38 @@ class _StageChip extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard(this.order, this.stageLabel);
+  const _OrderCard(this.order, this.stageLabel, {required this.onTap});
   final ProductionOrder order;
   final String stageLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: onTap,
+      radius: 18,
+      borderColor: AppColors.staffBorder,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(20)),
-                child: Row(
-                  children: [
-                    Icon(order.needsAttention ? Icons.notifications_none : Icons.schedule, size: 12, color: AppColors.staffAccent),
-                    const SizedBox(width: 4),
-                    Text(order.needsAttention ? 'Requiere atención' : stageLabel, style: AppFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
-                  ],
-                ),
-              ),
+              order.needsAttention ? const StaffPill('Requiere atención', icon: LucideIcons.bell) : StaffPill(stageLabel, icon: LucideIcons.clock),
               const Spacer(),
-              Text(order.code, style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+              Text(order.code, style: AppFonts.inter(fontSize: 9, color: AppColors.staffInk)),
             ],
           ),
           const SizedBox(height: 12),
           Text(order.patient, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
           const SizedBox(height: 4),
-          Text(order.detail, style: AppFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
+          Text(order.detail, style: AppFonts.inter(fontSize: 9, color: AppColors.staffMuted)),
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.staffAccent),
+              const Icon(LucideIcons.calendar, size: 14, color: AppColors.staffAccent),
               const SizedBox(width: 8),
-              Text(order.due, style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+              Text(order.due, style: AppFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
             ],
           ),
         ],

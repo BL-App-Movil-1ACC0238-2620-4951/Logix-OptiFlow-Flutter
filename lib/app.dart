@@ -81,6 +81,8 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/s/clinical', builder: (_, state) => ClinicalCareScreen(patientId: state.uri.queryParameters['patientId'], appointmentId: state.uri.queryParameters['appointmentId'])),
       GoRoute(path: '/s/evaluation', builder: (_, state) => VisualEvaluationScreen(patientId: state.uri.queryParameters['patientId'], appointmentId: state.uri.queryParameters['appointmentId'])),
       GoRoute(path: '/s/production', builder: (_, __) => const ProductionScreen()),
+      GoRoute(path: '/s/production/:stage', builder: (_, state) => ProductionScreen(initialStage: state.pathParameters['stage'])),
+      GoRoute(path: '/s/work-order/:id', builder: (_, state) => WorkOrderScreen(orderId: state.pathParameters['id']!)),
       GoRoute(path: '/s/quote', builder: (_, state) => QuoteScreen(patientId: state.uri.queryParameters['patientId'])),
       GoRoute(path: '/s/sale', builder: (_, state) => ConfirmSaleScreen(patientId: state.uri.queryParameters['patientId'], saleId: state.uri.queryParameters['saleId'])),
       GoRoute(path: '/s/sale/done', builder: (_, state) => ConfirmSaleScreen(patientId: state.uri.queryParameters['patientId'], saleId: state.uri.queryParameters['saleId'])),

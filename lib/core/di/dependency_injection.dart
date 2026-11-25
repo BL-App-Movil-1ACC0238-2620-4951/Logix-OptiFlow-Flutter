@@ -62,6 +62,13 @@ import 'package:logix_optiflow/features/notification/infrastructure/notification
 import 'package:logix_optiflow/features/notification/presentation/notifications_view_model.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
+import 'package:logix_optiflow/features/production/application/assign_technician_use_case.dart';
+import 'package:logix_optiflow/features/production/application/complete_lenses_use_case.dart';
+import 'package:logix_optiflow/features/production/application/get_work_order_use_case.dart';
+import 'package:logix_optiflow/features/production/application/get_workshop_catalog_use_case.dart';
+import 'package:logix_optiflow/features/production/application/notify_delivery_delay_use_case.dart';
+import 'package:logix_optiflow/features/production/application/send_to_laboratory_use_case.dart';
+import 'package:logix_optiflow/features/production/application/update_work_order_status_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/production_repository.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_api.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_repository_impl.dart';
@@ -99,6 +106,7 @@ import 'package:logix_optiflow/features/clinical/presentation/quote_view_model.d
 import 'package:logix_optiflow/features/clinical/presentation/sale_view_model.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
+import 'package:logix_optiflow/features/production/presentation/work_order_view_model.dart';
 import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
@@ -195,6 +203,13 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<ProductionRepository>(() => ProductionRepositoryImpl(api: getIt<ProductionApi>()));
   getIt.registerLazySingleton(() => GetPatientWorkOrdersUseCase(repository: getIt<ProductionRepository>()));
   getIt.registerLazySingleton(() => GetStaffOrdersUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => GetWorkOrderUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => GetWorkshopCatalogUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => AssignTechnicianUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => SendToLaboratoryUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => UpdateWorkOrderStatusUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => CompleteLensesUseCase(repository: getIt<ProductionRepository>()));
+  getIt.registerLazySingleton(() => NotifyDeliveryDelayUseCase(repository: getIt<ProductionRepository>()));
 
   // inventory
   getIt.registerLazySingleton<CatalogRepository>(() => CatalogRepositoryImpl(api: getIt<InventoryApi>()));
@@ -300,6 +315,16 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
       ));
   getIt.registerLazySingleton(() => ProductionViewModel(
         session: getIt(), patients: getIt(), getStaffOrdersUseCase: getIt(), getStaffPatientUseCase: getIt()));
+  getIt.registerFactory(() => WorkOrderViewModel(
+        production: getIt(),
+        getWorkOrderUseCase: getIt(),
+        getWorkshopCatalogUseCase: getIt(),
+        assignTechnicianUseCase: getIt(),
+        sendToLaboratoryUseCase: getIt(),
+        updateWorkOrderStatusUseCase: getIt(),
+        completeLensesUseCase: getIt(),
+        notifyDeliveryDelayUseCase: getIt(),
+      ));
   getIt.registerLazySingleton(() => AgendaViewModel(
         session: getIt(),
         patients: getIt(),
