@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
@@ -24,7 +24,7 @@ class QuickAccessRow extends StatelessWidget {
               children: [
                 Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.electric, shape: BoxShape.circle)),
                 const SizedBox(width: 4),
-                Text('2 activas', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.slate500)),
+                Text('2 activas', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.slate500)),
               ],
             ),
           ),
@@ -38,7 +38,7 @@ class QuickAccessRow extends StatelessWidget {
             footer: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(color: AppColors.emerald50, borderRadius: BorderRadius.circular(4)),
-              child: Text('$activeOrders en camino', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.emerald600)),
+              child: Text('$activeOrders en camino', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.emerald600)),
             ),
           ),
         ),
@@ -48,7 +48,7 @@ class QuickAccessRow extends StatelessWidget {
             icon: Icons.favorite_border,
             title: 'Historial',
             onTap: onHistory,
-            footer: Text('Último control', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.slate500)),
+            footer: Text('Último control', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.slate500)),
           ),
         ),
       ],
@@ -78,7 +78,7 @@ class _Quick extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                 footer,
               ],
             ),

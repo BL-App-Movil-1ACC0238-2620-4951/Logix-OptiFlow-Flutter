@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -46,7 +46,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
             children: [
               if (orders.isNotEmpty) ...[
-                Text(tab == 0 ? 'Pedido activo' : 'Pedidos entregados', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text(tab == 0 ? 'Pedido activo' : 'Pedidos entregados', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                 const SizedBox(height: 12),
                 for (final order in orders) ...[
                   _OrderCard(order),
@@ -61,10 +61,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   Text(
                     tab == 0 ? 'No tienes más pedidos activos' : 'No tienes más pedidos entregados',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
+                    style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
                   ),
                   const SizedBox(height: 4),
-                  Text('Aquí verás el avance de tus próximos lentes.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                  Text('Aquí verás el avance de tus próximos lentes.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
                 ],
               ),
             ],
@@ -93,7 +93,7 @@ class _Segment extends StatelessWidget {
           height: 38,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Center(child: Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.deepNavy))),
+            child: Center(child: Text(label, style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.deepNavy))),
           ),
         ),
       ),
@@ -130,13 +130,13 @@ class _OrderCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.inventory_2_outlined, size: 12, color: AppColors.electric),
                           const SizedBox(width: 4),
-                          Text(order.delivered ? 'Entregado' : order.statusLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.electric)),
+                          Text(order.delivered ? 'Entregado' : order.statusLabel, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.electric)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(order.title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                    Text('Pedido #${order.code} · ${order.dateLabel}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                    Text(order.title, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                    Text('Pedido #${order.code} · ${order.dateLabel}', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                   ],
                 ),
               ),
@@ -155,8 +155,8 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: Text('Pedido recibido', style: GoogleFonts.inter(fontSize: 11, color: AppColors.deepNavy))),
-              Text(order.statusLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Expanded(child: Text('Pedido recibido', style: AppFonts.inter(fontSize: 11, color: AppColors.deepNavy))),
+              Text(order.statusLabel, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
             ],
           ),
           const SizedBox(height: 12),
@@ -164,10 +164,10 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text.rich(
             TextSpan(
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500),
+              style: AppFonts.inter(fontSize: 12, color: AppColors.slate500),
               children: [
                 const TextSpan(text: 'Entrega estimada:  '),
-                TextSpan(text: order.estimate.replaceAll(' y ', '–'), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
+                TextSpan(text: order.estimate.replaceAll(' y ', '–'), style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
               ],
             ),
           ),
@@ -223,19 +223,19 @@ class OrderTrackingScreen extends StatelessWidget {
                         children: [
                           const Icon(Icons.check, size: 14, color: AppColors.navyBlue),
                           const SizedBox(width: 6),
-                          Text(order.delivered ? 'Entregado' : order.statusLabel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navyBlue)),
+                          Text(order.delivered ? 'Entregado' : order.statusLabel, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navyBlue)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Text(order.delivered ? 'Tus lentes fueron entregados' : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                    Text(order.delivered ? 'Tus lentes fueron entregados' : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                     const SizedBox(height: 6),
-                    Text('Entrega estimada entre el ${order.estimate}.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                    Text('Entrega estimada entre el ${order.estimate}.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
                   ],
                 ),
               ),
               const SizedBox(height: 22),
-              Text('Seguimiento', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text('Seguimiento', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 14),
               for (var index = 0; index < steps.length; index++)
                 _TrackStep(
@@ -315,8 +315,8 @@ class _TrackStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                Text(subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                Text(title, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text(subtitle, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
               ],
             ),
           ),
@@ -344,11 +344,11 @@ class _InfoLine extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.slate400, letterSpacing: 0.5)),
-              Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              Text(label, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.slate400, letterSpacing: 0.5)),
+              Text(value, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               if (detail != null) ...[
                 const SizedBox(height: 4),
-                Text(detail!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                Text(detail!, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
               ],
             ],
           ),

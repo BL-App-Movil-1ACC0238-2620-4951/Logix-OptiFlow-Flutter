@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -61,7 +61,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(children: [
-                    Expanded(child: Text(error, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400))),
+                    Expanded(child: Text(error, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400))),
                     TextButton(onPressed: reportVm.refreshAlerts, child: const Text('Reintentar')),
                   ]),
                 ),
@@ -70,7 +70,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
               else if (alerts.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text('No hay alertas por ahora.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+                  child: Text('No hay alertas por ahora.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
                 ),
               for (final alert in alerts) ...[
                 Padding(
@@ -92,9 +92,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(alert.title, style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                                Text(alert.title, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
                                 const SizedBox(height: 8),
-                                Text(alert.message, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffMuted)),
+                                Text(alert.message, style: AppFonts.inter(fontSize: 12, color: AppColors.staffMuted)),
                               ],
                             ),
                           ),
@@ -105,7 +105,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton.icon(
                           onPressed: () => context.push(alert.route),
-                          icon: Text(alert.action, style: GoogleFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+                          icon: Text(alert.action, style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
                           label: const Icon(Icons.chevron_right, size: 16, color: AppColors.staffAccent),
                         ),
                       ),
@@ -139,7 +139,7 @@ class _FilterChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: selected ? AppColors.staffAccent : AppColors.lavender),
         ),
-        child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
+        child: Text(label, style: AppFonts.inter(fontSize: 12, color: selected ? AppColors.white : AppColors.staffInk)),
       ),
     );
   }
@@ -191,7 +191,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: Text(
                         '${monthLabel[0].toUpperCase()}${monthLabel.substring(1)}',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(fontSize: 14, color: AppColors.staffInk),
+                        style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk),
                       ),
                     ),
                     IconButton(
@@ -206,7 +206,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()))
               else if (report == null)
                 Column(children: [
-                  Text(state.reportError ?? 'No hay datos para este mes.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+                  Text(state.reportError ?? 'No hay datos para este mes.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
                   TextButton(onPressed: reportVm.refreshReport, child: const Text('Reintentar')),
                 ])
               else ...[
@@ -216,11 +216,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ventas totales', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                      Text('Ventas totales', style: AppFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
                       const SizedBox(height: 14),
-                      Text(soles(report.sales.totalAmount), style: GoogleFonts.inter(fontSize: 26, color: AppColors.white)),
+                      Text(soles(report.sales.totalAmount), style: AppFonts.inter(fontSize: 26, color: AppColors.white)),
                       const SizedBox(height: 10),
-                      Text('Ventas de los últimos 6 meses', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                      Text('Ventas de los últimos 6 meses', style: AppFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 96,
@@ -306,11 +306,11 @@ class _ReportStat extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(alignment: Alignment.centerRight, child: Text(value, style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.staffInk))),
+            Align(alignment: Alignment.centerRight, child: Text(value, style: AppFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.staffInk))),
             const Spacer(),
-            Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+            Text(title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
             const SizedBox(height: 4),
-            Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+            Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
           ],
         ),
       ),

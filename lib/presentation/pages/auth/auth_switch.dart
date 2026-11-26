@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class AuthModeSwitch extends StatelessWidget {
@@ -38,7 +38,7 @@ class AuthModeSwitch extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: selected ? const [BoxShadow(color: Color(0x1400135B), blurRadius: 2, offset: Offset(0, 1))] : null,
           ),
-          child: Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppColors.deepNavy : AppColors.slate500)),
+          child: Text(label, style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppColors.deepNavy : AppColors.slate500)),
         ),
       ),
     );
@@ -74,12 +74,12 @@ class AuthRoleCard extends StatelessWidget {
               height: 32,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: selected ? AppColors.lavender : AppColors.periwinkle, borderRadius: BorderRadius.circular(12)),
-              child: Text(letter, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: selected ? AppColors.electric : AppColors.navyBlue)),
+              child: Text(letter, style: AppFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: selected ? AppColors.electric : AppColors.navyBlue)),
             ),
             const SizedBox(height: 8),
-            Text(title, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? AppColors.deepNavy : AppColors.slate700, letterSpacing: -0.3)),
+            Text(title, style: AppFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? AppColors.deepNavy : AppColors.slate700, letterSpacing: -0.3)),
             const SizedBox(height: 2),
-            Text(description, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: selected ? AppColors.slate500 : AppColors.slate400)),
+            Text(description, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 10, color: selected ? AppColors.slate500 : AppColors.slate400)),
           ],
         ),
       ),

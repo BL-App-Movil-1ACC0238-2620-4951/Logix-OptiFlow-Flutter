@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/optical_store.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
@@ -34,20 +34,20 @@ class StoreResultCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.schedule, size: 12, color: AppColors.deepNavy),
                       const SizedBox(width: 4),
-                      Text(active ? 'Consultar horarios' : 'No disponible', style: GoogleFonts.inter(fontSize: 12, color: AppColors.deepNavy)),
+                      Text(active ? 'Consultar horarios' : 'No disponible', style: AppFonts.inter(fontSize: 12, color: AppColors.deepNavy)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(store.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text(store.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                 Row(
                   children: [
                     const Icon(Icons.place_outlined, size: 14, color: AppColors.navyBlue),
                     const SizedBox(width: 5),
-                    Expanded(child: Text(store.address, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500))),
+                    Expanded(child: Text(store.address, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500))),
                   ],
                 ),
-                Text(store.rating == null ? 'Sin calificaciones' : '★ $rating', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                Text(store.rating == null ? 'Sin calificaciones' : '★ $rating', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
               ],
             ),
           ),

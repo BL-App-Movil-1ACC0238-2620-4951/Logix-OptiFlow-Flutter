@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/presentation/pages/auth/auth_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/appointments_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/booking_screen.dart';
@@ -90,7 +90,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
 
   @override
   Widget build(BuildContext context) {
-    final text = GoogleFonts.plusJakartaSansTextTheme();
+    final text = AppFonts.textTheme(ThemeData.light(useMaterial3: true).textTheme);
     return MaterialApp.router(
       title: 'OptiFlow',
       debugShowCheckedModeBanner: false,

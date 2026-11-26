@@ -14,6 +14,7 @@ abstract final class AppColors {
   static const patientHeader = Color(0xFF1E1B72);
   static const screenBg = Color(0xFFECF1FD);
   static const headerTitle = Color(0xFFE6EEFF);
+  static const bellChip = Color(0xFFD7D6F5);
   static const cardBorder = Color(0xFFDFE4FF);
   static const slate500 = Color(0xFF64748B);
   static const slate400 = Color(0xFF94A3B8);
@@ -24,6 +25,8 @@ abstract final class AppColors {
   static const teal700 = Color(0xFF0E7490);
   static const emerald50 = Color(0xFFECFDF5);
   static const emerald600 = Color(0xFF059669);
+  static const emerald700 = Color(0xFF047857);
+  static const mint100 = Color(0xFFD1FAE5);
   static const warmGray = Color(0xFFA19B95);
   static const wellnessBg = Color(0xFFD1DDFA);
   static const wellnessIcon = Color(0xFF7EA0F1);
@@ -38,11 +41,15 @@ abstract final class AppColors {
   static const errorBg = Color(0xFFFEE2E2);
   static const ctaNavy = Color(0xFF1C3C78);
   static const staffHeader = Color(0xFF1B2361);
+  static const staffHero = Color(0xFF1D385F);
   static const staffInk = Color(0xFF0B1C30);
   static const staffMuted = Color(0xFF495F80);
   static const staffBorder = Color(0xFFE5E7EB);
   static const staffChip = Color(0xFFDCE9FF);
+  static const staffSubtle = Color(0xFFB7C4FF);
   static const staffAccent = Color(0xFF1E50E2);
+  static const staffBlue700 = Color(0xFF1D4ED8);
+  static const staffBlue200 = Color(0xFFBFDBFE);
   static const staffField = Color(0xFFF8FAFC);
   static const staffGreen = Color(0xFF10B981);
   static const staffBlue50 = Color(0xFFEFF6FF);

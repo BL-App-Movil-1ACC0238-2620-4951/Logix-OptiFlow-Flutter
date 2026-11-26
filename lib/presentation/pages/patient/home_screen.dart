@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Hola, ${sessionVm.firstName}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.headerTitle, letterSpacing: -0.6),
+                          style: AppFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.headerTitle, letterSpacing: -0.6),
                         ),
                       ),
                       IconButton(
@@ -96,8 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('No tienes citas próximas', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                            Text('Reserva tu evaluación visual', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                            Text('No tienes citas próximas', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                            Text('Reserva tu evaluación visual', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                           ],
                         ),
                       ),
@@ -119,8 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             StatusCapsule(next.status.label),
                             const SizedBox(height: 4),
-                            Text(next.fromApi ? next.title : 'Evaluación visual integral', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                            Text('${next.storeName} · ${next.time} hrs', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                            Text(next.fromApi ? next.title : 'Evaluación visual integral', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                            Text('${next.storeName} · ${next.time} hrs', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                           ],
                         ),
                       ),

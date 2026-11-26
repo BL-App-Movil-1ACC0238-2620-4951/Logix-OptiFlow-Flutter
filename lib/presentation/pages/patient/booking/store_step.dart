@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
@@ -20,7 +20,7 @@ class BookingStoreStep extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 10),
-              child: Text('Selecciona dónde quieres atenderte.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+              child: Text('Selecciona dónde quieres atenderte.', style: AppFonts.inter(fontSize: 14, color: AppColors.slate500)),
             ),
             const SizedBox(height: 20),
             if (bookingVm.state.loading && bookingVm.state.stores.isEmpty)
@@ -31,7 +31,7 @@ class BookingStoreStep extends StatelessWidget {
             ],
             if (bookingVm.state.error != null) ...[
               const SizedBox(height: 4),
-              Text(bookingVm.state.error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+              Text(bookingVm.state.error!, style: AppFonts.inter(fontSize: 13, color: AppColors.errorRed)),
               if (bookingVm.state.stores.isEmpty)
                 TextButton(onPressed: bookingVm.state.loading ? null : () => bookingVm.prepareBooking(null, rescheduleId: bookingVm.state.reschedulingId), child: const Text('Reintentar')),
             ],
@@ -81,9 +81,9 @@ class _StoreChoice extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(store.name, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                Text(store.name, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                 const SizedBox(height: 3),
-                Text(store.address, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                Text(store.address, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                 const SizedBox(height: 3),
                 Row(
                   children: [
@@ -92,7 +92,7 @@ class _StoreChoice extends StatelessWidget {
                     Expanded(
                       child: Text(
                         store.availability,
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: selected ? AppColors.electric : AppColors.slate500),
+                        style: AppFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: selected ? AppColors.electric : AppColors.slate500),
                       ),
                     ),
                   ],

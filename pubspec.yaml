@@ -13,10 +13,10 @@ dependencies:
   go_router: ^14.8.1
   http: ^1.5.0
   shared_preferences: ^2.5.3
-  google_fonts: ^6.2.1
   intl: ^0.20.2
   get_it: ^9.3.0
   flutter_secure_storage: ^11.2.0
+  lucide_icons_flutter: ^4.0.3
 
 dev_dependencies:
   flutter_test:
@@ -27,3 +27,24 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter.ttf
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/plus_jakarta_sans.ttf
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/geist.ttf
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/open_sans.ttf
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/poppins_medium.ttf
+          weight: 500
+        - asset: assets/fonts/poppins_semibold.ttf
+          weight: 600
+        - asset: assets/fonts/poppins_bold.ttf
+          weight: 700

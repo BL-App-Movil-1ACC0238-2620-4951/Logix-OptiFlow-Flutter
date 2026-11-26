@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -66,7 +66,7 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Text('Paciente activo', style: TextStyle(color: Color(0xFFA7F3D0))),
-                    const SizedBox(height: 4), Text(patient.fullName, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
+                    const SizedBox(height: 4), Text(patient.fullName, style: AppFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.white)),
                     Text('ID #${patient.ficha}', style: const TextStyle(fontSize: 10, color: AppColors.slate300)),
                   ])),
                 ]),
@@ -82,7 +82,7 @@ class _StaffPatientRecordScreenState extends State<StaffPatientRecordScreen> {
               if (errors['clinical'] != null) Text(errors['clinical']!, style: const TextStyle(color: AppColors.errorRed))
               else if (rx == null) AppCard(child: Text(loading ? 'Cargando…' : 'Aún no tiene recetas registradas.'))
               else AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Última Prescripción', style: GoogleFonts.inter(fontSize: 18, color: AppColors.staffInk)),
+                Text('Última Prescripción', style: AppFonts.inter(fontSize: 18, color: AppColors.staffInk)),
                 Text(last?.examinationDate == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(last!.examinationDate!))),
                 const SizedBox(height: 14),
                 Row(children: [
@@ -144,9 +144,9 @@ class _HeroFact extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 8, color: AppColors.slate300)),
+        Text(label, style: AppFonts.inter(fontSize: 8, color: AppColors.slate300)),
         const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.inter(fontSize: 15, color: AppColors.white)),
+        Text(value, style: AppFonts.inter(fontSize: 15, color: AppColors.white)),
       ],
     );
   }
@@ -166,11 +166,11 @@ class _EyeBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 8, color: AppColors.staffInk)),
+          Text(label, style: AppFonts.inter(fontSize: 8, color: AppColors.staffInk)),
           const SizedBox(height: 6),
-          Text(value, style: GoogleFonts.inter(fontSize: 17, color: AppColors.staffInk)),
+          Text(value, style: AppFonts.inter(fontSize: 17, color: AppColors.staffInk)),
           const SizedBox(height: 4),
-          Text(detail, style: GoogleFonts.inter(fontSize: 8, color: AppColors.staffAccent)),
+          Text(detail, style: AppFonts.inter(fontSize: 8, color: AppColors.staffAccent)),
         ],
       ),
     );
@@ -186,7 +186,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: AppColors.staffBlue50, borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: GoogleFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+      child: Text(text, style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
@@ -29,14 +29,14 @@ class NotificationsScreen extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: patientVm.markNotificationsRead,
-                  child: Text('Marcar leídas', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
+                  child: Text('Marcar leídas', style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.electric)),
                 ),
               ),
               for (final section in sections) ...[
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.only(left: 10),
-                  child: Text(section.$1, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
+                  child: Text(section.$1, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
                 ),
                 const SizedBox(height: 8),
                 for (final item in section.$2) _NotificationRow(item, patientVm.state.readNotificationIds.contains(item.id)),
@@ -107,11 +107,11 @@ class _NotificationRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.title, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: read ? FontWeight.w500 : FontWeight.w700, color: AppColors.deepNavy)),
+                      Text(item.title, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: read ? FontWeight.w500 : FontWeight.w700, color: AppColors.deepNavy)),
                       const SizedBox(height: 3),
-                      Text(item.message, style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                      Text(item.message, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                       const SizedBox(height: 6),
-                      Text(_ago(item.occurredAt), style: GoogleFonts.inter(fontSize: 10, color: AppColors.slate400)),
+                      Text(_ago(item.occurredAt), style: AppFonts.inter(fontSize: 10, color: AppColors.slate400)),
                     ],
                   ),
                 ),
@@ -161,9 +161,9 @@ class PrescriptionScreen extends StatelessWidget {
                     children: [
                       const Icon(Icons.description_outlined, size: 40, color: AppColors.slate400),
                       const SizedBox(height: 12),
-                      Text('Aún no tienes recetas', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                      Text('Aún no tienes recetas', style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                       const SizedBox(height: 6),
-                      Text('Tu receta aparecerá aquí después de tu evaluación visual.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                      Text('Tu receta aparecerá aquí después de tu evaluación visual.', textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
                     ],
                   ),
                 )
@@ -184,8 +184,8 @@ class PrescriptionScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Tu última receta', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                            Text(rx.issuedLabel, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                            Text('Tu última receta', style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                            Text(rx.issuedLabel, style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
                           ],
                         ),
                       ),
@@ -207,16 +207,16 @@ class PrescriptionScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Paciente', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                                  Text(rx.patientName, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                                  Text('Paciente', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                  Text(rx.patientName, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
                                 ],
                               ),
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text('Fecha', style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate400)),
-                                Text(rx.date, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                                Text('Fecha', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+                                Text(rx.date, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
                               ],
                             ),
                           ],
@@ -231,7 +231,7 @@ class PrescriptionScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         const _Caption('OBSERVACIONES E INDICACIÓN'),
                         const SizedBox(height: 8),
-                        Text(rx.observations, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF374151), height: 1.45)),
+                        Text(rx.observations, style: AppFonts.inter(fontSize: 13, color: const Color(0xFF374151), height: 1.45)),
                       ],
                     ],
                   ),
@@ -242,7 +242,7 @@ class PrescriptionScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.verified_user_outlined, size: 16, color: AppColors.slate500),
                     const SizedBox(width: 8),
-                    Text('Tus datos de salud se almacenan de forma segura.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate500)),
+                    Text('Tus datos de salud se almacenan de forma segura.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                   ],
                 ),
               ],
@@ -276,8 +276,8 @@ class _RxTable extends StatelessWidget {
                     decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFCBD5E1)))),
                     child: Column(
                       children: [
-                        Text(header.$1, style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-                        if (header.$2.isNotEmpty) Text(header.$2, style: GoogleFonts.inter(fontSize: 8, color: AppColors.slate400)),
+                        Text(header.$1, style: AppFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                        if (header.$2.isNotEmpty) Text(header.$2, style: AppFonts.inter(fontSize: 8, color: AppColors.slate400)),
                       ],
                     ),
                   ),
@@ -293,8 +293,8 @@ class _RxTable extends StatelessWidget {
                   child: _Cell(
                     Column(
                       children: [
-                        Text(row == 0 ? 'R (OD)' : 'L (OI)', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-                        Text(row == 0 ? 'Derecho' : 'Izquierdo', style: GoogleFonts.inter(fontSize: 9, color: AppColors.slate400)),
+                        Text(row == 0 ? 'R (OD)' : 'L (OI)', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+                        Text(row == 0 ? 'Derecho' : 'Izquierdo', style: AppFonts.inter(fontSize: 9, color: AppColors.slate400)),
                       ],
                     ),
                   ),
@@ -334,7 +334,7 @@ class _Value extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF111827)));
+    return Text(text, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF111827)));
   }
 }
 
@@ -344,6 +344,6 @@ class _Caption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.deepNavy, letterSpacing: 0.6));
+    return Text(text, style: AppFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.deepNavy, letterSpacing: 0.6));
   }
 }
