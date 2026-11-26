@@ -16,6 +16,7 @@ import 'package:logix_optiflow/presentation/pages/patient/purchases_screen.dart'
 import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/store_map_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/try_on_screen.dart';
 import 'package:logix_optiflow/presentation/pages/staff/staff_screens.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
