@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -44,7 +45,7 @@ class BookingViewModel extends ChangeNotifier {
   final GetCurrentLocationUseCase getCurrentLocationUseCase;
   final GetFirstAvailableSlotsUseCase getFirstAvailableSlotsUseCase;
 
-  BookingUiState _state = BookingUiState(weekStart: _monday(DateTime.now()));
+  BookingUiState _state = BookingUiState(weekStart: _monday(StoreTime.today()));
   BookingUiState get state => _state;
   @visibleForTesting
   set step(int value) => _state = _state.copyWith(step: value);
@@ -103,8 +104,8 @@ class BookingViewModel extends ChangeNotifier {
   }
 
   StoreOption _option(OpticalStore store, GeoPoint? user, DateTime? first, {bool pending = false}) {
-    final today = DateTime.now();
-    final firstLocal = first?.toLocal();
+    final today = StoreTime.today();
+    final firstLocal = first == null ? null : StoreTime.clock(first);
     final label = first == null ? null : firstSlotLabel(first);
     return StoreOption(
       id: store.id,
@@ -154,7 +155,7 @@ class BookingViewModel extends ChangeNotifier {
           PatientViewMapper.slot(slot),
       ]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
       final first = slots.firstOrNull?.date;
-      _state = _state.copyWith(slots: slots, selectedDate: () => first, weekStart: _monday(first ?? now));
+      _state = _state.copyWith(slots: slots, selectedDate: () => first, weekStart: _monday(first ?? StoreTime.today()));
     } catch (e) {
       if (active()) _state = _state.copyWith(error: () => e is ApiException ? e.message : 'No se pudieron cargar los horarios.');
     } finally {

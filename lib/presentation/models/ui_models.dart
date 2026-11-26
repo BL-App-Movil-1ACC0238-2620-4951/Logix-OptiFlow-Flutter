@@ -215,17 +215,14 @@ class StoreOption {
 }
 
 class SlotOption {
-  const SlotOption({required this.id, required this.date, required this.time, this.endsAt});
+  const SlotOption({required this.id, required this.date, required this.time, required this.startsAt, this.endsAt});
 
   final String? id;
+  /// Día y hora en Lima, como se muestran.
   final DateTime date;
   final String time;
+  final DateTime startsAt;
   final DateTime? endsAt;
-
-  DateTime get startsAt {
-    final parts = time.split(':');
-    return DateTime(date.year, date.month, date.day, int.parse(parts[0]), int.parse(parts[1]));
-  }
 
   int? get durationMinutes => endsAt?.difference(startsAt).inMinutes;
 

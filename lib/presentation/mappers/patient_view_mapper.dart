@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
@@ -21,14 +22,15 @@ abstract final class PatientViewMapper {
     String? opticalStoreId,
     String? timeSlotId,
   }) {
+    final at = StoreTime.clock(start);
     return AppointmentUi(
       id: id,
-      day: DateFormat('d', 'es').format(start),
-      month: DateFormat('MMM', 'es').format(start).replaceAll('.', '').toUpperCase(),
-      monthName: _cap(DateFormat('MMMM', 'es').format(start)),
-      weekday: _cap(DateFormat('EEEE', 'es').format(start)),
-      time: DateFormat('HH:mm').format(start),
-      endTime: DateFormat('HH:mm').format(end),
+      day: DateFormat('d', 'es').format(at),
+      month: DateFormat('MMM', 'es').format(at).replaceAll('.', '').toUpperCase(),
+      monthName: _cap(DateFormat('MMMM', 'es').format(at)),
+      weekday: _cap(DateFormat('EEEE', 'es').format(at)),
+      time: DateFormat('HH:mm').format(at),
+      endTime: DateFormat('HH:mm').format(StoreTime.clock(end)),
       title: title,
       storeName: storeName,
       storeAddress: storeAddress,
@@ -66,10 +68,12 @@ abstract final class PatientViewMapper {
   }
 
   static SlotOption slot(TimeSlot slot) {
+    final at = StoreTime.clock(slot.start);
     return SlotOption(
       id: slot.id,
-      date: DateTime(slot.start.year, slot.start.month, slot.start.day),
-      time: DateFormat('HH:mm').format(slot.start),
+      date: DateTime(at.year, at.month, at.day),
+      time: DateFormat('HH:mm').format(at),
+      startsAt: slot.start,
       endsAt: slot.end,
     );
   }
@@ -87,13 +91,13 @@ abstract final class PatientViewMapper {
     final delivery = DateTime.tryParse(order.estimatedDelivery ?? '');
     final frame = items.where((i) => i.type == 'FRAME').firstOrNull?.description;
     final lenses = items.where((i) => i.type != 'FRAME').map((i) => i.description).join(' · ');
-    String shortDateTime(DateTime at) => DateFormat("d MMM · HH:mm", 'es').format(at.toLocal());
+    String shortDateTime(DateTime at) => DateFormat("d MMM · HH:mm", 'es').format(StoreTime.clock(at));
     final history = [for (final change in order.statusHistory) shortDateTime(change.changedAt)];
     return OrderUi(
       id: id,
       code: 'OF-${id.substring(0, id.length < 4 ? id.length : 4).toUpperCase()}',
       title: frame != null ? 'Lentes ópticos + montura' : 'Lentes ópticos',
-      dateLabel: DateFormat('d MMM', 'es').format(created),
+      dateLabel: DateFormat('d MMM', 'es').format(StoreTime.clock(created)),
       step: step,
       estimate: delivery == null ? 'por confirmar' : DateFormat("d 'de' MMMM", 'es').format(delivery),
       product: frame ?? 'Lentes',
@@ -113,7 +117,7 @@ abstract final class PatientViewMapper {
     final pending = sale.status == SaleStatus.pendingPayment;
     return PurchaseUi(
       id: sale.id,
-      date: date == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(date.toLocal()),
+      date: date == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(date)),
       amount: amount == null ? '—' : soles(amount),
       paymentMethod: switch (method) {
         null => 'Pago pendiente',
@@ -134,7 +138,7 @@ abstract final class PatientViewMapper {
   }
 
   static HistoryEntry history(ClinicalRecord record) {
-    final when = record.examinationDate?.toLocal();
+    final when = record.examinationDate == null ? null : StoreTime.clock(record.examinationDate!);
     return HistoryEntry(
       date: when == null ? '—' : DateFormat('dd MMM yyyy', 'es').format(when).toUpperCase().replaceAll('.', ''),
       title: 'Evaluación visual',
@@ -165,14 +169,14 @@ abstract final class PatientViewMapper {
       for (final record in withRx)
         PrescriptionItemUi(
           recordId: record.id!,
-          date: record.examinationDate == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(record.examinationDate!.toLocal()),
+          date: record.examinationDate == null ? 'Sin fecha' : DateFormat('d MMM yyyy', 'es').format(StoreTime.clock(record.examinationDate!)),
           summary: 'OD ${_rx(record.prescription!.sphereOd)} · OI ${_rx(record.prescription!.sphereOs)}',
         ),
     ];
   }
 
   static PrescriptionUi prescriptionUi(PrescriptionValues values, DateTime? examinationDate, String? observations, String name) {
-    final date = examinationDate?.toLocal() ?? DateTime.now();
+    final date = StoreTime.clock(examinationDate ?? DateTime.now());
     final treatment = values.treatment?.trim() ?? '';
     final notes = observations?.trim() ?? '';
     return PrescriptionUi(

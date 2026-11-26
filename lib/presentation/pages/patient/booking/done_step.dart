@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
@@ -25,7 +26,7 @@ class BookingDoneStep extends StatelessWidget {
         if (appointment == null) return const Text('No hay una reserva confirmada.');
         final confirmed = AppointmentStatusLabel.fromApi(appointment.status) == AppointmentStatus.confirmed;
         final rescheduled = bookingVm.state.reschedulingId != null;
-        final start = appointment.start.toLocal();
+        final start = StoreTime.clock(appointment.start);
         String upper(String pattern) => DateFormat(pattern, 'es').format(start).replaceAll('.', '').toUpperCase();
         return Column(
           children: [

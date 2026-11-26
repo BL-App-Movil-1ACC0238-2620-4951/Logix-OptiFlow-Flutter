@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/notification/application/answer_survey_use_case.dart';
@@ -41,12 +42,11 @@ class NotificationsViewModel extends ChangeNotifier {
   int get unreadCount => _state.items.where((n) => !n.read).length;
 
   List<NotificationSection> get sections {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = StoreTime.today();
     final yesterday = today.subtract(const Duration(days: 1));
     final groups = {'Hoy': <PatientNotification>[], 'Ayer': <PatientNotification>[], 'Anteriores': <PatientNotification>[]};
     for (final item in _state.items) {
-      final day = DateTime(item.occurredAt.year, item.occurredAt.month, item.occurredAt.day);
+      final day = StoreTime.day(item.occurredAt);
       groups[day == today ? 'Hoy' : day == yesterday ? 'Ayer' : 'Anteriores']!.add(item);
     }
     return [
