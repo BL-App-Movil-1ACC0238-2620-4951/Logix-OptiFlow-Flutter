@@ -10,12 +10,13 @@ import 'package:logix_optiflow/presentation/pages/patient/try_on/try_on_glasses.
 /// Cámara frontal con ML Kit Face Detection (sin internet). Llama a [onEyes] en cada cuadro con
 /// los ojos del rostro principal, o con null si no hay rostro. Las coordenadas ya vienen en la
 /// vista (escaladas y en espejo como la vista previa), así que se pueden dibujar encima tal cual.
-/// Sin permiso o sin cámara llama a [onUnavailable].
+/// Sin permiso o sin cámara llama a [onUnavailable], con true si el dispositivo no tiene cámara
+/// (por ejemplo, el simulador de iOS).
 class FaceCamera extends StatefulWidget {
   const FaceCamera({super.key, required this.onEyes, required this.onUnavailable});
 
   final ValueChanged<EyePositions?> onEyes;
-  final VoidCallback onUnavailable;
+  final ValueChanged<bool> onUnavailable;
 
   @override
   State<FaceCamera> createState() => _FaceCameraState();
@@ -46,10 +47,14 @@ class _FaceCameraState extends State<FaceCamera> with WidgetsBindingObserver {
   }
 
   Future<void> _start() async {
+    var noCamera = false;
     try {
       final cameras = await availableCameras();
       final front = cameras.where((c) => c.lensDirection == CameraLensDirection.front).firstOrNull ?? cameras.firstOrNull;
-      if (front == null) throw CameraException('NoCamera', null);
+      if (front == null) {
+        noCamera = true;
+        throw CameraException('NoCamera', null);
+      }
       final controller = CameraController(
         front,
         ResolutionPreset.medium,
@@ -64,7 +69,7 @@ class _FaceCameraState extends State<FaceCamera> with WidgetsBindingObserver {
     } catch (_) {
       // Sin permiso de cámara (o sin cámara): la pantalla ofrece pedirlo de nuevo.
       await _stop();
-      if (mounted) widget.onUnavailable();
+      if (mounted) widget.onUnavailable(noCamera);
     }
   }
 

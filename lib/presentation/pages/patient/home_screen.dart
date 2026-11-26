@@ -259,8 +259,9 @@ class _NextAppointmentCard extends StatelessWidget {
       radius: 24,
       padding: const EdgeInsets.all(17),
       onTap: onTap,
-      child: SizedBox(
-        height: 65,
+      // Altura mínima y no fija: con letra más grande el texto no cabe en 65 y se cortaría.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 65),
         child: Row(
           children: [
             DateBadge(day: appointment.day, month: appointment.month),

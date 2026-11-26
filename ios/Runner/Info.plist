@@ -24,6 +24,21 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Mercado Pago vuelve a la app con back_url optiflow://payment-result -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.logix.logix_optiflow</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>optiflow</string>
+			</array>
+		</dict>
+	</array>
+	<!-- El enlace de vuelta solo trae la app al frente; no es una ruta de go_router. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>OptiFlow usa la cámara para probarte monturas y escanear códigos de productos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

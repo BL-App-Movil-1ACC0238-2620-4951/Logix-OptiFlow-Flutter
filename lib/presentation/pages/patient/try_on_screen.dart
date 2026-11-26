@@ -28,6 +28,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
   final _vm = getIt<CatalogViewModel>();
   final _eyes = ValueNotifier<EyePositions?>(null);
   bool _hasCamera = true;
+  bool _noCamera = false;
   int _cameraKey = 0;
 
   @override
@@ -91,18 +92,23 @@ class _TryOnScreenState extends State<TryOnScreen> {
                               key: ValueKey(_cameraKey),
                               // Se suaviza el movimiento para que la montura no tiemble.
                               onEyes: (found) => _eyes.value = found == null ? null : (_eyes.value?.towards(found) ?? found),
-                              onUnavailable: () => setState(() => _hasCamera = false),
+                              onUnavailable: (noCamera) => setState(() {
+                                _hasCamera = false;
+                                _noCamera = noCamera;
+                              }),
                             ),
                             CustomPaint(painter: GlassesPainter(style, finish, eyes)),
                             if (eyes == null) const CustomPaint(painter: _CameraGuide()),
                           ] else
                             Center(
                               child: GestureDetector(
-                                onTap: _retryCamera,
+                                onTap: _noCamera ? null : _retryCamera,
                                 child: Padding(
                                   padding: const EdgeInsets.all(32),
                                   child: Text(
-                                    'Toca aquí para permitir la cámara (o actívala en Ajustes).',
+                                    _noCamera
+                                        ? 'Este dispositivo no tiene cámara, así que el probador virtual no está disponible.'
+                                        : 'Toca aquí para permitir la cámara (o actívala en Ajustes).',
                                     textAlign: TextAlign.center,
                                     style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.white),
                                   ),

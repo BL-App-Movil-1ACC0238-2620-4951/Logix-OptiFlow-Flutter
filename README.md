@@ -36,3 +36,5 @@ El APK queda en `build/app/outputs/flutter-apk/app-release.apk`.
 ## iOS (solo en Mac)
 
 Abre `ios/Runner.xcworkspace` en Xcode, elige tu equipo en **Signing & Capabilities** y agrega `-ObjC` y `-all_load` en **Other Linker Flags** (para el probador virtual).
+
+El simulador de iOS no tiene cámara: el probador avisa que no está disponible y en el escáner se escribe el SKU. Las notificaciones push solo funcionan en Android.
