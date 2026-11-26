@@ -32,6 +32,13 @@ class ReportApi {
     return InventoryMetrics(unitsIn: _int(json['unitsIn']), unitsOut: _int(json['unitsOut']), lowStockProducts: _int(json['lowStockProducts']));
   }
 
+  /// El reporte en CSV; el de inventario además pide la óptica.
+  Future<String> csv(ReportKind kind, DateTime from, DateTime to, String? opticalStoreId) => _client.getText(
+        'reports/${kind.path}',
+        query: {'from': _day(from), 'to': _day(to), if (kind == ReportKind.inventory) 'opticalStoreId': opticalStoreId},
+        accept: 'text/csv',
+      );
+
   Future<Map<String, dynamic>> _map(String path, DateTime from, DateTime to, [Map<String, String?> extra = const {}]) async {
     final json = await _client.get(path, {'from': _day(from), 'to': _day(to), ...extra});
     if (json is! Map) throw ApiException('El servidor devolvió un reporte inválido.');

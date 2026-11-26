@@ -15,4 +15,8 @@ class CatalogRepositoryImpl implements CatalogRepository {
 
   @override
   Future<FrameItem> updatePrice(String sku, num price) async => (await api.updateFramePrice(sku, price)).toEntity();
+
+  @override
+  Future<FrameItem> addFrame({required String sku, required String name, String? material, String? shape, String? color, required num price}) async =>
+      (await api.addFrame(sku: sku, name: name, material: material, shape: shape, color: color, price: price)).toEntity();
 }

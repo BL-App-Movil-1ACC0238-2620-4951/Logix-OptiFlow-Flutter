@@ -47,6 +47,25 @@ class ApiClient {
     }
   }
 
+  /// GET que devuelve el cuerpo tal cual (por ejemplo un CSV con `accept: 'text/csv'`).
+  Future<String> getText(String path, {Map<String, String?>? query, String accept = 'text/plain'}) async {
+    final uri = Uri.parse('$baseUrl$path').replace(
+      queryParameters: {
+        for (final entry in (query ?? const {}).entries)
+          if (entry.value != null && entry.value!.trim().isNotEmpty) entry.key: entry.value!.trim(),
+      },
+    );
+    final requestToken = token;
+    try {
+      final response = await _client.get(uri, headers: {..._headers(requestToken), 'Accept': accept}).timeout(_timeout);
+      if (response.statusCode >= 200 && response.statusCode < 300) return utf8.decode(response.bodyBytes);
+      _decode(response, requestToken: requestToken);
+      throw ApiException('No se pudo completar la solicitud (${response.statusCode}).', statusCode: response.statusCode);
+    } catch (error) {
+      throw _wrap(error);
+    }
+  }
+
   Future<Object?> send(String method, String path, Map<String, dynamic> body) async {
     final uri = Uri.parse('$baseUrl$path');
     final requestToken = path == 'auth/tokens' || path == 'patients' ? null : token;

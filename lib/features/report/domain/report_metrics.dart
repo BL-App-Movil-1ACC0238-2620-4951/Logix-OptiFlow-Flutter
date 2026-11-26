@@ -1,3 +1,14 @@
+/// Reportes que se exportan en CSV; `path` es el de `GET reports/{path}`.
+enum ReportKind {
+  sales('sales', 'Ventas'),
+  production('production', 'Producción'),
+  inventory('inventory', 'Inventario');
+
+  const ReportKind(this.path, this.label);
+  final String path;
+  final String label;
+}
+
 /// Ventas cerradas y cotizaciones de un periodo (`GET /reports/sales`).
 class SalesMetrics {
   const SalesMetrics({required this.attentions, required this.approvedQuotations, required this.rejectedQuotations, required this.closedSales, required this.totalAmount, required this.averageTicket});

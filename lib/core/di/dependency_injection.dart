@@ -41,6 +41,7 @@ import 'package:logix_optiflow/features/inventory/application/get_frame_stock_us
 import 'package:logix_optiflow/features/inventory/application/toggle_favorite_frame_use_case.dart';
 import 'package:logix_optiflow/features/inventory/domain/favorite_frame_repository.dart';
 import 'package:logix_optiflow/features/inventory/infrastructure/favorite_frame_repository_impl.dart';
+import 'package:logix_optiflow/features/inventory/application/add_frame_model_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_low_stock_alerts_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
@@ -72,6 +73,7 @@ import 'package:logix_optiflow/features/production/application/update_work_order
 import 'package:logix_optiflow/features/production/domain/production_repository.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_api.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_repository_impl.dart';
+import 'package:logix_optiflow/features/report/application/export_report_use_case.dart';
 import 'package:logix_optiflow/features/report/application/get_monthly_report_use_case.dart';
 import 'package:logix_optiflow/features/report/domain/report_repository.dart';
 import 'package:logix_optiflow/features/report/infrastructure/report_api.dart';
@@ -105,6 +107,19 @@ import 'package:logix_optiflow/features/clinical/presentation/clinical_care_view
 import 'package:logix_optiflow/features/clinical/presentation/quote_view_model.dart';
 import 'package:logix_optiflow/features/clinical/presentation/sale_view_model.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
+import 'package:logix_optiflow/features/inventory/presentation/new_frame_view_model.dart';
+import 'package:logix_optiflow/features/inventory/application/register_supplier_use_case.dart';
+import 'package:logix_optiflow/features/inventory/presentation/suppliers_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/application/assign_staff_role_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_staff_members_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_store_time_slots_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/publish_time_slots_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/register_staff_member_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/update_staff_member_status_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_member_repository.dart';
+import 'package:logix_optiflow/features/searchbooking/infrastructure/staff_member_repository_impl.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/schedule_view_model.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/staff_members_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/work_order_view_model.dart';
 import 'package:logix_optiflow/features/report/presentation/report_view_model.dart';
@@ -170,6 +185,13 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<LocationProvider>(() => const DeviceLocationProvider());
   getIt.registerLazySingleton(() => GetCurrentLocationUseCase(provider: getIt<LocationProvider>()));
   getIt.registerLazySingleton(() => GetStoreAvailabilityUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => GetStoreTimeSlotsUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => PublishTimeSlotsUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton<StaffMemberRepository>(() => StaffMemberRepositoryImpl(api: getIt<SearchBookingApi>()));
+  getIt.registerLazySingleton(() => GetStaffMembersUseCase(repository: getIt<StaffMemberRepository>()));
+  getIt.registerLazySingleton(() => RegisterStaffMemberUseCase(repository: getIt<StaffMemberRepository>()));
+  getIt.registerLazySingleton(() => AssignStaffRoleUseCase(repository: getIt<StaffMemberRepository>()));
+  getIt.registerLazySingleton(() => UpdateStaffMemberStatusUseCase(repository: getIt<StaffMemberRepository>()));
   getIt.registerLazySingleton(() => GetPatientAppointmentsUseCase(repository: getIt<AppointmentRepository>()));
   getIt.registerLazySingleton(() => CancelAppointmentUseCase(repository: getIt<AppointmentRepository>()));
   getIt.registerLazySingleton(() => BookAppointmentUseCase(repository: getIt<AppointmentRepository>()));
@@ -223,13 +245,16 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetFrameStockUseCase(stores: getIt<StoreRepository>(), catalog: getIt<CatalogRepository>()));
   getIt.registerLazySingleton(() => GetStoreStockUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetSuppliersUseCase(repository: getIt<InventoryRepository>()));
+  getIt.registerLazySingleton(() => RegisterSupplierUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetStockMovementsUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => ReplenishStockUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetLowStockAlertsUseCase(repository: getIt<InventoryRepository>()));
+  getIt.registerLazySingleton(() => AddFrameModelUseCase(catalog: getIt<CatalogRepository>(), inventory: getIt<InventoryRepository>()));
 
   // report
   getIt.registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(api: getIt<ReportApi>()));
   getIt.registerLazySingleton(() => GetMonthlyReportUseCase(repository: getIt<ReportRepository>()));
+  getIt.registerLazySingleton(() => ExportReportUseCase(repository: getIt<ReportRepository>()));
 
   // ViewModels: uno por área, compartidos por las pantallas.
   getIt.registerLazySingleton(() => SessionViewModel(
@@ -300,6 +325,15 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getFavoriteFramesUseCase: getIt(),
         toggleFavoriteFrameUseCase: getIt(),
       ));
+  getIt.registerFactory(() => NewFrameViewModel(session: getIt(), catalog: getIt(), addFrameModelUseCase: getIt(), getSuppliersUseCase: getIt()));
+  getIt.registerFactory(() => SuppliersViewModel(getSuppliersUseCase: getIt(), registerSupplierUseCase: getIt()));
+  getIt.registerFactory(() => StaffMembersViewModel(
+        getStaffMembersUseCase: getIt(),
+        registerStaffMemberUseCase: getIt(),
+        assignStaffRoleUseCase: getIt(),
+        updateStaffMemberStatusUseCase: getIt(),
+      ));
+  getIt.registerFactory(() => ScheduleViewModel(getStoreTimeSlotsUseCase: getIt(), publishTimeSlotsUseCase: getIt()));
   getIt.registerLazySingleton(() => StaffPatientsViewModel(
         session: getIt(),
         getStaffPatientsUseCase: getIt(),
@@ -336,7 +370,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         bookAppointmentUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => ReportViewModel(
-        session: getIt(), production: getIt(), getLowStockAlertsUseCase: getIt(), getMonthlyReportUseCase: getIt()));
+        session: getIt(), production: getIt(), getLowStockAlertsUseCase: getIt(), getMonthlyReportUseCase: getIt(), exportReportUseCase: getIt()));
   getIt.registerLazySingleton(() => ClinicalCareViewModel(
         session: getIt(), repository: getIt(), agenda: getIt(), patients: getIt()));
   getIt.registerLazySingleton(() => QuoteViewModel(session: getIt(), repository: getIt()));

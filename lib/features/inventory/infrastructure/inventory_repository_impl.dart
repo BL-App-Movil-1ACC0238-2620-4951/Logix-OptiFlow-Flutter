@@ -12,6 +12,8 @@ class InventoryRepositoryImpl implements InventoryRepository {
   @override
   Future<List<Supplier>> suppliers() => api.suppliers();
   @override
+  Future<Supplier> registerSupplier(String name, String? contact) => api.registerSupplier(name, contact);
+  @override
   Future<List<StockMovement>> movements({required String opticalStoreId, required DateTime from, required DateTime to, String? sku}) =>
       api.stockMovements(opticalStoreId: opticalStoreId, from: from, to: to, sku: sku);
   @override

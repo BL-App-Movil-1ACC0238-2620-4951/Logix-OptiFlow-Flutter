@@ -37,6 +37,13 @@ class StoreRepositoryImpl implements StoreRepository {
       api.rateOpticalStore(opticalStoreId, patientId, score, comment);
 
   @override
+  Future<List<TimeSlot>> timeSlots(String storeId) async => (await api.availability(storeId)).map((slot) => slot.toEntity()).toList();
+
+  @override
+  Future<List<TimeSlot>> publishTimeSlots(String storeId, List<(DateTime, DateTime)> slots) async =>
+      (await api.publishTimeSlots(storeId, slots)).map((slot) => slot.toEntity()).toList();
+
+  @override
   Future<List<TimeSlot>> availability(String storeId) async {
     final slots = await api.availability(storeId);
     return slots

@@ -1,9 +1,11 @@
 import 'package:logix_optiflow/core/network/api_client.dart';
 import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_member.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/appointment_dto.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/optical_store_dto.dart';
+import 'package:logix_optiflow/features/searchbooking/infrastructure/staff_member_dto.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/staff_patient_dto.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/time_slot_dto.dart';
 
@@ -57,6 +59,37 @@ class SearchBookingApi {
     final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];
     return list.whereType<Map>().map((e) => TimeSlotDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
+
+  /// Abre turnos en la óptica (`POST optical-stores/{id}/time-slots`); las horas van en UTC.
+  Future<List<TimeSlotDto>> publishTimeSlots(String storeId, List<(DateTime, DateTime)> slots) async {
+    final json = await _client.send('POST', 'optical-stores/$storeId/time-slots', {
+      'timeSlots': [
+        for (final (start, end) in slots) {'startDateTime': start.toUtc().toIso8601String(), 'endDateTime': end.toUtc().toIso8601String()},
+      ],
+    });
+    final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];
+    return list.whereType<Map>().map((e) => TimeSlotDto.fromJson(Map<String, dynamic>.from(e))).toList();
+  }
+
+  Future<List<StaffMember>> staffMembers(String opticalStoreId) async =>
+      _list(await _client.get('staff-members', {'opticalStoreId': opticalStoreId})).map(StaffMemberDto.fromJson).toList();
+
+  Future<StaffMember> registerStaffMember({
+    required String name,
+    required String email,
+    required String password,
+    required String opticalStoreId,
+    required String role,
+  }) async =>
+      StaffMemberDto.fromJson(Map<String, dynamic>.from(await _client.send('POST', 'staff-members', {
+        'name': name, 'email': email, 'password': password, 'opticalStoreId': opticalStoreId, 'role': role,
+      }) as Map));
+
+  Future<StaffMember> assignStaffRole(String id, String role) async => StaffMemberDto.fromJson(
+      Map<String, dynamic>.from(await _client.send('PATCH', 'staff-members/${Uri.encodeComponent(id)}/role', {'role': role}) as Map));
+
+  Future<StaffMember> updateStaffMemberStatus(String id, bool active) async => StaffMemberDto.fromJson(
+      Map<String, dynamic>.from(await _client.send('PATCH', 'staff-members/${Uri.encodeComponent(id)}/status', {'active': active}) as Map));
 
   Future<AppointmentDto> book({
     required String patientId,

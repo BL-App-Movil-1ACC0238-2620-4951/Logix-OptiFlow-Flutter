@@ -6,4 +6,6 @@ abstract class CatalogRepository {
   Future<FrameItem> frame(String sku, {String? opticalStoreId});
 
   Future<FrameItem> updatePrice(String sku, num price);
+
+  Future<FrameItem> addFrame({required String sku, required String name, String? material, String? shape, String? color, required num price});
 }

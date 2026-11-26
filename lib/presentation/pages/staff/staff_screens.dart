@@ -19,7 +19,11 @@ import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart' show SearchField;
 import 'package:logix_optiflow/presentation/widgets/staff_widgets.dart';
+import 'package:logix_optiflow/presentation/widgets/frame_photos.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/features/inventory/domain/product.dart';
 
+export 'package:logix_optiflow/presentation/pages/staff/staff_admin_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_care_screens.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_evaluation_screen.dart';
 export 'package:logix_optiflow/presentation/pages/staff/staff_insight_screens.dart';
@@ -737,64 +741,206 @@ class StaffInventoryScreen extends StatefulWidget {
 }
 
 class _StaffInventoryScreenState extends State<StaffInventoryScreen> {
-  String query = '';
+  final _search = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) getIt<CatalogViewModel>().refreshInventory();
+      if (!mounted) return;
+      getIt<CatalogViewModel>().refreshInventory();
+      getIt<StoreSearchViewModel>().loadStores();
+      if (getIt<SessionViewModel>().canOpen('/s/production')) getIt<ProductionViewModel>().refreshStaffOrders();
     });
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// Se recarga al volver de una reposición o de una montura nueva.
+  Future<void> _open(String path) async {
+    await context.push(path);
+    if (mounted) getIt<CatalogViewModel>().refreshInventory();
   }
 
   @override
   Widget build(BuildContext context) {
     final catalogVm = getIt<CatalogViewModel>();
     final sessionVm = getIt<SessionViewModel>();
+    final storesVm = getIt<StoreSearchViewModel>();
+    final productionVm = getIt<ProductionViewModel>();
     return ListenableBuilder(
-      listenable: Listenable.merge([catalogVm, sessionVm]),
+      listenable: Listenable.merge([catalogVm, sessionVm, storesVm, productionVm]),
       builder: (context, _) {
-        final q = query.trim().toLowerCase();
-        final products = catalogVm.state.products.where((item) => '${item.name} ${item.sku} ${item.detail}'.toLowerCase().contains(q)).toList();
-        final total = catalogVm.state.products.fold<int>(0, (sum, item) => sum + item.available);
-        final low = catalogVm.state.products.where((item) => item.minimumStock != null && item.available <= item.minimumStock!).length;
+        final state = catalogVm.state;
+        final all = state.products;
+        final q = _search.text.trim().toLowerCase();
+        final rows = q.isEmpty
+            ? all
+            : all.where((item) {
+                final frame = catalogVm.frameById(item.sku);
+                return [item.name, item.sku, frame?.color, frame?.material].whereType<String>().any((v) => v.toLowerCase().contains(q));
+              }).toList();
+        final total = all.fold<int>(0, (sum, item) => sum + item.available);
+        final low = all.where((item) => item.minimumStock != null && item.available <= item.minimumStock!).length;
+        final canProduction = sessionVm.canOpen('/s/production');
+        final open = productionVm.productionOrders.where((o) => o.stage != ProductionStage.delivered).toList();
+        final actions = [
+          if (sessionVm.canOpen('/s/inventory/new')) (LucideIcons.plus, 'Nueva montura', '/s/inventory/new'),
+          if (sessionVm.canOpen('/s/movement')) (LucideIcons.box, 'Ingresar stock', '/s/movement'),
+          if (sessionVm.canOpen('/s/alerts')) (LucideIcons.bell, 'Alertas', '/s/alerts'),
+          if (canProduction) (LucideIcons.fileText, 'Órdenes', '/s/production'),
+        ];
         return StaffScaffold(
           tab: StaffTab.inventory,
-          topBar: StaffTopBar(title: 'Inventario de mi óptica', trailing: IconButton(onPressed: () => context.push('/s/scanner'), icon: const Icon(Icons.search, color: AppColors.white))),
+          topBar: StaffTopBar(title: 'Inventario', trailing: StaffCircleAction(icon: LucideIcons.scan, onTap: () => context.push('/s/scanner'))),
           body: RefreshIndicator(
             onRefresh: catalogVm.refreshInventory,
-            child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(20), children: [
-              if (catalogVm.state.inventoryLoading) const LinearProgressIndicator(),
-              if (catalogVm.state.inventoryError != null) ...[
-                Text(catalogVm.state.inventoryError!, style: const TextStyle(color: AppColors.errorRed)),
+            child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
+              StaffHero(
+                radius: 20,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('CONTROL DE STOCK · ${storesVm.staffStoreName.toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: AppFonts.inter(fontSize: 8, color: AppColors.slate300, letterSpacing: 1)),
+                      const SizedBox(height: 8),
+                      Text('Catálogo y stock', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
+                      const SizedBox(height: 6),
+                      Text('${all.length} modelos en el catálogo de la cadena.', style: AppFonts.inter(fontSize: 10, color: AppColors.slate300)),
+                    ]),
+                  ),
+                  const Icon(LucideIcons.layoutGrid, size: 44, color: AppColors.staffSubtle),
+                ]),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: LucideIcons.eye,
+                    value: '$total',
+                    title: 'En stock',
+                    subtitle: '$low por reponer',
+                    onTap: sessionVm.canOpen('/s/alerts') ? () => context.push('/s/alerts') : null,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: canProduction
+                      ? _StatCard(
+                          icon: LucideIcons.briefcase,
+                          value: '${open.length}',
+                          title: 'En taller / lab',
+                          subtitle: '${open.where((o) => o.needsAttention).length} con retraso',
+                          onTap: () => context.push('/s/production'),
+                        )
+                      : _StatCard(
+                          icon: LucideIcons.briefcase,
+                          value: '${all.where((item) => item.available == 0).length}',
+                          title: 'Sin stock',
+                          subtitle: 'modelos agotados aquí',
+                        ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              SearchField(controller: _search, placeholder: 'Buscar modelo, SKU o color', onChanged: (_) => setState(() {})),
+              const SizedBox(height: 26),
+              StaffSectionTitle('Catálogo · ${rows.length} ${rows.length == 1 ? 'modelo' : 'modelos'}'),
+              const SizedBox(height: 12),
+              if (state.inventoryLoading && all.isEmpty)
+                Text('Cargando...', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400))
+              else if (state.inventoryError != null) ...[
+                Text(state.inventoryError!, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
                 TextButton(onPressed: catalogVm.refreshInventory, child: const Text('Reintentar')),
+              ] else if (rows.isEmpty)
+                Text('No hay monturas que coincidan.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+              for (var i = 0; i < rows.length; i += 2) ...[
+                IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    for (final item in rows.skip(i).take(2)) ...[
+                      if (item != rows[i]) const SizedBox(width: 14),
+                      Expanded(child: _ProductCard(item, catalogVm.frameById(item.sku), onTap: () => _open('/s/product/${Uri.encodeComponent(item.sku)}'))),
+                    ],
+                    if (i + 1 >= rows.length) ...[const SizedBox(width: 14), const Expanded(child: SizedBox())],
+                  ]),
+                ),
+                const SizedBox(height: 14),
               ],
-              if (catalogVm.state.inventoryError == null && !catalogVm.state.inventoryLoading)
-                AppCard(child: Row(children: [
-                  Expanded(child: Text('$total unidades en stock', style: Theme.of(context).textTheme.titleMedium)),
-                  Text('$low modelos con stock bajo'),
-                ])),
-              const SizedBox(height: 16),
-              TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Nombre, SKU o material')),
-              const SizedBox(height: 16),
-              if (!catalogVm.state.inventoryLoading && catalogVm.state.inventoryError == null && products.isEmpty) const Text('No hay monturas con esos criterios.'),
-              for (final product in products) ...[
-                AppCard(onTap: () => context.push('/s/product/${Uri.encodeComponent(product.sku)}'), child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.remove_red_eye_outlined),
-                  title: Text(product.name), subtitle: Text('${product.sku}\n${product.price} · ${product.available} unidades'),
-                  trailing: const Icon(Icons.chevron_right),
-                )),
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const StaffSectionTitle('Acciones rápidas'),
                 const SizedBox(height: 12),
-              ],
-              if (sessionVm.canOpen('/s/movement')) ...[
-                const SizedBox(height: 12),
-                SolidButton(label: 'Registrar ingreso de proveedor', icon: Icons.add, onPressed: () => context.push('/s/movement')),
+                Row(children: [
+                  for (final (index, (icon, label, path)) in actions.indexed) ...[
+                    if (index > 0) const SizedBox(width: 10),
+                    Expanded(
+                      child: _StaffCard(
+                        radius: 16,
+                        padding: EdgeInsets.zero,
+                        onTap: () => _open(path),
+                        child: SizedBox(
+                          height: 82,
+                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(icon, size: 22, color: AppColors.staffInk),
+                            const SizedBox(height: 7),
+                            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 10, color: AppColors.staffInk)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ]),
               ],
             ]),
           ),
         );
-        },
+      },
+    );
+  }
+}
+
+/// Etiqueta del stock de una montura en la óptica.
+String _stockTag(ProductItem item) => item.available == 0
+    ? 'Sin stock'
+    : item.minimumStock != null && item.available <= item.minimumStock!
+        ? 'Stock bajo'
+        : 'Disponible';
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard(this.item, this.frame, {required this.onTap});
+  final ProductItem item;
+  final FrameItem? frame;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tag = _stockTag(item);
+    final detail = [frame?.color, frame?.material].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+    return _StaffCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(framePhotoFor(item.sku), height: 92, width: double.infinity, fit: BoxFit.cover),
+        ),
+        const SizedBox(height: 10),
+        StaffPill(tag, icon: tag == 'Disponible' ? LucideIcons.check : LucideIcons.bell),
+        const SizedBox(height: 8),
+        Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk)),
+        const SizedBox(height: 4),
+        Text(detail.isEmpty ? item.sku : detail, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppFonts.inter(fontSize: 9, color: AppColors.slate400)),
+        const Spacer(),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(child: Text(item.price, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.staffInk))),
+          Text('${item.available} disp.', style: AppFonts.inter(fontSize: 9, color: item.available == 0 ? AppColors.errorRed : AppColors.staffGreen)),
+        ]),
+      ]),
     );
   }
 }
@@ -835,8 +981,11 @@ class StaffMoreScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    if (sessionVm.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', null, () => context.push('/s/alerts'), badge: '3'),
-                    if (sessionVm.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', null, () => context.push('/s/reports')),
+                    if (sessionVm.canOpen('/s/alerts')) _Tool(Icons.notifications_none, 'Alertas', 'Stock crítico y órdenes', () => context.push('/s/alerts')),
+                    if (sessionVm.canOpen('/s/reports')) _Tool(Icons.bar_chart, 'Reportes', 'Ventas, producción e inventario del mes', () => context.push('/s/reports')),
+                    if (sessionVm.canOpen('/s/admin/staff')) _Tool(Icons.person_outline, 'Personal', 'Altas, roles y accesos', () => context.push('/s/admin/staff')),
+                    if (sessionVm.canOpen('/s/admin/suppliers')) _Tool(Icons.inventory_2_outlined, 'Proveedores', null, () => context.push('/s/admin/suppliers')),
+                    if (sessionVm.canOpen('/s/admin/schedule')) _Tool(Icons.calendar_today_outlined, 'Horarios de atención', 'Abrir turnos para reservar', () => context.push('/s/admin/schedule')),
                     _Tool(Icons.settings_outlined, 'Configuración y permisos', sessionVm.session?.role.label, () => context.push('/s/settings')),
                     _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
                     _Tool(Icons.logout, 'Cerrar sesión', sessionVm.session?.email, () async { await sessionVm.logout(); }),

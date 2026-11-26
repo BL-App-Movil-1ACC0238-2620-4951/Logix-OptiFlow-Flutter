@@ -12,6 +12,9 @@ class ReportUiState {
     this.report,
     this.reportLoading = false,
     this.reportError,
+    this.exporting,
+    this.exportMessage,
+    this.exportError,
   });
 
   final DateTime month;
@@ -21,6 +24,9 @@ class ReportUiState {
   final MonthlyReport? report;
   final bool reportLoading;
   final String? reportError;
+  final ReportKind? exporting;
+  final String? exportMessage;
+  final String? exportError;
 
   ReportUiState copyWith({
     DateTime? month,
@@ -30,6 +36,9 @@ class ReportUiState {
     ValueGetter<MonthlyReport?>? report,
     bool? reportLoading,
     ValueGetter<String?>? reportError,
+    ValueGetter<ReportKind?>? exporting,
+    ValueGetter<String?>? exportMessage,
+    ValueGetter<String?>? exportError,
   }) {
     return ReportUiState(
       month: month ?? this.month,
@@ -39,6 +48,9 @@ class ReportUiState {
       report: report != null ? report() : this.report,
       reportLoading: reportLoading ?? this.reportLoading,
       reportError: reportError != null ? reportError() : this.reportError,
+      exporting: exporting != null ? exporting() : this.exporting,
+      exportMessage: exportMessage != null ? exportMessage() : this.exportMessage,
+      exportError: exportError != null ? exportError() : this.exportError,
     );
   }
 }
