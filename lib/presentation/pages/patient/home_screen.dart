@@ -13,6 +13,7 @@ import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/widgets/frame_image.dart';
+import 'package:logix_optiflow/presentation/widgets/frame_photos.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -379,7 +380,7 @@ class _FeaturedFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shape = frame.category.trim().isEmpty ? 'MONTURA' : frame.category.toUpperCase();
+    final shape = frame.shape?.toUpperCase() ?? 'MONTURA';
     return AppCard(
       onTap: onTap,
       padding: const EdgeInsets.all(8),
@@ -389,7 +390,7 @@ class _FeaturedFrame extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(borderRadius: BorderRadius.circular(12), child: FrameImage(path: frame.image, height: 130)),
+            ClipRRect(borderRadius: BorderRadius.circular(12), child: FrameImage(path: framePhotoFor(frame.sku), height: 130)),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),

@@ -16,6 +16,9 @@ class FrameItem {
     this.stockKnown = false,
     this.minimumStock,
     this.tryOnModelUrl,
+    this.material,
+    this.shape,
+    this.color,
   });
 
   final String id;
@@ -34,4 +37,7 @@ class FrameItem {
   final bool stockKnown;
   final int? minimumStock;
   final String? tryOnModelUrl;
+  final String? material;
+  final String? shape;
+  final String? color;
 }
