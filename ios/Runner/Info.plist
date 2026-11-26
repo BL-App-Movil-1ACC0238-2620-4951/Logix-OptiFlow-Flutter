@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>OptiFlow usa la cámara para probarte monturas y escanear códigos de productos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>OptiFlow usa tu ubicación para mostrarte las ópticas más cercanas.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
