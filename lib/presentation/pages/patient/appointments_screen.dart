@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
@@ -529,12 +530,12 @@ class _RescheduleScreenState extends State<RescheduleScreen> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final today = StoreTime.today();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _vm.state.selectedDate ?? now,
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: now.add(const Duration(days: 365)),
+      initialDate: _vm.state.selectedDate ?? today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
       helpText: 'Elige una fecha',
     );
     if (picked != null) _vm.selectDate(picked);

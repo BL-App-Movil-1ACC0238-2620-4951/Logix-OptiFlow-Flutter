@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/network/offline_cache.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 
 // Componentes base copiados de Kotlin (Chrome.kt, Primitives.kt y PatientCommon.kt).
@@ -65,6 +68,35 @@ extension StaffTabX on StaffTab {
       };
 }
 
+/// Aviso de que no hay conexión y se muestran los datos guardados, con la fecha de su última actualización.
+class OfflineBanner extends StatelessWidget {
+  const OfflineBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!getIt.isRegistered<OfflineCache>()) return const SizedBox.shrink();
+    final cache = getIt<OfflineCache>();
+    return ListenableBuilder(
+      listenable: cache,
+      builder: (context, _) {
+        final date = cache.savedDataFrom;
+        if (date == null) return const SizedBox.shrink();
+        final label = DateFormat('d MMM, HH:mm', 'es').format(StoreTime.clock(date)).replaceAll('.', '');
+        return Container(
+          width: double.infinity,
+          color: const Color(0xFF475569),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Text(
+            'Sin conexión · datos actualizados el $label',
+            textAlign: TextAlign.center,
+            style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.white),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class PatientScaffold extends StatelessWidget {
   const PatientScaffold({
     super.key,
@@ -86,6 +118,7 @@ class PatientScaffold extends StatelessWidget {
       body: Column(
         children: [
           topBar,
+          const OfflineBanner(),
           Expanded(child: body),
           PatientBottomBar(selected: tab),
         ],
@@ -115,6 +148,7 @@ class StaffScaffold extends StatelessWidget {
       body: Column(
         children: [
           topBar,
+          const OfflineBanner(),
           Expanded(child: body),
           if (showBottomBar) StaffBottomBar(selected: tab),
         ],

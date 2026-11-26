@@ -8,7 +8,7 @@ class InventoryApi {
 
   final ApiClient _client;
 
-  Future<List<FrameModelDto>> frameCatalog() async => _list(await _client.get('inventory/frames'))
+  Future<List<FrameModelDto>> frameCatalog() async => _list(await _client.cachedGet('frames', 'inventory/frames'))
       .map(FrameModelDto.new).toList();
 
   Future<FrameModelDto> frameModel(String sku, {String? opticalStoreId}) async => FrameModelDto(

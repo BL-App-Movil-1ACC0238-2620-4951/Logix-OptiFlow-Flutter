@@ -8,7 +8,7 @@ class NotificationApi {
   final ApiClient _client;
 
   Future<List<PatientNotification>> forPatient(String patientId) async {
-    final json = await _client.get('patients/$patientId/notifications');
+    final json = await _client.cachedGet('notifications/$patientId', 'patients/$patientId/notifications');
     if (json is! List) throw ApiException('El servidor devolvió notificaciones inválidas.');
     return [for (final item in json.whereType<Map>()) _fromJson(Map<String, dynamic>.from(item))];
   }
@@ -33,6 +33,11 @@ class NotificationApi {
   Future<void> answerSurvey(String id, int rating, String? comment) async {
     final text = comment?.trim() ?? '';
     await _client.send('POST', 'notifications/$id/survey-response', {'rating': rating, 'comment': text.isEmpty ? null : text});
+  }
+
+  /// Token de push de este celular, para que el backend le mande los avisos del paciente.
+  Future<void> registerDevice(String patientId, String token) async {
+    await _client.send('POST', 'patients/$patientId/device-tokens', {'token': token, 'platform': 'ANDROID'});
   }
 
   static PatientNotification _fromJson(Map<String, dynamic> json) {

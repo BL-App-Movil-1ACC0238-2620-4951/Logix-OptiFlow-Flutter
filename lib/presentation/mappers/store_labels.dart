@@ -1,10 +1,11 @@
 import 'package:intl/intl.dart';
 
+import 'package:logix_optiflow/core/time/store_time.dart';
+
 /// "Hoy · 10:30", "Mañana · 09:00" o "vie 14 · 16:00" para el primer turno libre de una óptica.
 String firstSlotLabel(DateTime start) {
-  final local = start.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
+  final local = StoreTime.clock(start);
+  final today = StoreTime.today();
   final day = DateTime(local.year, local.month, local.day);
   final dayLabel = day == today
       ? 'Hoy'

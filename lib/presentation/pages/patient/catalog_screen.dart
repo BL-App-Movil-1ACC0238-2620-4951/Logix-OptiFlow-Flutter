@@ -8,6 +8,7 @@ import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/inventory/domain/frame.dart';
 import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/try_on/try_on_glasses.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/widgets/frame_photos.dart';
 
@@ -392,7 +393,18 @@ class _FrameDetailScreenState extends State<FrameDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 52),
-                    // "Probar virtualmente" se agrega con el probador de cámara (rama 22).
+                    if (tryOnStyleOf(frame) != null) ...[
+                      SolidButton(
+                        label: 'Probar virtualmente',
+                        onPressed: () => context.push('/p/tryon/${Uri.encodeComponent(frame.sku)}'),
+                        background: AppColors.white,
+                        foreground: AppColors.electric,
+                        border: AppColors.electric,
+                        leadingIcon: LucideIcons.glasses,
+                        textStyle: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     SolidButton(
                       label: 'Ver ópticas con disponibilidad',
                       onPressed: () => context.push('/p/book'),
@@ -405,12 +417,4 @@ class _FrameDetailScreenState extends State<FrameDetailScreen> {
       },
     );
   }
-}
-
-// El probador con cámara llega en su propia rama; mientras tanto se abre el detalle.
-class TryOnScreen extends StatelessWidget {
-  const TryOnScreen({super.key, required this.id});
-  final String id;
-  @override
-  Widget build(BuildContext context) => FrameDetailScreen(id: id);
 }

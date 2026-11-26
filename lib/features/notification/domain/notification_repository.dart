@@ -8,4 +8,6 @@ abstract class NotificationRepository {
   Future<int> loyaltyBalance(String patientId);
 
   Future<void> answerSurvey(String id, int rating, String? comment);
+
+  Future<void> registerDevice(String patientId, String token);
 }

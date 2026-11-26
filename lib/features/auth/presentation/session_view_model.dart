@@ -104,6 +104,8 @@ class SessionViewModel extends ChangeNotifier {
     for (final listener in List.of(_logoutListeners)) { listener(); }
     notifyListeners();
     await clearSessionUseCase.execute();
+    // Lo guardado para ver sin conexión es de esta cuenta.
+    await api.offline?.clear();
   }
 
   String? validateAuth({

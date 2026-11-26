@@ -18,4 +18,7 @@ class NotificationRepositoryImpl implements NotificationRepository {
 
   @override
   Future<void> answerSurvey(String id, int rating, String? comment) => api.answerSurvey(id, rating, comment);
+
+  @override
+  Future<void> registerDevice(String patientId, String token) => api.registerDevice(patientId, token);
 }

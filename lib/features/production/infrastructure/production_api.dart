@@ -13,11 +13,11 @@ class ProductionApi {
   final ApiClient _client;
 
   Future<List<WorkOrderDto>> workOrders(String patientId) async {
-    final json = await _client.get('patients/$patientId/work-orders');
+    final json = await _client.cachedGet('work-orders/$patientId', 'patients/$patientId/work-orders');
     final list = json is List ? json : const [];
     return list.whereType<Map>().map((e) => WorkOrderDto.fromJson(Map<String, dynamic>.from(e))).toList();
   }
-  Future<List<StaffOrder>> staffOrders() async => _list(await _client.get('work-orders')).map(StaffOrderDto.fromJson).toList();
+  Future<List<StaffOrder>> staffOrders() async => _list(await _client.cachedGet('work-orders', 'work-orders')).map(StaffOrderDto.fromJson).toList();
 
   Future<WorkOrderDetail> workOrder(String id) async => _detail(await _client.get('work-orders/$id'));
   Future<WorkOrderDetail> assignTechnician(String id, String technicianId) async =>
