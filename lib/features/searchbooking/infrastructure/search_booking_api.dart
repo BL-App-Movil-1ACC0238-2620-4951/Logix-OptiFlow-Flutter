@@ -48,6 +48,10 @@ class SearchBookingApi {
     await _client.send('POST', 'patients/$patientId/favorites', {'opticalStoreId': opticalStoreId});
   }
 
+  Future<void> rateOpticalStore(String storeId, String patientId, int score, String? comment) async {
+    await _client.send('POST', 'optical-stores/$storeId/ratings', {'patientId': patientId, 'score': score, 'comment': comment});
+  }
+
   Future<List<TimeSlotDto>> availability(String storeId) async {
     final json = await _client.get('optical-stores/$storeId/time-slots');
     final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];
@@ -87,6 +91,11 @@ class SearchBookingApi {
     if (patient.id != id) throw ApiException('El paciente recibido no coincide con la ficha solicitada.');
     return patient;
   }
+  /// El paciente cambia su nombre, teléfono y fecha de nacimiento.
+  Future<StaffPatient> updatePatientProfile(String id, {required String name, required String phone, DateTime? birthDate}) async =>
+      StaffPatientDto.fromJson(Map<String, dynamic>.from(await _client.send('PATCH', 'patients/${Uri.encodeComponent(id)}', {
+        'name': name, 'phone': phone, 'birthDate': birthDate == null ? null : StoreTime.isoDay(birthDate),
+      }) as Map));
   Future<StaffPatient> registerPatientByStaff({required String name, required String email, required String phone, required String dni, DateTime? birthDate}) async =>
       StaffPatientDto.fromJson(Map<String, dynamic>.from(await _client.send('POST', 'patients', {
         'name': name, 'email': email, 'phone': phone, 'password': dni,

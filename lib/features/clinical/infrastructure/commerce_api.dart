@@ -1,3 +1,4 @@
+import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/core/network/api_client.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_dto.dart';
@@ -17,6 +18,13 @@ class CommerceApi {
   Future<Sale> sale(String id) async => CommerceDto.sale(Map<String, dynamic>.from(await _client.get('sales/${Uri.encodeComponent(id)}') as Map));
   Future<Sale> registerSale(String quotationId) async => CommerceDto.sale(Map<String, dynamic>.from(await _client.send('POST', 'sales', {'quotationId': quotationId}) as Map));
   Future<Sale> paySaleCash(String id, num amount) async => CommerceDto.sale(Map<String, dynamic>.from(await _client.send('POST', 'sales/${Uri.encodeComponent(id)}/payments', {'amount': amount}) as Map));
+  /// Link de Checkout Pro de Mercado Pago para pagar una venta pendiente.
+  Future<String> paymentLink(String id) async {
+    final json = await _client.send('POST', 'sales/${Uri.encodeComponent(id)}/payment-preference', const {});
+    final url = json is Map ? json['initPoint']?.toString() : null;
+    if (url == null || url.isEmpty) throw ApiException('No se pudo generar el link de pago.');
+    return url;
+  }
   Future<Sale> closeSale(String id) async => CommerceDto.sale(Map<String, dynamic>.from(await _client.send('PATCH', 'sales/${Uri.encodeComponent(id)}/status', {'status': 'CLOSED'}) as Map));
 
   List<Map<String, dynamic>> _list(Object? json) => _client.mapList(json, 'El servidor devolvió una lista del personal inválida.');

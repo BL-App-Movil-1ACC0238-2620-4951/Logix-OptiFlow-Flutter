@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
@@ -64,7 +66,7 @@ class _BookingScreenState extends State<BookingScreen> {
               BookingStepper(step: bookingVm.state.step),
               const SizedBox(height: 26),
               if (bookingVm.state.reschedulingId != null && bookingVm.state.step < 4)
-                const Padding(padding: EdgeInsets.only(bottom: 16), child: Text('Reservaremos el nuevo horario y después cancelaremos la cita anterior.')),
+                Padding(padding: const EdgeInsets.only(bottom: 16), child: Text('Reservaremos el nuevo horario y después cancelaremos la cita anterior.', style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate500))),
               if (bookingVm.state.step == 1) const BookingStoreStep(),
               if (bookingVm.state.step == 2) const BookingDateStep(),
               if (bookingVm.state.step == 3) const BookingConfirmStep(),
@@ -125,7 +127,7 @@ class _StepDot extends StatelessWidget {
         border: active ? null : Border.all(color: AppColors.slate300),
       ),
       child: showCheck
-          ? const Icon(Icons.check, size: 14, color: AppColors.white)
+          ? const Icon(LucideIcons.check, size: 14, color: AppColors.white)
           : Text('$index', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: active ? AppColors.white : AppColors.slate400)),
     );
   }

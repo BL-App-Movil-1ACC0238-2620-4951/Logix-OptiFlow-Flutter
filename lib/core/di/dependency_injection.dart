@@ -20,6 +20,15 @@ import 'package:logix_optiflow/features/auth/infrastructure/session_local_data_s
 import 'package:logix_optiflow/features/auth/infrastructure/session_repository_impl.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patients_with_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/get_loyalty_points_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/update_patient_profile_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/edit_profile_view_model.dart';
+import 'package:logix_optiflow/features/clinical/application/create_payment_link_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_patient_sales_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_sale_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/patient_account_view_model.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_repository.dart';
 import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/clinical_api.dart';
@@ -68,6 +77,7 @@ import 'package:logix_optiflow/features/searchbooking/application/get_current_lo
 import 'package:logix_optiflow/features/searchbooking/application/get_first_available_slots_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_nearby_optical_stores_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/save_favorite_store_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/rate_optical_store_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/location_provider.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/device_location_provider.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
@@ -137,6 +147,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetNotificationsUseCase(repository: getIt<NotificationRepository>()));
   getIt.registerLazySingleton(() => MarkNotificationReadUseCase(repository: getIt<NotificationRepository>()));
   getIt.registerLazySingleton(() => AnswerSurveyUseCase(repository: getIt<NotificationRepository>()));
+  getIt.registerLazySingleton(() => GetLoyaltyPointsUseCase(repository: getIt<NotificationRepository>()));
 
   // searchbooking
   getIt.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl(api: getIt<SearchBookingApi>()));
@@ -147,6 +158,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetNearbyOpticalStoresUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => GetFirstAvailableSlotsUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton(() => SaveFavoriteStoreUseCase(repository: getIt<StoreRepository>()));
+  getIt.registerLazySingleton(() => RateOpticalStoreUseCase(repository: getIt<StoreRepository>()));
   getIt.registerLazySingleton<LocationProvider>(() => const DeviceLocationProvider());
   getIt.registerLazySingleton(() => GetCurrentLocationUseCase(provider: getIt<LocationProvider>()));
   getIt.registerLazySingleton(() => GetStoreAvailabilityUseCase(repository: getIt<StoreRepository>()));
@@ -157,6 +169,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetStaffPatientsUseCase(repository: getIt<PatientRepository>()));
   getIt.registerLazySingleton(() => GetStaffPatientUseCase(repository: getIt<PatientRepository>()));
   getIt.registerLazySingleton(() => RegisterPatientByStaffUseCase(repository: getIt<PatientRepository>()));
+  getIt.registerLazySingleton(() => UpdatePatientProfileUseCase(repository: getIt<PatientRepository>()));
 
   // clinical
   getIt.registerLazySingleton<ClinicalRepository>(
@@ -171,6 +184,11 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
     ),
   );
   getIt.registerLazySingleton(() => GetPatientClinicalRecordsUseCase(repository: getIt<ClinicalRepository>()));
+  getIt.registerLazySingleton(() => GetPrescriptionUseCase(repository: getIt<ClinicalRepository>()));
+  getIt.registerLazySingleton(() => GetPatientSalesUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => GetSaleUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => GetQuotationUseCase(repository: getIt<CommerceRepository>()));
+  getIt.registerLazySingleton(() => CreatePaymentLinkUseCase(repository: getIt<CommerceRepository>()));
   getIt.registerLazySingleton(() => GetPatientsWithRecordsUseCase(repository: getIt<ClinicalRepository>()));
 
   // production
@@ -225,7 +243,19 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         cancelAppointmentUseCase: getIt(),
         getPatientWorkOrdersUseCase: getIt(),
         getPatientClinicalRecordsUseCase: getIt(),
+        rateOpticalStoreUseCase: getIt(),
+        getPrescriptionUseCase: getIt(),
+        getSaleUseCase: getIt(),
+        getQuotationUseCase: getIt(),
       ));
+  getIt.registerLazySingleton(() => PatientAccountViewModel(
+        session: getIt(),
+        getPatientSalesUseCase: getIt(),
+        getQuotationUseCase: getIt(),
+        createPaymentLinkUseCase: getIt(),
+        getLoyaltyPointsUseCase: getIt(),
+      ));
+  getIt.registerFactory(() => EditProfileViewModel(session: getIt(), getPatientUseCase: getIt(), updatePatientProfileUseCase: getIt()));
   getIt.registerLazySingleton(() => NotificationsViewModel(
         session: getIt(),
         getNotificationsUseCase: getIt(),
@@ -239,6 +269,8 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getStoreAvailabilityUseCase: getIt(),
         bookAppointmentUseCase: getIt(),
         cancelAppointmentUseCase: getIt(),
+        getCurrentLocationUseCase: getIt(),
+        getFirstAvailableSlotsUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => CatalogViewModel(
         session: getIt(),

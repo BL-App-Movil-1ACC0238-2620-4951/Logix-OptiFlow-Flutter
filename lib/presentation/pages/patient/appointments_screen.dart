@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
-import 'package:logix_optiflow/presentation/models/ui_models.dart';
-import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
-import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/models/ui_models.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
-import 'package:logix_optiflow/presentation/pages/patient/booking_screen.dart';
 
+const _softBorder = Color(0xFFC3D3F5);
+const _fieldBorder = Color(0xFFA8BCD9);
 
+/// La cita ya se atendió: el backend la marcó como completada o su horario ya pasó.
+bool _attended(AppointmentUi item) =>
+    item.status == AppointmentStatus.completed || (item.isPast && item.status != AppointmentStatus.cancelled);
 
+void _back(BuildContext context, String fallback) => context.canPop() ? context.pop() : context.go(fallback);
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -21,27 +29,29 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
-  int tab = 0;
+  final _vm = getIt<PatientViewModel>();
+  int _tab = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) getIt<PatientViewModel>().refreshAppointments();
+      if (mounted) _vm.refreshAppointments();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final patientVm = getIt<PatientViewModel>();
     return ListenableBuilder(
-      listenable: patientVm,
+      listenable: _vm,
       builder: (context, _) {
-        final items = patientVm.state.appointments.where((item) {
-          return switch (tab) {
-            0 => !item.isPast && item.status != AppointmentStatus.cancelled,
-            1 => item.isPast && item.status != AppointmentStatus.cancelled,
-            _ => item.status == AppointmentStatus.cancelled,
+        final state = _vm.state;
+        final items = state.appointments.where((item) {
+          final cancelled = item.status == AppointmentStatus.cancelled;
+          return switch (_tab) {
+            0 => !_attended(item) && !cancelled,
+            1 => _attended(item),
+            _ => cancelled,
           };
         }).toList();
         final grouped = <String, List<AppointmentUi>>{};
@@ -53,125 +63,111 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           tab: PatientTab.appointments,
           topBar: DarkTopBar(
             title: 'Mis citas',
+            onBack: () => _back(context, '/p/home'),
             below: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  for (final entry in ['Próximas', 'Anteriores', 'Canceladas'].indexed) ...[
-                    if (entry.$1 > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: _TabChip(
-                        label: entry.$2,
-                        selected: tab == entry.$1,
-                        onTap: () => setState(() => tab = entry.$1),
-                      ),
+                  for (final (i, label) in const ['Próximas', 'Anteriores', 'Canceladas'].indexed)
+                    SegmentChip(
+                      text: label,
+                      selected: _tab == i,
+                      onTap: () => setState(() => _tab = i),
+                      selectedBg: AppColors.skyTint,
+                      selectedText: AppColors.deepNavy,
+                      unselectedText: AppColors.deepNavy,
+                      style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
-                  ],
                 ],
               ),
             ),
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.tonalIcon(
-                  onPressed: () => context.push('/p/book'),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Reservar cita'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.skyTint,
-                    foregroundColor: AppColors.deepNavy,
-                    shape: const StadiumBorder(),
+          body: RefreshIndicator(
+            onRefresh: _vm.refreshAppointments,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(32, 26, 32, 24),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () => context.push('/p/book'),
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      decoration: BoxDecoration(color: AppColors.skyTint, borderRadius: BorderRadius.circular(99)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.plus, size: 16, color: AppColors.deepNavy),
+                          const SizedBox(width: 10),
+                          Text('Reservar cita', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.deepNavy)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (patientVm.state.appointmentsLoading) const LinearProgressIndicator(),
-              if (patientVm.state.appointmentsError != null) ...[
-                Text(patientVm.state.appointmentsError!, style: const TextStyle(color: AppColors.errorRed)),
-                TextButton(onPressed: patientVm.refreshAppointments, child: const Text('Reintentar')),
-              ],
-              if (!patientVm.state.appointmentsLoading && patientVm.state.appointmentsError == null && items.isEmpty)
-                Text(
-                  switch (tab) {
-                    0 => 'No tienes citas próximas.',
-                    1 => 'Aún no tienes citas anteriores.',
-                    _ => 'No tienes citas canceladas.',
-                  },
-                  style: AppFonts.inter(fontSize: 14, color: AppColors.slate500),
-                ),
-              for (final entry in grouped.entries) ...[
-                Text(entry.key, style: AppFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
-                const SizedBox(height: 12),
-                for (final item in entry.value) ...[
-                  _AppointmentTile(item: item),
+                const SizedBox(height: 18),
+                if (state.appointmentsLoading && state.appointments.isEmpty) const LinearProgressIndicator(),
+                ErrorBanner(state.appointmentsError),
+                if (!state.appointmentsLoading && state.appointmentsError == null && items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      switch (_tab) {
+                        0 => 'No tienes citas próximas.',
+                        1 => 'Aún no tienes citas anteriores.',
+                        _ => 'No tienes citas canceladas.',
+                      },
+                      style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.slate500),
+                    ),
+                  ),
+                for (final entry in grouped.entries) ...[
+                  Text(entry.key, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
                   const SizedBox(height: 12),
+                  for (final item in entry.value) ...[
+                    _AppointmentCard(item: item, onTap: () => context.push('/p/appointment/${item.id}')),
+                    const SizedBox(height: 18),
+                  ],
                 ],
               ],
-            ],
+            ),
           ),
         );
-        },
+      },
     );
   }
 }
 
-class _TabChip extends StatelessWidget {
-  const _TabChip({required this.label, required this.selected, required this.onTap});
-  final String label;
-  final bool selected;
+class _AppointmentCard extends StatelessWidget {
+  const _AppointmentCard({required this.item, required this.onTap});
+  final AppointmentUi item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.skyTint : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 38,
-          child: Center(
-            child: Text(label, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepNavy)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppointmentTile extends StatelessWidget {
-  const _AppointmentTile({required this.item});
-  final AppointmentUi item;
-
-  @override
-  Widget build(BuildContext context) {
-    final cancelled = item.status == AppointmentStatus.cancelled;
     return AppCard(
-      onTap: () => context.push('/p/appointment/${item.id}'),
+      onTap: onTap,
+      borderColor: AppColors.lavender,
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          DateBadge(day: item.day, month: item.month),
-          const SizedBox(width: 12),
+          DateBadge(day: item.day, month: item.month, background: const Color(0xFFEEF2FF)),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StatusCapsule(
-                  item.status.label,
-                  color: cancelled ? AppColors.errorRed : AppColors.deepNavy,
-                  background: cancelled ? AppColors.errorBg : AppColors.white,
-                ),
-                const SizedBox(height: 4),
+                StatusCapsule(item.status.label),
+                const SizedBox(height: 5),
                 Text(item.title, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                Text('${item.storeName} · ${item.time}', style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                const SizedBox(height: 5),
+                Text('${item.storeName} · ${item.time}', style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate500)),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.slate500),
+          const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.slate500),
         ],
       ),
     );
@@ -182,54 +178,118 @@ class AppointmentDetailScreen extends StatelessWidget {
   const AppointmentDetailScreen({super.key, required this.id});
   final String id;
 
+  Future<void> _confirmCancel(BuildContext context, PatientViewModel vm, AppointmentUi item) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.white,
+        title: Text('¿Cancelar la cita?', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+        content: Text(
+          'Se liberará tu horario en ${item.storeName}. Si la necesitas después, tendrás que reservar otra.',
+          style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.slate500),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('No', style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.slate500)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('Sí, cancelar', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.errorRed)),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !context.mounted) return;
+    final cancelled = await vm.cancelAppointment(item.id);
+    if (!context.mounted) return;
+    showAppMessage(context, cancelled ? 'Cita cancelada' : vm.state.appointmentActionError ?? 'No se pudo cancelar la cita.');
+    if (cancelled) _back(context, '/p/appointments');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final patientVm = getIt<PatientViewModel>();
+    final vm = getIt<PatientViewModel>();
     return ListenableBuilder(
-      listenable: patientVm,
+      listenable: vm,
       builder: (context, _) {
-        final item = patientVm.appointmentById(id);
+        final item = vm.appointmentById(id);
+        final topBar = DarkTopBar(title: 'Detalle de cita', onBack: () => _back(context, '/p/appointments'));
         if (item == null) {
           return PatientScaffold(
             tab: PatientTab.appointments,
-            topBar: DarkTopBar(title: 'Cita', onBack: () => context.go('/p/appointments')),
-            body: Center(child: patientVm.state.appointmentsLoading
-              ? const CircularProgressIndicator()
-              : Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(patientVm.state.appointmentsError ?? 'No encontramos esta cita.'),
-                  TextButton(onPressed: patientVm.refreshAppointments, child: const Text('Volver a cargar')),
-                ])),
+            topBar: topBar,
+            body: Center(
+              child: vm.state.appointmentsLoading
+                  ? const CircularProgressIndicator(color: AppColors.electric)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(vm.state.appointmentsError ?? 'No encontramos esta cita.', style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.slate500)),
+                        TextButton(onPressed: vm.refreshAppointments, child: const Text('Volver a cargar')),
+                      ],
+                    ),
+            ),
           );
         }
-        final cancelled = item.status == AppointmentStatus.cancelled;
+        final attended = _attended(item);
+        final active = item.status != AppointmentStatus.cancelled && !attended;
+        final busy = vm.state.appointmentActionLoading;
+        final storeId = item.opticalStoreId;
         return PatientScaffold(
           tab: PatientTab.appointments,
-          topBar: DarkTopBar(title: 'Detalle de cita', onBack: () => context.pop()),
+          topBar: topBar,
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            padding: const EdgeInsets.fromLTRB(34, 22, 34, 24),
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDFE7FC),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFC3D3F5)),
+                  border: Border.all(color: _softBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StatusCapsule(item.status.label, color: AppColors.deepNavy, background: AppColors.white),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(99)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.status == AppointmentStatus.confirmed || item.status == AppointmentStatus.completed ? LucideIcons.check : LucideIcons.clock,
+                            size: 13,
+                            color: AppColors.deepNavy,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(item.status.label, style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        DateBadge(day: item.day, month: item.month),
+                        Container(
+                          width: 56,
+                          height: 54,
+                          decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(12)),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(item.day, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.deepNavy, height: 1.1)),
+                              Text(item.month, style: AppFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.slate500)),
+                            ],
+                          ),
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(item.title, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                              Text('${item.weekday} · ${item.time} a ${item.endTime}', style: AppFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                              Text('${item.weekday} · ${item.time} a ${item.endTime}', style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate500)),
                             ],
                           ),
                         ),
@@ -240,70 +300,78 @@ class AppointmentDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               AppCard(
+                radius: 20,
+                borderColor: AppColors.lavender,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
-                    _DetailLine(icon: Icons.place_outlined, label: 'Ubicación', value: item.storeName, extra: item.storeAddress),
-                    const Divider(height: 28, color: AppColors.lavender),
-                    _DetailLine(icon: Icons.person_outline, label: 'Profesional', value: item.professional),
+                    _DetailLine(icon: LucideIcons.mapPin, label: 'Ubicación', value: item.storeName, extra: item.storeAddress),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1, color: AppColors.lavender),
+                    const SizedBox(height: 14),
+                    _DetailLine(icon: LucideIcons.user, label: 'Profesional', value: item.professional),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.infoBanner,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFC3D3F5)),
-                ),
-                child: Row(
-                  children: [
-                    const IconTile(icon: Icons.notifications_none, background: Color(0xFFC7D5F7), color: AppColors.electric),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Recordatorio activado', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                          Text('Te avisaremos 24 horas antes.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
-                        ],
+              if (!attended) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.infoBanner,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _softBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      const IconTile(icon: LucideIcons.bell, background: Color(0xFFC7D5F7), color: AppColors.electric, iconSize: 18),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Recordatorio activado', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                            Text('Te avisaremos 24 horas antes.', style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate500)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (!cancelled && !item.isPast) ...[
-                const SizedBox(height: 18),
+              ],
+              if (attended && storeId != null) ...[
+                const SizedBox(height: 14),
+                _RateStoreCard(storeId: storeId, storeName: item.storeName, rated: vm.state.ratedStoreIds.contains(storeId)),
+              ],
+              if (active) ...[
+                const SizedBox(height: 20),
                 SolidButton(
                   label: 'Reprogramar cita',
-                  icon: Icons.edit_outlined,
+                  leadingIcon: LucideIcons.pencil,
                   background: AppColors.white,
                   foreground: AppColors.electric,
                   border: AppColors.skyTint,
-                  onPressed: patientVm.state.appointmentActionLoading ? null : () => context.push('/p/reschedule/${item.id}'),
+                  height: 48,
+                  textStyle: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                  onPressed: busy ? null : () => context.push('/p/reschedule/${item.id}'),
                 ),
-                TextButton(
-                  onPressed: patientVm.state.appointmentActionLoading ? null : () async {
-                    final accepted = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-                      title: const Text('¿Cancelar esta cita?'),
-                      content: Text('Se liberará tu horario del ${item.day} de ${item.monthName} a las ${item.time}.'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Conservar cita')),
-                        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Cancelar cita')),
-                      ],
-                    ));
-                    if (accepted != true || !context.mounted) return;
-                    final cancelled = await patientVm.cancelAppointment(item.id);
-                    if (!context.mounted) return;
-                    showAppMessage(context, cancelled ? 'Cita cancelada' : patientVm.state.appointmentActionError ?? 'No se pudo cancelar la cita.');
-                  },
-                  child: Text(patientVm.state.appointmentActionLoading ? 'Cancelando…' : 'Cancelar cita', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: AppColors.electric)),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: busy ? null : () => _confirmCancel(context, vm, item),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      busy ? 'Cancelando…' : 'Cancelar cita',
+                      textAlign: TextAlign.center,
+                      style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.electric),
+                    ),
+                  ),
                 ),
               ],
             ],
           ),
         );
-        },
+      },
     );
   }
 }
@@ -320,15 +388,18 @@ class _DetailLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.electric, size: 18),
+        Padding(padding: const EdgeInsets.only(top: 4), child: Icon(icon, color: AppColors.electric, size: 18)),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
+              Text(label, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate400)),
               Text(value, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-              if (extra != null && extra!.isNotEmpty) Text(extra!, style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
+              if (extra != null && extra!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(extra!, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate500)),
+              ],
             ],
           ),
         ),
@@ -337,10 +408,357 @@ class _DetailLine extends StatelessWidget {
   }
 }
 
-class RescheduleScreen extends StatelessWidget {
+/// Calificación de 1 a 5 estrellas de la óptica de una cita atendida.
+class _RateStoreCard extends StatefulWidget {
+  const _RateStoreCard({required this.storeId, required this.storeName, required this.rated});
+  final String storeId;
+  final String storeName;
+  final bool rated;
+
+  @override
+  State<_RateStoreCard> createState() => _RateStoreCardState();
+}
+
+class _RateStoreCardState extends State<_RateStoreCard> {
+  final _comment = TextEditingController();
+  int _score = 0;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (_score == 0) {
+      showAppMessage(context, 'Elige de 1 a 5 estrellas');
+      return;
+    }
+    if (_sending) return;
+    setState(() => _sending = true);
+    final error = await getIt<PatientViewModel>().rateStore(widget.storeId, _score, _comment.text);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (error != null) showAppMessage(context, error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      radius: 20,
+      borderColor: AppColors.lavender,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: widget.rated
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('¡Gracias por calificar!', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                const SizedBox(height: 4),
+                Text('Tu opinión ayuda a otros pacientes a elegir óptica.', style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate500)),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Califica tu visita', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                const SizedBox(height: 4),
+                Text('¿Cómo te atendieron en ${widget.storeName}?', style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate500)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    for (var value = 1; value <= 5; value++) ...[
+                      if (value > 1) const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () => setState(() => _score = value),
+                        child: Icon(LucideIcons.star, size: 30, color: value <= _score ? AppColors.electric : AppColors.slate300),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _comment,
+                  maxLength: 280,
+                  minLines: 1,
+                  maxLines: 3,
+                  style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.deepNavy),
+                  decoration: InputDecoration(
+                    hintText: 'Comentario (opcional)',
+                    hintStyle: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate400),
+                    counterText: '',
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _fieldBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.electric)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SolidButton(
+                  label: _sending ? 'Enviando...' : 'Enviar calificación',
+                  height: 46,
+                  textStyle: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                  onPressed: _send,
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Reprogramar: elige óptica, fecha y horario. Se reserva el nuevo horario y luego se cancela la cita anterior.
+class RescheduleScreen extends StatefulWidget {
   const RescheduleScreen({super.key, required this.id});
   final String id;
 
   @override
-  Widget build(BuildContext context) => BookingScreen(rescheduleId: id);
+  State<RescheduleScreen> createState() => _RescheduleScreenState();
+}
+
+class _RescheduleScreenState extends State<RescheduleScreen> {
+  final _vm = getIt<BookingViewModel>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await _vm.prepareBooking(null, rescheduleId: widget.id);
+      if (mounted && _vm.state.stores.isNotEmpty) await _vm.continueFromStore();
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _vm.state.selectedDate ?? now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 365)),
+      helpText: 'Elige una fecha',
+    );
+    if (picked != null) _vm.selectDate(picked);
+  }
+
+  Future<void> _confirm() async {
+    if (_vm.state.loading) return;
+    if (_vm.state.stores.isEmpty) {
+      showAppMessage(context, 'No se pudieron cargar las ópticas. Intenta de nuevo.');
+      return;
+    }
+    if (_vm.state.selectedDate == null) {
+      showAppMessage(context, 'Selecciona una fecha');
+      return;
+    }
+    if (_vm.state.selectedSlot == null) {
+      showAppMessage(context, 'Selecciona un horario');
+      return;
+    }
+    if (_vm.state.step == 2 && !_vm.continueFromDate()) {
+      showAppMessage(context, _vm.state.error ?? 'Selecciona un horario');
+      return;
+    }
+    final done = await _vm.confirmBooking();
+    if (!mounted) return;
+    showAppMessage(context, done ? 'Cita reprogramada' : _vm.state.error ?? 'No se pudo reprogramar la cita.');
+    if (done) context.go('/p/appointments');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _vm,
+      builder: (context, _) {
+        final state = _vm.state;
+        final slots = _vm.slotsFor(state.selectedDate);
+        final date = state.selectedDate;
+        final dateText = date == null ? '' : DateFormat("EEEE d 'de' MMMM", 'es').format(date);
+        return PatientScaffold(
+          tab: PatientTab.appointments,
+          topBar: DarkTopBar(title: 'Detalle de cita', onBack: () => _back(context, '/p/appointments')),
+          body: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 6, offset: Offset(0, 2))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Reprograma cita', style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.navyBlue)),
+                    const SizedBox(height: 10),
+                    Text('Elige la óptica y el horario que mejor te convenga.', style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.slate500)),
+                    const SizedBox(height: 18),
+                    const _FormLabel('Óptica'),
+                    if (state.stores.isEmpty)
+                      Text(
+                        state.loading ? 'Cargando ópticas...' : state.error ?? 'No se pudieron cargar las ópticas. Revisa tu conexión e intenta de nuevo.',
+                        style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate500),
+                      )
+                    else
+                      _Dropdown(
+                        options: [for (final s in state.stores) s.name],
+                        selected: state.selectedStoreIndex,
+                        onSelect: (i) async {
+                          _vm.selectStore(i);
+                          await _vm.continueFromStore();
+                        },
+                      ),
+                    const SizedBox(height: 18),
+                    const _FormLabel('Fecha'),
+                    _FieldBox(onTap: _pickDate, child: Text(dateText.isEmpty ? '' : dateText[0].toUpperCase() + dateText.substring(1), style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.deepNavy))),
+                    const SizedBox(height: 18),
+                    const _FormLabel('Horarios disponibles'),
+                    if (state.loading)
+                      const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator(color: AppColors.electric)))
+                    else if (slots.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text('No hay horarios disponibles para esta fecha.', style: AppFonts.plusJakartaSans(fontSize: 13, color: AppColors.slate500)),
+                      ),
+                    if (!state.loading)
+                      for (var i = 0; i < slots.length; i += 3) ...[
+                        Row(
+                          children: [
+                            for (var j = i; j < i + 3; j++) ...[
+                              if (j > i) const SizedBox(width: 8),
+                              Expanded(child: j < slots.length ? _TimeChip(slot: slots[j], selected: state.selectedSlot?.id == slots[j].id, onTap: () => _vm.selectSlot(slots[j])) : const SizedBox()),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: const Color(0xFFDDEFFB), borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: [
+                          const Icon(LucideIcons.calendarClock, size: 20, color: Color(0xFF0E6A93)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text('Recibirás un recordatorio 24 horas antes de tu cita.', style: AppFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF0E5A80))),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (state.stores.isNotEmpty && state.error != null) ...[
+                      const SizedBox(height: 12),
+                      ErrorBanner(state.error),
+                    ],
+                    const SizedBox(height: 18),
+                    SolidButton(
+                      label: state.appointment != null ? 'Completar reprogramación' : 'Confirmar reserva',
+                      leadingIcon: LucideIcons.calendarPlus,
+                      height: 48,
+                      loading: state.loading && state.step == 3,
+                      textStyle: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                      onPressed: _confirm,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FormLabel extends StatelessWidget {
+  const _FormLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(text, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+      );
+}
+
+class _FieldBox extends StatelessWidget {
+  const _FieldBox({required this.child, this.onTap});
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 46,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F8FF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _fieldBorder),
+          ),
+          child: child,
+        ),
+      );
+}
+
+class _Dropdown extends StatelessWidget {
+  const _Dropdown({required this.options, required this.selected, required this.onSelect});
+  final List<String> options;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      color: AppColors.white,
+      onSelected: onSelect,
+      itemBuilder: (_) => [
+        for (final (i, option) in options.indexed)
+          PopupMenuItem(value: i, child: Text(option, style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.deepNavy))),
+      ],
+      child: _FieldBox(
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                selected >= 0 && selected < options.length ? options[selected] : '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppFonts.plusJakartaSans(fontSize: 14, color: AppColors.deepNavy),
+              ),
+            ),
+            const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.deepNavy),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeChip extends StatelessWidget {
+  const _TimeChip({required this.slot, required this.selected, required this.onTap});
+  final SlotOption slot;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const selectedBg = Color(0xFFBFDBFE);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? selectedBg : AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: selected ? selectedBg : _fieldBorder),
+        ),
+        child: Text(slot.label, style: AppFonts.plusJakartaSans(fontSize: 15, color: selected ? AppColors.white : AppColors.deepNavy)),
+      ),
+    );
+  }
 }

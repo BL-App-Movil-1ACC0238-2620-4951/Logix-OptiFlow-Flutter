@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final next = patientVm.nextAppointment;
         final frames = catalogVm.state.frames;
         final featured = frames.take(2).toList();
-        final prescriptions = patientVm.state.prescription == null ? 0 : 1;
+        final prescriptions = patientVm.state.prescriptions.length;
         final activeOrders = patientVm.state.orders.where((o) => !o.delivered).length;
         return PatientScaffold(
           tab: PatientTab.home,

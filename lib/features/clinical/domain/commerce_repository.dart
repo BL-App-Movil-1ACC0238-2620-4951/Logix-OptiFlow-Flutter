@@ -19,4 +19,5 @@ abstract class CommerceRepository {
   Future<Sale> register(String quotationId);
   Future<Sale> payCash(String saleId, num amount);
   Future<Sale> close(String saleId);
+  Future<String> paymentLink(String saleId);
 }

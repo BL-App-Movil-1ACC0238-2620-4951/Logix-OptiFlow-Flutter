@@ -18,4 +18,7 @@ abstract class StoreRepository {
   Future<List<OpticalStore>> nearby(double latitude, double longitude, double radiusKm);
 
   Future<void> saveFavorite(String patientId, String opticalStoreId);
+
+  /// Califica la óptica de 1 a 5; el backend acepta una sola calificación por paciente.
+  Future<void> rate(String opticalStoreId, String patientId, int score, String? comment);
 }

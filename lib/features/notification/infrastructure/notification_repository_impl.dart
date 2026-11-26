@@ -14,5 +14,8 @@ class NotificationRepositoryImpl implements NotificationRepository {
   Future<void> markRead(String id) => api.markRead(id);
 
   @override
+  Future<int> loyaltyBalance(String patientId) => api.loyaltyBalance(patientId);
+
+  @override
   Future<void> answerSurvey(String id, int rating, String? comment) => api.answerSurvey(id, rating, comment);
 }

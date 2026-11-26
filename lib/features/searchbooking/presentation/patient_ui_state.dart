@@ -12,7 +12,11 @@ class PatientUiState {
     this.orders = const [],
     this.history = const [],
     this.prescription,
+    this.prescriptions = const [],
+    this.selectedPrescription,
+    this.selectedPrescriptionError,
     this.patientLoading = true,
+    this.ratedStoreIds = const {},
   });
 
   final List<AppointmentUi> appointments;
@@ -23,7 +27,13 @@ class PatientUiState {
   final List<OrderUi> orders;
   final List<HistoryEntry> history;
   final PrescriptionUi? prescription;
+  final List<PrescriptionItemUi> prescriptions;
+  /// Receta abierta desde "Mis recetas"; null mientras se consulta.
+  final PrescriptionUi? selectedPrescription;
+  final String? selectedPrescriptionError;
   final bool patientLoading;
+  /// Ópticas que el paciente ya calificó en esta sesión.
+  final Set<String> ratedStoreIds;
 
   PatientUiState copyWith({
     List<AppointmentUi>? appointments,
@@ -34,7 +44,11 @@ class PatientUiState {
     List<OrderUi>? orders,
     List<HistoryEntry>? history,
     ValueGetter<PrescriptionUi?>? prescription,
+    List<PrescriptionItemUi>? prescriptions,
+    ValueGetter<PrescriptionUi?>? selectedPrescription,
+    ValueGetter<String?>? selectedPrescriptionError,
     bool? patientLoading,
+    Set<String>? ratedStoreIds,
   }) {
     return PatientUiState(
       appointments: appointments ?? this.appointments,
@@ -45,7 +59,11 @@ class PatientUiState {
       orders: orders ?? this.orders,
       history: history ?? this.history,
       prescription: prescription != null ? prescription() : this.prescription,
+      prescriptions: prescriptions ?? this.prescriptions,
+      selectedPrescription: selectedPrescription != null ? selectedPrescription() : this.selectedPrescription,
+      selectedPrescriptionError: selectedPrescriptionError != null ? selectedPrescriptionError() : this.selectedPrescriptionError,
       patientLoading: patientLoading ?? this.patientLoading,
+      ratedStoreIds: ratedStoreIds ?? this.ratedStoreIds,
     );
   }
 }

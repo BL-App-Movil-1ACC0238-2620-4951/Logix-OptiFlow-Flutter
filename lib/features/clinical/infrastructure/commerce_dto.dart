@@ -42,6 +42,7 @@ abstract final class CommerceDto {
     return Sale(
       id: _id(json, 'id'), quotationId: _id(json, 'quotationId'), patientId: _id(json, 'patientId'), status: status,
       closedAt: json['closedAt'] == null ? null : DateTime.parse(json['closedAt'] as String),
+      paidAt: DateTime.tryParse('${payment?['paidAt']}'), issuedAt: DateTime.tryParse('${receipt?['issueDate']}'),
       paymentMethod: payment?['method'] as String?, paymentStatus: payment?['status'] as String?,
       amount: payment?['amount'] == null ? null : _amount(payment!['amount']), receiptNumber: receipt?['receiptNumber'] as String?,
     );

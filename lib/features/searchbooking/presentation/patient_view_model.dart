@@ -6,11 +6,16 @@ import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_prescription_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_quotation_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_sale_use_case.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/work_order.dart';
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/rate_optical_store_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_ui_state.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/store_search_view_model.dart';
@@ -26,6 +31,10 @@ class PatientViewModel extends ChangeNotifier {
     required this.cancelAppointmentUseCase,
     required this.getPatientWorkOrdersUseCase,
     required this.getPatientClinicalRecordsUseCase,
+    required this.rateOpticalStoreUseCase,
+    required this.getPrescriptionUseCase,
+    required this.getSaleUseCase,
+    required this.getQuotationUseCase,
   }) {
     session.addSessionReadyListener(_onSessionReady);
     session.addLogoutListener(_reset);
@@ -37,10 +46,15 @@ class PatientViewModel extends ChangeNotifier {
   final CancelAppointmentUseCase cancelAppointmentUseCase;
   final GetPatientWorkOrdersUseCase getPatientWorkOrdersUseCase;
   final GetPatientClinicalRecordsUseCase getPatientClinicalRecordsUseCase;
+  final RateOpticalStoreUseCase rateOpticalStoreUseCase;
+  final GetPrescriptionUseCase getPrescriptionUseCase;
+  final GetSaleUseCase getSaleUseCase;
+  final GetQuotationUseCase getQuotationUseCase;
 
   PatientUiState _state = PatientUiState();
   PatientUiState get state => _state;
   int _appointmentsRequest = 0;
+  Map<String, ClinicalRecord> _recordsById = const {};
 
   PatientSession? get _current => session.session;
 
@@ -56,6 +70,7 @@ class PatientViewModel extends ChangeNotifier {
 
   void _reset() {
     _appointmentsRequest++;
+    _recordsById = const {};
     _emit(PatientUiState(patientLoading: false));
   }
 
@@ -126,16 +141,47 @@ class PatientViewModel extends ChangeNotifier {
     if (!identical(current, _current)) return;
     try { records = await getPatientClinicalRecordsUseCase.execute(current.patientId); } catch (_) {}
     await appointmentsRequest;
+    final products = await Future.wait(apiOrders.map(_productsOf));
     if (!identical(current, _current)) return;
     final name = session.displayName;
-    final orders = apiOrders.map(PatientViewMapper.order).toList();
+    final storeNames = {for (final store in stores.state.stores) store.id: store.name};
+    final orders = [
+      for (final (i, order) in apiOrders.indexed)
+        PatientViewMapper.order(order, items: products[i], storeName: storeNames[order.opticalStoreId]),
+    ];
     final history = records.map(PatientViewMapper.history).toList();
+    _recordsById = {for (final r in records) if (r.id != null) r.id!: r};
     _emit(_state.copyWith(
       orders: orders,
       history: history,
       prescription: () => PatientViewMapper.prescription(records, name),
+      prescriptions: PatientViewMapper.prescriptionItems(records),
       patientLoading: false,
     ));
+  }
+
+  /// Productos del pedido: venta → cotización → ítems. Sin venta o si falla, lista vacía.
+  Future<List<QuotationItem>> _productsOf(WorkOrder order) async {
+    final saleId = order.saleId;
+    if (saleId == null) return const [];
+    try {
+      final sale = await getSaleUseCase.execute(saleId);
+      return (await getQuotationUseCase.execute(sale.quotationId)).items;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Carga una receta con `GET clinical-records/{id}/prescription`.
+  Future<void> loadPrescription(String recordId) async {
+    final record = _recordsById[recordId];
+    _emit(_state.copyWith(selectedPrescription: () => null, selectedPrescriptionError: () => null));
+    try {
+      final values = await getPrescriptionUseCase.execute(recordId);
+      _emit(_state.copyWith(selectedPrescription: () => PatientViewMapper.prescriptionUi(values, record?.examinationDate, record?.observations, session.displayName)));
+    } catch (error) {
+      _emit(_state.copyWith(selectedPrescriptionError: () => error is ApiException ? error.message : 'No se pudo cargar la receta.'));
+    }
   }
 
   Future<bool> cancelAppointment(String id) async {
@@ -157,5 +203,29 @@ class PatientViewModel extends ChangeNotifier {
     } finally {
       if (identical(current, _current)) _emit(_state.copyWith(appointmentActionLoading: false));
     }
+  }
+
+  /// Califica la óptica de una cita atendida. Devuelve el error o null; un 409 significa que ya estaba calificada.
+  Future<String?> rateStore(String storeId, int score, String comment) async {
+    final current = _current;
+    if (current?.isAuthenticated != true || current?.isPatient != true) return 'Inicia sesión como paciente para calificar.';
+    String? error;
+    var rated = false;
+    try {
+      await rateOpticalStoreUseCase.execute(
+        opticalStoreId: storeId,
+        patientId: current!.patientId,
+        score: score,
+        comment: comment.trim().isEmpty ? null : comment.trim(),
+      );
+      rated = true;
+    } on ApiException catch (e) {
+      rated = e.statusCode == 409;
+      error = e.message;
+    } catch (_) {
+      error = 'No se pudo enviar la calificación.';
+    }
+    if (rated && identical(current, _current)) _emit(_state.copyWith(ratedStoreIds: {..._state.ratedStoreIds, storeId}));
+    return error;
   }
 }

@@ -35,6 +35,8 @@ class ClinicalApi {
     if (requiredValues.any((value) => value == null || !value.isFinite)) throw ApiException('El servidor devolvió una receta incompleta.');
     return prescription;
   }
+  Future<PrescriptionValues> prescription(String recordId) async =>
+      ClinicalRecordDto.parsePrescription(Map<String, dynamic>.from(await _client.get('clinical-records/${Uri.encodeComponent(recordId)}/prescription') as Map));
   Future<int> patientsWithRecords() async {
     final json = await _client.get('clinical-records/summary') as Map;
     return (json['patientsWithRecords'] as num).toInt();

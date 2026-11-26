@@ -33,6 +33,10 @@ class StoreRepositoryImpl implements StoreRepository {
   Future<void> saveFavorite(String patientId, String opticalStoreId) => api.saveFavoriteStore(patientId, opticalStoreId);
 
   @override
+  Future<void> rate(String opticalStoreId, String patientId, int score, String? comment) =>
+      api.rateOpticalStore(opticalStoreId, patientId, score, comment);
+
+  @override
   Future<List<TimeSlot>> availability(String storeId) async {
     final slots = await api.availability(storeId);
     return slots

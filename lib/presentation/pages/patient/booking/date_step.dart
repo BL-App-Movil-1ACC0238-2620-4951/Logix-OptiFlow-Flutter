@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
@@ -27,7 +28,7 @@ class BookingDateStep extends StatelessWidget {
           children: [
             Row(
               children: [
-                _MonthArrow(Icons.chevron_left, () => bookingVm.shiftWeek(-1)),
+                _MonthArrow(LucideIcons.chevronLeft, () => bookingVm.shiftWeek(-1)),
                 Expanded(
                   child: Text(
                     month[0].toUpperCase() + month.substring(1),
@@ -35,7 +36,7 @@ class BookingDateStep extends StatelessWidget {
                     style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepNavy),
                   ),
                 ),
-                _MonthArrow(Icons.chevron_right, () => bookingVm.shiftWeek(1)),
+                _MonthArrow(LucideIcons.chevronRight, () => bookingVm.shiftWeek(1)),
               ],
             ),
             const SizedBox(height: 14),
@@ -61,13 +62,13 @@ class BookingDateStep extends StatelessWidget {
               decoration: BoxDecoration(color: const Color(0xFFF4F6FD), borderRadius: BorderRadius.circular(16)),
               child: Row(
                 children: [
-                  const IconTile(icon: Icons.pie_chart_outline, background: AppColors.lavender, color: AppColors.electric),
+                  const IconTile(icon: LucideIcons.chartPie, background: AppColors.lavender, color: AppColors.electric),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(bookingVm.state.selectedSlot?.durationMinutes == null ? 'Selecciona un horario para ver su duración' : 'Duración: ${bookingVm.state.selectedSlot!.durationMinutes} min', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                        Text(switch ((bookingVm.state.selectedSlot ?? slots.firstOrNull)?.durationMinutes) { null => 'Duración según el horario', final m => 'Duración aproximada: $m min' }, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
                         Text('Llega 10 minutos antes de tu cita.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate500)),
                       ],
                     ),

@@ -13,6 +13,14 @@ class NotificationApi {
     return [for (final item in json.whereType<Map>()) _fromJson(Map<String, dynamic>.from(item))];
   }
 
+  /// Saldo de puntos OptiFlow del paciente.
+  Future<int> loyaltyBalance(String patientId) async {
+    final json = await _client.get('patients/$patientId/loyalty-account');
+    final balance = json is Map ? json['balance'] : null;
+    if (balance is! num) throw ApiException('El servidor devolvió un saldo de puntos inválido.');
+    return balance.toInt();
+  }
+
   Future<void> markRead(String id) async {
     try {
       await _client.send('PATCH', 'notifications/$id', {'read': true});

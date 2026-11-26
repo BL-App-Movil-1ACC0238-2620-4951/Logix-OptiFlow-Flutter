@@ -33,12 +33,14 @@ class Quotation {
 }
 
 class Sale {
-  const Sale({required this.id, required this.quotationId, required this.patientId, required this.status, this.closedAt, this.paymentMethod, this.paymentStatus, this.amount, this.receiptNumber});
+  const Sale({required this.id, required this.quotationId, required this.patientId, required this.status, this.closedAt, this.paidAt, this.issuedAt, this.paymentMethod, this.paymentStatus, this.amount, this.receiptNumber});
   final String id;
   final String quotationId;
   final String patientId;
   final SaleStatus status;
   final DateTime? closedAt;
+  final DateTime? paidAt;
+  final DateTime? issuedAt;
   final String? paymentMethod;
   final String? paymentStatus;
   final num? amount;

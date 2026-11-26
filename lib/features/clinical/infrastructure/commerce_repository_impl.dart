@@ -46,4 +46,6 @@ class CommerceRepositoryImpl implements CommerceRepository {
   Future<Sale> payCash(String saleId, num amount) => api.paySaleCash(saleId, amount);
   @override
   Future<Sale> close(String saleId) => api.closeSale(saleId);
+  @override
+  Future<String> paymentLink(String saleId) => api.paymentLink(saleId);
 }

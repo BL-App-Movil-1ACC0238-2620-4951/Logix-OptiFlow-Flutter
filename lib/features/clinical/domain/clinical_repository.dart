@@ -9,6 +9,7 @@ abstract class ClinicalRepository {
   Future<ClinicalRecord> examine({required String patientId, required String appointmentId, required String observations});
   Future<ClinicalRecord> saveHistory(String recordId, MedicalHistory history);
   Future<PrescriptionValues> prescribe(String recordId, PrescriptionValues values);
+  Future<PrescriptionValues> prescription(String recordId);
   Future<Appointment> complete(String appointmentId);
   Future<int> patientsWithRecords();
 }

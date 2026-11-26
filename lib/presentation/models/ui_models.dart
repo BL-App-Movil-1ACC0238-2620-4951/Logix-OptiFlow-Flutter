@@ -86,6 +86,8 @@ class OrderUi {
     required this.pickup,
     required this.history,
     required this.fromApi,
+    this.statusDates = const {},
+    this.delayReason,
   });
 
   final String id;
@@ -100,6 +102,10 @@ class OrderUi {
   final String pickup;
   final List<String> history;
   final bool fromApi;
+  /// Fecha y hora en que la orden llegó a cada estado del backend (PENDING, IN_WORKSHOP, …).
+  final Map<String, String> statusDates;
+  /// Motivo del retraso informado por el taller.
+  final String? delayReason;
 
   bool get delivered => step >= 4;
 
@@ -154,6 +160,40 @@ class PrescriptionUi {
   final String axisOi;
   final String additionOi;
   final String observations;
+}
+
+/// Una receta de "Mis recetas"; [recordId] es la ficha clínica que la contiene.
+class PrescriptionItemUi {
+  const PrescriptionItemUi({required this.recordId, required this.date, required this.summary});
+
+  final String recordId;
+  final String date;
+  final String summary;
+}
+
+/// Una venta del paciente en "Mis compras".
+class PurchaseUi {
+  const PurchaseUi({
+    required this.id,
+    required this.date,
+    required this.amount,
+    required this.paymentMethod,
+    required this.status,
+    this.receiptNumber,
+    this.payable = false,
+    this.paymentRejected = false,
+  });
+
+  final String id;
+  final String date;
+  final String amount;
+  final String paymentMethod;
+  final String status;
+  final String? receiptNumber;
+  /// Pendiente de pago: el paciente puede pagarla con tarjeta o Yape.
+  final bool payable;
+  /// El último intento con Mercado Pago fue rechazado.
+  final bool paymentRejected;
 }
 
 class StoreOption {

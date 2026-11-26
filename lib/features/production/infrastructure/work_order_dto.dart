@@ -7,6 +7,10 @@ class WorkOrderDto {
     this.createdAt,
     this.estimatedDelivery,
     this.lensSpecification,
+    this.saleId,
+    this.opticalStoreId,
+    this.delayReason,
+    this.statusHistory = const [],
   });
 
   final String id;
@@ -14,6 +18,10 @@ class WorkOrderDto {
   final DateTime? createdAt;
   final String? estimatedDelivery;
   final String? lensSpecification;
+  final String? saleId;
+  final String? opticalStoreId;
+  final String? delayReason;
+  final List<WorkOrderStatusChange> statusHistory;
 
   factory WorkOrderDto.fromJson(Map<String, dynamic> json) {
     final lenses = json['lenses'];
@@ -22,12 +30,22 @@ class WorkOrderDto {
       final value = (lenses.first as Map)['specifications'];
       if (value != null) specification = '$value';
     }
+    final delay = json['deliveryDelay'];
+    final history = json['statusHistory'];
     return WorkOrderDto(
       id: '${json['id']}',
       status: '${json['status'] ?? ''}',
       createdAt: DateTime.tryParse('${json['createdAt']}')?.toLocal(),
       estimatedDelivery: json['estimatedDeliveryDate']?.toString(),
       lensSpecification: specification,
+      saleId: json['saleId']?.toString(),
+      opticalStoreId: json['opticalStoreId']?.toString(),
+      delayReason: json['delayed'] == true && delay is Map ? delay['reason']?.toString() : null,
+      statusHistory: [
+        if (history is List)
+          for (final change in history.whereType<Map>())
+            if (DateTime.tryParse('${change['changedAt']}') case final at?) WorkOrderStatusChange('${change['status']}', at.toLocal()),
+      ],
     );
   }
 
@@ -38,6 +56,10 @@ class WorkOrderDto {
       createdAt: createdAt,
       estimatedDelivery: estimatedDelivery,
       lensSpecification: lensSpecification,
+      saleId: saleId,
+      opticalStoreId: opticalStoreId,
+      delayReason: delayReason,
+      statusHistory: statusHistory,
     );
   }
 }
