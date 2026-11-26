@@ -1,3 +1,17 @@
+import java.util.Properties
+
+// Firma del release: android/key.properties (fuera de git) dice dónde está el archivo con los
+// datos del keystore, que vive fuera del repo. Sin él, el release se firma con la clave de debug.
+// No se usa local.properties porque Flutter lo reescribe en cada compilación.
+val keyProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val releaseSigningFile = keyProperties.getProperty("release.signing.properties")
+    ?.let { file(it) }
+    ?.takeIf { it.exists() }
+val releaseSigning = releaseSigningFile?.let { f -> Properties().apply { f.inputStream().use { load(it) } } }
+
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -30,11 +44,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            create("release") {
+                // Si la ruta del keystore no existe tal cual, se busca junto al archivo de datos.
+                val store = file(releaseSigning.getProperty("storeFile"))
+                storeFile = if (store.exists()) store else File(releaseSigningFile!!.parentFile, store.name)
+                storePassword = releaseSigning.getProperty("storePassword")
+                keyAlias = releaseSigning.getProperty("keyAlias")
+                keyPassword = releaseSigning.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }
