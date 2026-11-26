@@ -1,4 +1,4 @@
-import '../../domain/entities/appointment.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 
 class AppointmentUi {
   const AppointmentUi({

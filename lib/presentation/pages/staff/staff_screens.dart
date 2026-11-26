@@ -4,18 +4,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../../../domain/entities/models.dart';
-import '../../../domain/entities/store_time.dart';
-import '../../state/optiflow_controller.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
-export 'staff_care_screens.dart';
-export 'staff_evaluation_screen.dart';
-export 'staff_insight_screens.dart';
-export 'staff_inventory_screens.dart';
-export 'staff_record_screen.dart';
-export 'staff_sale_screens.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_care_screens.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_evaluation_screen.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_insight_screens.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_inventory_screens.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_record_screen.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_sale_screens.dart';
 
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});

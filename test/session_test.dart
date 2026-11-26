@@ -1,15 +1,25 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logix_optiflow/core/storage/secure_token_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logix_optiflow/data/datasources/session_local_data_source.dart';
-import 'package:logix_optiflow/domain/entities/models.dart';
+import 'package:logix_optiflow/features/auth/infrastructure/session_local_data_source.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
+import 'package:logix_optiflow/features/auth/domain/app_settings.dart';
+
+SessionLocalDataSource source() =>
+    SessionLocalDataSource(tokens: const SecureTokenStorage(storage: FlutterSecureStorage()));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+  });
 
   test('restaura identidad, rol, token, óptica y vencimiento de personal',
       () async {
-    final local = SessionLocalDataSource();
+    final local = source();
     final expiry = DateTime.now().add(const Duration(hours: 1)).toUtc();
     await local.save(PatientSession(
         patientId: 'staff-1',
@@ -30,9 +40,9 @@ void main() {
   });
 
   test('sesiones antiguas sin rol se restauran como pacientes', () async {
-    SharedPreferences.setMockInitialValues(
-        {'patient_id': 'patient-1', 'token': 'token'});
-    expect((await SessionLocalDataSource().read())?.role, UserRole.patient);
+    SharedPreferences.setMockInitialValues({'patient_id': 'patient-1'});
+    FlutterSecureStorage.setMockInitialValues({'token': 'token'});
+    expect((await source().read())?.role, UserRole.patient);
   });
 
   test('descarta sesiones vencidas, tokens vacíos y roles desconocidos',
@@ -43,16 +53,16 @@ void main() {
       {'token': ''},
       {'user_role': 'SUPERADMIN'},
     ]) {
-      SharedPreferences.setMockInitialValues(
-          {'patient_id': 'user-1', 'token': 'token', ...overrides});
-      expect(await SessionLocalDataSource().read(), isNull);
-      expect(
-          (await SharedPreferences.getInstance()).getString('token'), isNull);
+      final token = overrides.remove('token') ?? 'token';
+      SharedPreferences.setMockInitialValues({'patient_id': 'user-1', ...overrides});
+      FlutterSecureStorage.setMockInitialValues({'token': token});
+      expect(await source().read(), isNull);
+      expect(await const FlutterSecureStorage().read(key: 'token'), isNull);
     }
   });
 
   test('limpia toda la identidad al salir y conserva preferencias', () async {
-    final local = SessionLocalDataSource();
+    final local = source();
     await local.save(const PatientSession(
         patientId: 'staff-1',
         name: 'Camila',
@@ -76,6 +86,7 @@ void main() {
     ]) {
       expect(prefs.containsKey(key), isFalse);
     }
+    expect(await const FlutterSecureStorage().read(key: 'token'), isNull);
     expect((await local.readSettings()).controlReminders, isTrue);
   });
 }

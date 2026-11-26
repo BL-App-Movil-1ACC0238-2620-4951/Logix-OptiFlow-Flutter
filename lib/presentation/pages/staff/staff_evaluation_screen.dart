@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
-import 'staff_clinical_care_screen.dart';
+import 'package:logix_optiflow/presentation/pages/staff/staff_clinical_care_screen.dart';
 
 class VisualEvaluationScreen extends StatelessWidget {
   const VisualEvaluationScreen({super.key, this.patientId, this.appointmentId});

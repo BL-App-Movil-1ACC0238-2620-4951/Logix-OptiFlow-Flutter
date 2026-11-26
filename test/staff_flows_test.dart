@@ -1,20 +1,22 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'support/test_apis.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/core/di/dependencies.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/domain/entities/models.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/network/api_client.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/staff_api_checks.dart';
 
-OptiFlowController staffController(
+Future<OptiFlowController> staffController(
     Future<http.Response> Function(http.Request) handler,
     {UserRole role = UserRole.admin,
-    String? storeId = 'store-1'}) {
-  final api = OptiFlowApi(client: MockClient(handler));
-  final app = OptiFlowController(dependencies: AppDependencies(api: api));
+    String? storeId = 'store-1'}) async {
+  final api = await setupTestDependencies(MockClient(handler));
+  final app = OptiFlowController();
   app.session = PatientSession(
       patientId: 'staff-1',
       name: 'Staff',
@@ -36,7 +38,7 @@ void main() {
       () async {
     final pending = Completer<http.Response>();
     var posts = 0;
-    final app = staffController((request) async {
+    final app = await staffController((request) async {
       posts++;
       return pending.future;
     });
@@ -58,14 +60,14 @@ void main() {
     expect(await saved, 'patient-1');
     expect(posts, 1);
     expect(identical(app.session, account), isTrue);
-    expect(app.deps.api.token, 'staff-token');
+    expect(getIt<ApiClient>().token, 'staff-token');
     expect(app.staffPatient('patient-1')?.email, 'camila@example.test');
     expect(app.staffPatient('unknown'), isNull);
   });
 
   test('validaciones de DNI, fecha y permisos rechazan el envío', () async {
     var calls = 0;
-    final app = staffController((_) async {
+    final app = await staffController((_) async {
       calls++;
       return staffResponse(staffPatientFixture);
     });
@@ -86,7 +88,7 @@ void main() {
             dni: '12345678',
             birthDate: '31/02/2000'),
         isNull);
-    final technician = staffController((_) async {
+    final technician = await staffController((_) async {
       calls++;
       return staffResponse(staffPatientFixture);
     }, role: UserRole.technician);
@@ -102,7 +104,7 @@ void main() {
 
   test('agenda sin óptica asignada no realiza solicitudes', () async {
     var calls = 0;
-    final app = staffController((_) async {
+    final app = await staffController((_) async {
       calls++;
       return staffResponse([]);
     }, storeId: null);
@@ -115,7 +117,7 @@ void main() {
   test('agenda descarta respuestas antiguas y excluye citas canceladas',
       () async {
     final pending = Completer<http.Response>();
-    final app = staffController((request) async {
+    final app = await staffController((request) async {
       if (request.url.path.endsWith('/patients/patient-1')) {
         return staffResponse(staffPatientFixture);
       }
@@ -137,7 +139,7 @@ void main() {
   });
 
   test('error de registro no crea un paciente local', () async {
-    final app = staffController(
+    final app = await staffController(
         (_) async => staffResponse({'message': 'Correo ya registrado'}, 409));
     expect(
         await app.registerStaffPatient(
@@ -153,7 +155,7 @@ void main() {
   test('logout descarta directorio en vuelo y no restaura datos de la cuenta',
       () async {
     final pending = Completer<http.Response>();
-    final app = staffController((_) => pending.future);
+    final app = await staffController((_) => pending.future);
     final loading = app.refreshStaffPatients();
     await app.logout();
     pending.complete(staffResponse([staffPatientFixture]));
@@ -167,7 +169,7 @@ void main() {
       () async {
     var posts = 0;
     final start = DateTime.now().add(const Duration(days: 2));
-    final app = staffController((request) async {
+    final app = await staffController((request) async {
       if (request.method == 'POST') {
         posts++;
         return staffResponse({'message': 'Horario ocupado'}, 409);

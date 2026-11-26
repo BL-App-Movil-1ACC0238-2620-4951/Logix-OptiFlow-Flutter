@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../domain/entities/optical_store.dart';
-import '../../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/optical_store.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class StoreResultCard extends StatelessWidget {
   const StoreResultCard({super.key, required this.store});

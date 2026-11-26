@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:logix_optiflow/core/errors/api_exception.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/data/repositories/catalog_repository_impl.dart';
+import 'test_apis.dart';
+import 'package:logix_optiflow/features/inventory/infrastructure/catalog_repository_impl.dart';
 
 const frameFixture = <String, Object>{
   'id': 'model-uuid',
@@ -65,7 +65,7 @@ Future<void> expectStatus(Future<Object?> action, int status) async {
 // No Flutter engine or sockets are needed: these checks can also run with Dart.
 Future<void> runInventoryApiChecks() async {
   final requests = <http.Request>[];
-  final api = OptiFlowApi(
+  final api = TestApis(
       baseUrl: 'http://localhost:8080/api/v1/',
       client: MockClient((request) async {
         requests.add(request);
@@ -123,7 +123,7 @@ Future<void> runInventoryApiChecks() async {
             'Unexpected inventory request: ${request.method} ${request.url}');
       }));
   api.token = 'token';
-  final catalog = CatalogRepositoryImpl(api);
+  final catalog = CatalogRepositoryImpl(api: api.inventory);
   final frames = await catalog.frames();
   check(frames.single.id == 'RX 42', 'Routes must use SKU, not model UUID');
   check(frames.single.price == 299.95 && frames.single.fromPrice == 'S/ 299.95',
@@ -133,14 +133,14 @@ Future<void> runInventoryApiChecks() async {
   final frame = await catalog.frame('RX 42', opticalStoreId: 'store-1');
   check(frame.stockKnown && frame.stock == 3 && frame.minimumStock == 5,
       'SKU detail must use server stock');
-  final stock = await api.inventoryStock('store-1');
+  final stock = await api.inventory.inventoryStock('store-1');
   check(stock.stocks.single.quantity == 3 && stock.stocks.single.low,
       'Stock threshold must come from the API');
-  check((await api.suppliers()).single.id == 'supplier-1',
+  check((await api.inventory.suppliers()).single.id == 'supplier-1',
       'Suppliers must come from the API');
   check((await catalog.updatePrice('RX 42', 349.90)).price == 349.90,
       'Price update must use the server result');
-  final movement = await api.replenishStock(
+  final movement = await api.inventory.replenishStock(
       opticalStoreId: 'store-1',
       sku: 'RX 42',
       supplierId: 'supplier-1',
@@ -148,12 +148,12 @@ Future<void> runInventoryApiChecks() async {
       minimumStock: 0);
   check(movement.id == 'movement-1' && movement.quantity == 4,
       'Replenishment must return the registered movement');
-  await api.replenishStock(
+  await api.inventory.replenishStock(
       opticalStoreId: 'store-1',
       sku: 'RX 42',
       supplierId: 'supplier-1',
       quantity: 4);
-  final history = await api.stockMovements(
+  final history = await api.inventory.stockMovements(
       opticalStoreId: 'store-1',
       from: DateTime(2026, 11, 1),
       to: DateTime(2026, 11, 30),
@@ -163,16 +163,16 @@ Future<void> runInventoryApiChecks() async {
   check(requests.length == 8, 'Unexpected extra inventory requests');
 
   for (final status in [403, 404]) {
-    final failing = OptiFlowApi(
+    final failing = TestApis(
         client: MockClient(
             (_) async => jsonResponse({'message': 'Denied'}, status)));
     failing.token = 'token';
-    await expectStatus(failing.frameModel('UNKNOWN'), status);
+    await expectStatus(failing.inventory.frameModel('UNKNOWN'), status);
     check(failing.token == 'token',
         'A permission or missing SKU error must not log out');
   }
-  final empty = OptiFlowApi(client: MockClient((_) async => jsonResponse([])));
-  check((await CatalogRepositoryImpl(empty).frames()).isEmpty,
+  final empty = TestApis(client: MockClient((_) async => jsonResponse([])));
+  check((await CatalogRepositoryImpl(api: empty.inventory).frames()).isEmpty,
       'Empty catalogs must stay empty');
 }
 

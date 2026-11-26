@@ -2,26 +2,75 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../core/di/dependencies.dart';
-import '../../core/errors/api_exception.dart';
-import '../../domain/entities/models.dart';
-import '../../domain/entities/inventory.dart';
-import '../../domain/entities/staff_order.dart';
-import '../../domain/entities/store_time.dart';
-import '../mappers/staff_view_mapper.dart';
-import 'clinical_care_flow.dart';
-import 'quote_flow.dart';
-import 'sale_flow.dart';
-import '../mappers/patient_view_mapper.dart';
-import '../models/ui_models.dart';
-import '../navigation/route_access.dart';
+import 'package:logix_optiflow/features/auth/application/clear_session_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/load_app_settings_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/load_session_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/login_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/register_patient_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/save_app_settings_use_case.dart';
+import 'package:logix_optiflow/features/auth/application/save_session_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_patient_clinical_records_use_case.dart';
+import 'package:logix_optiflow/features/clinical/application/get_patients_with_records_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_frame_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_store_stock_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_suppliers_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/replenish_stock_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/update_frame_price_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/load_read_notifications_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/save_read_notifications_use_case.dart';
+import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
+import 'package:logix_optiflow/features/production/application/get_production_orders_use_case.dart';
+import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
+import 'package:logix_optiflow/features/report/application/get_report_bars_use_case.dart';
+import 'package:logix_optiflow/features/report/application/get_staff_alerts_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/book_appointment_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_agenda_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_optical_stores_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_patient_appointments_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_staff_patient_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_staff_patients_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/get_store_availability_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/register_patient_by_staff_use_case.dart';
+import 'package:logix_optiflow/features/searchbooking/application/search_optical_stores_use_case.dart';
+import 'package:logix_optiflow/core/network/api_client.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_repository.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce_repository.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/errors/api_exception.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
+import 'package:logix_optiflow/features/auth/domain/app_settings.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/optical_store.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/time_slot.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
+import 'package:logix_optiflow/features/production/domain/work_order.dart';
+import 'package:logix_optiflow/features/production/domain/production_order.dart';
+import 'package:logix_optiflow/features/production/domain/staff_order.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/features/inventory/domain/inventory.dart';
+import 'package:logix_optiflow/features/inventory/domain/product.dart';
+import 'package:logix_optiflow/features/report/domain/staff_alert.dart';
+import 'package:logix_optiflow/presentation/mappers/staff_view_mapper.dart';
+import 'package:logix_optiflow/presentation/state/clinical_care_flow.dart';
+import 'package:logix_optiflow/presentation/state/quote_flow.dart';
+import 'package:logix_optiflow/presentation/state/sale_flow.dart';
+import 'package:logix_optiflow/presentation/mappers/patient_view_mapper.dart';
+import 'package:logix_optiflow/presentation/models/ui_models.dart';
+import 'package:logix_optiflow/presentation/navigation/route_access.dart';
 
 class OptiFlowController extends ChangeNotifier {
-  OptiFlowController({AppDependencies? dependencies}) : deps = dependencies ?? AppDependencies() {
-    deps.api.onUnauthorized = () { unawaited(logout()); };
+  OptiFlowController() {
+    _api.onUnauthorized = () { unawaited(logout()); };
   }
 
-  final AppDependencies deps;
+  final ApiClient _api = getIt<ApiClient>();
   static const minPassword = 8;
 
   bool bootstrapped = false;
@@ -201,14 +250,14 @@ class OptiFlowController extends ChangeNotifier {
   Future<void> bootstrap() => _bootstrapFuture ??= _bootstrap();
 
   Future<void> _bootstrap() async {
-    session = await deps.loadSession();
+    session = await getIt<LoadSessionUseCase>().execute();
     if (session != null && !session!.isAuthenticated) {
       session = null;
-      await deps.clearSession();
+      await getIt<ClearSessionUseCase>().execute();
     }
-    deps.api.token = session?.token;
-    readNotificationIds = await deps.loadReadNotifications();
-    settings = await deps.loadSettings();
+    _api.token = session?.token;
+    readNotificationIds = await getIt<LoadReadNotificationsUseCase>().execute();
+    settings = await getIt<LoadAppSettingsUseCase>().execute();
     bootstrapped = true;
     notifyListeners();
     if (session?.isPatient == true) {
@@ -221,13 +270,13 @@ class OptiFlowController extends ChangeNotifier {
 
   Future<void> setControlReminders(bool value) async {
     settings = settings.copyWith(controlReminders: value);
-    await deps.saveSettings(settings);
+    await getIt<SaveAppSettingsUseCase>().execute(settings);
     notifyListeners();
   }
 
   Future<void> _saveSession(PatientSession value) async {
-    await deps.saveSession(value);
-    deps.api.token = value.token;
+    await getIt<SaveSessionUseCase>().execute(value);
+    _api.token = value.token;
     session = value;
     notifyListeners();
   }
@@ -238,7 +287,7 @@ class OptiFlowController extends ChangeNotifier {
     clinicalCare?.dispose();
     clinicalCare = null;
     session = null;
-    deps.api.token = null;
+    _api.token = null;
     _appointmentsRequest++;
     _searchRequest++;
     _bookingRequest++;
@@ -323,8 +372,8 @@ class OptiFlowController extends ChangeNotifier {
     prescription = PrescriptionUi.demo('Valentina Silva');
     patientLoading = false;
     notifyListeners();
-    await deps.clearSession();
-    await deps.saveReadNotifications({});
+    await getIt<ClearSessionUseCase>().execute();
+    await getIt<SaveReadNotificationsUseCase>().execute({});
   }
 
   String? validateAuth({
@@ -351,7 +400,7 @@ class OptiFlowController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
+      await _saveSession(await getIt<LoginUseCase>().execute(email: email.trim(), password: password));
       if (session?.isPatient == true) unawaited(refreshPatient());
     } on ApiException catch (e) {
       error = e.message;
@@ -374,8 +423,8 @@ class OptiFlowController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await deps.registerPatient(name: name.trim(), email: email.trim(), phone: phone.trim(), password: password);
-      await _saveSession(await deps.loginPatient(email: email.trim(), password: password));
+      await getIt<RegisterPatientUseCase>().execute(name: name.trim(), email: email.trim(), phone: phone.trim(), password: password);
+      await _saveSession(await getIt<LoginUseCase>().execute(email: email.trim(), password: password));
       if (session?.isPatient == true) unawaited(refreshPatient());
     } on ApiException catch (e) {
       error = e.message;
@@ -413,8 +462,8 @@ class OptiFlowController extends ChangeNotifier {
     appointmentsError = null;
     notifyListeners();
     try {
-      final storeRequest = deps.getStores().catchError((_) => stores);
-      final results = await deps.getAppointments(current.patientId);
+      final storeRequest = getIt<GetOpticalStoresUseCase>().execute().catchError((_) => stores);
+      final results = await getIt<GetPatientAppointmentsUseCase>().execute(current.patientId);
       final loadedStores = await storeRequest;
       if (!identical(current, session) || request != _appointmentsRequest) return;
       stores = loadedStores;
@@ -440,9 +489,9 @@ class OptiFlowController extends ChangeNotifier {
     final appointmentsRequest = refreshAppointments();
     List<WorkOrder> apiOrders = const [];
     List<ClinicalRecord> records = const [];
-    try { apiOrders = await deps.getWorkOrders(current.patientId); } catch (_) {}
+    try { apiOrders = await getIt<GetPatientWorkOrdersUseCase>().execute(current.patientId); } catch (_) {}
     if (!identical(current, session)) return;
-    try { records = await deps.getClinicalRecords(current.patientId); } catch (_) {}
+    try { records = await getIt<GetPatientClinicalRecordsUseCase>().execute(current.patientId); } catch (_) {}
     await appointmentsRequest;
     if (!identical(current, session)) return;
     final name = displayName;
@@ -464,7 +513,7 @@ class OptiFlowController extends ChangeNotifier {
     appointmentActionError = null;
     notifyListeners();
     try {
-      final updated = await deps.cancelAppointment(id);
+      final updated = await getIt<CancelAppointmentUseCase>().execute(id);
       if (!identical(current, session)) return false;
       _appointmentsRequest++; // Older list requests must not restore the old status.
       appointmentsLoading = false;
@@ -495,14 +544,14 @@ class OptiFlowController extends ChangeNotifier {
 
   Future<void> markNotificationsRead() async {
     readNotificationIds = notifications.map((n) => n.id).toSet();
-    await deps.saveReadNotifications(readNotificationIds);
+    await getIt<SaveReadNotificationsUseCase>().execute(readNotificationIds);
     notifyListeners();
   }
 
   Future<void> markNotificationRead(String id) async {
     if (readNotificationIds.contains(id)) return;
     readNotificationIds = {...readNotificationIds, id};
-    await deps.saveReadNotifications(readNotificationIds);
+    await getIt<SaveReadNotificationsUseCase>().execute(readNotificationIds);
     notifyListeners();
   }
 
@@ -513,7 +562,7 @@ class OptiFlowController extends ChangeNotifier {
     searchMessage = null;
     notifyListeners();
     try {
-      final result = await deps.searchStores(
+      final result = await getIt<SearchOpticalStoresUseCase>().execute(
         name: searchQuery.trim().isEmpty ? null : searchQuery.trim(),
         address: searchAddress.trim().isEmpty ? null : searchAddress.trim(),
         minRating: minRating,
@@ -571,7 +620,7 @@ class OptiFlowController extends ChangeNotifier {
         }
         storeId ??= original.opticalStoreId;
       }
-      final loaded = await deps.getStores(); // Always load all stores, independent of search filters.
+      final loaded = await getIt<GetOpticalStoresUseCase>().execute(); // Always load all stores, independent of search filters.
       if (request != _bookingRequest || !identical(current, session)) return;
       stores = loaded;
       bookingStores = [for (final store in loaded)
@@ -617,7 +666,7 @@ class OptiFlowController extends ChangeNotifier {
     bookingError = null;
     notifyListeners();
     try {
-      final available = await deps.getAvailability(store!.id!);
+      final available = await getIt<GetStoreAvailabilityUseCase>().execute(store!.id!);
       if (request != _bookingRequest || !identical(current, session)) return;
       final now = DateTime.now();
       slots = [for (final slot in available)
@@ -704,7 +753,7 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
     try {
       if (bookingAppointment == null) {
-        final created = await deps.bookAppointment(patientId: current!.patientId, opticalStoreId: store!.id!, timeSlotId: slot!.id!);
+        final created = await getIt<BookAppointmentUseCase>().execute(patientId: current!.patientId, opticalStoreId: store!.id!, timeSlotId: slot!.id!);
         if (request != _bookingRequest || !identical(current, session)) return false;
         bookingAppointment = created;
         _appointmentsRequest++;
@@ -714,7 +763,7 @@ class OptiFlowController extends ChangeNotifier {
       // The backend implements rescheduling as book-new, then cancel-old.
       // Keep the new id if cancellation fails, so retry never books it twice.
       if (reschedulingId != null) {
-        final cancelled = await deps.cancelAppointment(reschedulingId!);
+        final cancelled = await getIt<CancelAppointmentUseCase>().execute(reschedulingId!);
         if (request != _bookingRequest || !identical(current, session)) return false;
         _putAppointment(cancelled);
       }
@@ -773,7 +822,7 @@ class OptiFlowController extends ChangeNotifier {
     catalogError = null;
     notifyListeners();
     try {
-      final loaded = await deps.getFrames();
+      final loaded = await getIt<GetFramesUseCase>().execute();
       if (!identical(current, session) || request != _catalogRequest) return;
       _frames = loaded;
       for (final frame in loaded) { _framesBySku[frame.id] = frame; }
@@ -804,7 +853,7 @@ class OptiFlowController extends ChangeNotifier {
     frameErrors.remove(sku);
     notifyListeners();
     try {
-      final frame = await deps.getFrame(sku, opticalStoreId: storeId);
+      final frame = await getIt<GetFrameUseCase>().execute(sku, opticalStoreId: storeId);
       if (!identical(current, session) || _frameRequests[sku] != request) return null;
       _cacheFrame(frame);
       if (forInventory) _productsBySku[sku] = _product(frame);
@@ -836,7 +885,7 @@ class OptiFlowController extends ChangeNotifier {
     inventoryError = null;
     notifyListeners();
     try {
-      final results = await Future.wait<Object>([deps.getFrames(), deps.getStoreStock(storeId)]);
+      final results = await Future.wait<Object>([getIt<GetFramesUseCase>().execute(), getIt<GetStoreStockUseCase>().execute(storeId)]);
       if (!identical(current, session) || request != _inventoryRequest) return;
       final catalog = results[0] as List<FrameItem>;
       final inventory = results[1] as StoreInventory;
@@ -868,7 +917,7 @@ class OptiFlowController extends ChangeNotifier {
     suppliersError = null;
     notifyListeners();
     try {
-      final loaded = await deps.getSuppliers();
+      final loaded = await getIt<GetSuppliersUseCase>().execute();
       if (identical(current, session) && request == _supplierRequest) suppliers = loaded;
     } catch (e) {
       if (identical(current, session) && request == _supplierRequest) suppliersError = _inventoryMessage(e, 'No se pudieron cargar los proveedores.');
@@ -896,7 +945,7 @@ class OptiFlowController extends ChangeNotifier {
     notifyListeners();
     try {
       final end = to ?? DateTime.now();
-      final loaded = await deps.getStockMovements(opticalStoreId: storeId, from: from ?? end.subtract(const Duration(days: 30)), to: end, sku: sku);
+      final loaded = await getIt<GetStockMovementsUseCase>().execute(opticalStoreId: storeId, from: from ?? end.subtract(const Duration(days: 30)), to: end, sku: sku);
       if (identical(current, session) && request == _movementsRequest) stockMovements = loaded;
     } catch (e) {
       if (identical(current, session) && request == _movementsRequest) movementsError = _inventoryMessage(e, 'No se pudieron cargar los movimientos.');
@@ -922,7 +971,7 @@ class OptiFlowController extends ChangeNotifier {
     inventoryMutationBusy = true;
     notifyListeners();
     try {
-      await deps.replenishStock(opticalStoreId: storeId!, sku: sku.trim(), supplierId: supplierId, quantity: quantity, minimumStock: minimumStock);
+      await getIt<ReplenishStockUseCase>().execute(opticalStoreId: storeId!, sku: sku.trim(), supplierId: supplierId, quantity: quantity, minimumStock: minimumStock);
       if (!identical(current, session)) return false;
       _inventoryRequest++;
       _frameRequests[sku] = (_frameRequests[sku] ?? 0) + 1;
@@ -951,7 +1000,7 @@ class OptiFlowController extends ChangeNotifier {
     inventoryMutationBusy = true;
     notifyListeners();
     try {
-      final updated = await deps.updateFramePrice(sku, price);
+      final updated = await getIt<UpdateFramePriceUseCase>().execute(sku, price);
       if (!identical(current, session)) return false;
       _catalogRequest++;
       catalogLoading = false;
@@ -975,9 +1024,9 @@ class OptiFlowController extends ChangeNotifier {
   List<FrameItem> get frames => _frames;
   FrameItem? frameById(String sku) => _framesBySku[sku];
   ProductItem? productById(String sku) => _productsBySku[sku];
-  List<ProductionOrder> get productionOrders => deps.getProductionOrders();
-  List<StaffAlert> get alerts => deps.getStaffAlerts();
-  List<double> get reportBars => deps.getReportBars();
+  List<ProductionOrder> get productionOrders => getIt<GetProductionOrdersUseCase>().execute();
+  List<StaffAlert> get alerts => getIt<GetStaffAlertsUseCase>().execute();
+  List<double> get reportBars => getIt<GetReportBarsUseCase>().execute();
 
   String get staffStoreName => stores.where((s) => s.id == session?.opticalStoreId).firstOrNull?.name ?? session?.role.label ?? '';
   Set<String> get waitingPatientIds => agenda.where((a) => a.status == AgendaStatus.waiting).map((a) => a.patientId).toSet();
@@ -998,7 +1047,7 @@ class OptiFlowController extends ChangeNotifier {
     if (canOpen('/s/patients')) tasks.add(refreshStaffPatients());
     if (canOpen('/s/agenda')) tasks.add(refreshStaffAgenda());
     if (canOpen('/s/production')) tasks.add(refreshStaffOrders());
-    tasks.add(() async { try { final loaded = await deps.getStores(); if (identical(current, session)) { stores = loaded; notifyListeners(); } } catch (_) {} }());
+    tasks.add(() async { try { final loaded = await getIt<GetOpticalStoresUseCase>().execute(); if (identical(current, session)) { stores = loaded; notifyListeners(); } } catch (_) {} }());
     await Future.wait(tasks);
   }
 
@@ -1011,14 +1060,14 @@ class OptiFlowController extends ChangeNotifier {
     patientSummaryError = null;
     notifyListeners();
     try {
-      final loaded = await deps.getStaffPatients();
+      final loaded = await getIt<GetStaffPatientsUseCase>().execute();
       if (!identical(current, session) || request != _staffPatientsRequest) return;
       staffPatients = loaded;
       for (final patient in loaded) { _staffPatientsById[patient.id] = patient; }
       notifyListeners();
       if (!identical(current, session)) return;
       try {
-        final count = await deps.getPatientsWithRecords();
+        final count = await getIt<GetPatientsWithRecordsUseCase>().execute();
         if (identical(current, session) && request == _staffPatientsRequest) patientsWithRecords = count;
       } catch (e) {
         if (identical(current, session) && request == _staffPatientsRequest) patientSummaryError = _inventoryMessage(e, 'No se pudo cargar el resumen clínico.');
@@ -1038,7 +1087,7 @@ class OptiFlowController extends ChangeNotifier {
     staffOrdersError = null;
     notifyListeners();
     try {
-      final loaded = await deps.getStaffOrders();
+      final loaded = await getIt<GetStaffOrdersUseCase>().execute();
       if (identical(current, session) && request == _staffOrdersRequest) staffOrders = loaded;
     } catch (e) {
       if (identical(current, session) && request == _staffOrdersRequest) staffOrdersError = _inventoryMessage(e, 'No se pudieron cargar las órdenes.');
@@ -1060,10 +1109,10 @@ class OptiFlowController extends ChangeNotifier {
     agenda = [];
     notifyListeners();
     try {
-      final loaded = await deps.getAgenda(storeId, requestedDate);
+      final loaded = await getIt<GetAgendaUseCase>().execute(storeId, requestedDate);
       final items = await Future.wait(loaded.where((a) => a.status != 'CANCELLED').map((appointment) async {
         var patient = _staffPatientsById[appointment.patientId];
-        if (patient == null) { try { patient = await deps.getStaffPatient(appointment.patientId); } catch (_) {} }
+        if (patient == null) { try { patient = await getIt<GetStaffPatientUseCase>().execute(appointment.patientId); } catch (_) {} }
         if (identical(current, session) && patient != null) _staffPatientsById[patient.id] = patient;
         return StaffViewMapper.agenda(appointment, patient?.fullName ?? 'Paciente');
       }));
@@ -1091,7 +1140,7 @@ class OptiFlowController extends ChangeNotifier {
     staffPatientSaving = true;
     notifyListeners();
     try {
-      final patient = await deps.registerPatientByStaff(name: name.trim(), email: email.trim(), phone: phone.trim(), dni: dni, birthDate: birth);
+      final patient = await getIt<RegisterPatientByStaffUseCase>().execute(name: name.trim(), email: email.trim(), phone: phone.trim(), dni: dni, birthDate: birth);
       if (!identical(current, session)) return null;
       _staffPatientsRequest++;
       staffPatientsLoading = false;
@@ -1118,8 +1167,8 @@ class OptiFlowController extends ChangeNotifier {
     Future<Object> result(Future<Object> call) => call.then<Object>((value) => value, onError: (Object error) => error);
     try {
       final responses = await Future.wait<Object>([
-        result(deps.getStaffPatient(id)), result(deps.getClinicalRecords(id)),
-        result(deps.getAppointments(id)), result(deps.getStaffOrders()),
+        result(getIt<GetStaffPatientUseCase>().execute(id)), result(getIt<GetPatientClinicalRecordsUseCase>().execute(id)),
+        result(getIt<GetPatientAppointmentsUseCase>().execute(id)), result(getIt<GetStaffOrdersUseCase>().execute()),
       ]);
       if (!identical(current, session) || _staffRecordRequests[id] != request) return;
       final patient = responses[0];
@@ -1159,7 +1208,7 @@ class OptiFlowController extends ChangeNotifier {
     staffBookingSlotId = null;
     notifyListeners();
     try {
-      final loaded = await deps.getAvailability(storeId);
+      final loaded = await getIt<GetStoreAvailabilityUseCase>().execute(storeId);
       if (!identical(current, session) || request != _staffBookingRequest) return;
       staffBookingSlots = loaded.where((s) => s.opticalStoreId == storeId && s.status == 'AVAILABLE' && s.start.isAfter(DateTime.now())).toList()..sort((a, b) => a.start.compareTo(b.start));
       staffBookingDay = staffBookingSlots.isEmpty ? null : StoreTime.day(staffBookingSlots.first.start);
@@ -1192,7 +1241,7 @@ class OptiFlowController extends ChangeNotifier {
     staffBookingError = null;
     notifyListeners();
     try {
-      await deps.bookAppointment(patientId: patientId, opticalStoreId: storeId, timeSlotId: slot.id);
+      await getIt<BookAppointmentUseCase>().execute(patientId: patientId, opticalStoreId: storeId, timeSlotId: slot.id);
       if (!identical(current, session)) return false;
       staffBookingSlots = staffBookingSlots.where((s) => s.id != slot.id).toList();
       staffBookingSlotId = null;
@@ -1215,7 +1264,7 @@ class OptiFlowController extends ChangeNotifier {
     final current = session;
     clinicalCare?.dispose();
     final flow = ClinicalCareFlow(
-      repository: deps.clinical, patientId: patientId, appointmentId: appointmentId,
+      repository: getIt<ClinicalRepository>(), patientId: patientId, appointmentId: appointmentId,
       isActive: () => identical(current, session) && canOpen('/s/clinical'),
       onChanged: notifyListeners,
       onCompleted: () async { await Future.wait([refreshStaffAgenda(), loadStaffRecord(patientId)]); },
@@ -1228,7 +1277,7 @@ class OptiFlowController extends ChangeNotifier {
     if (!canOpen('/s/quote')) return;
     final current = session;
     quoteFlow?.dispose();
-    final flow = QuoteFlow(repository: deps.commerce, patientId: patientId, storeId: current?.opticalStoreId,
+    final flow = QuoteFlow(repository: getIt<CommerceRepository>(), patientId: patientId, storeId: current?.opticalStoreId,
       isActive: () => identical(current, session) && canOpen('/s/quote'), onChanged: notifyListeners);
     quoteFlow = flow;
     await flow.load();
@@ -1238,7 +1287,7 @@ class OptiFlowController extends ChangeNotifier {
     if (!canOpen('/s/sale')) return;
     final current = session;
     saleFlow?.dispose();
-    final flow = SaleFlow(repository: deps.commerce, patientId: patientId, saleId: saleId,
+    final flow = SaleFlow(repository: getIt<CommerceRepository>(), patientId: patientId, saleId: saleId,
       isActive: () => identical(current, session) && canOpen('/s/sale'), onChanged: notifyListeners,
       onClosed: () async {
         await loadStaffRecord(patientId);
@@ -1253,7 +1302,7 @@ class OptiFlowController extends ChangeNotifier {
     quoteFlow?.dispose();
     saleFlow?.dispose();
     clinicalCare?.dispose();
-    deps.api.onUnauthorized = null;
+    _api.onUnauthorized = null;
     super.dispose();
   }
 

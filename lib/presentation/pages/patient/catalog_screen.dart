@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/frame.dart';
-import '../../state/optiflow_controller.dart';
-import '../../widgets/chrome.dart';
-import '../../widgets/frame_image.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/inventory/domain/frame.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/widgets/frame_image.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});

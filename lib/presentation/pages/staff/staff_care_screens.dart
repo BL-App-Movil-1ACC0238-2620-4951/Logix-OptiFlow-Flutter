@@ -4,14 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../../domain/entities/store_time.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/production_order.dart';
-import '../../state/optiflow_controller.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/production/domain/production_order.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
-export 'staff_clinical_care_screen.dart';
+export 'package:logix_optiflow/presentation/pages/staff/staff_clinical_care_screen.dart';
 
 class NewPatientScreen extends StatefulWidget {
   const NewPatientScreen({super.key});

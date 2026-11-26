@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../state/optiflow_controller.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

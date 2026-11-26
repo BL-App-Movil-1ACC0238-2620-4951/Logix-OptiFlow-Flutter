@@ -1,5 +1,5 @@
-import '../../domain/entities/patient_session.dart';
-import '../../domain/entities/user_role.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 
 String homePath(PatientSession? session) => session?.isAuthenticated != true
     ? '/auth'

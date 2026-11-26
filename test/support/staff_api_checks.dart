@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/data/models/staff_dto.dart';
-import 'package:logix_optiflow/domain/entities/agenda_item.dart';
-import 'package:logix_optiflow/domain/entities/store_time.dart';
+import 'test_apis.dart';
+import 'package:logix_optiflow/features/searchbooking/infrastructure/staff_patient_dto.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/presentation/mappers/staff_view_mapper.dart';
 
 const staffPatientFixture = <String, Object>{
@@ -44,7 +44,7 @@ void verify(bool value, String message) {
 }
 
 Future<void> runStaffApiChecks() async {
-  final api = OptiFlowApi(client: MockClient((request) async {
+  final api = TestApis(client: MockClient((request) async {
     final path = request.url.path;
     if (request.method == 'POST') {
       if (path == '/api/v1/appointments') {
@@ -109,14 +109,14 @@ Future<void> runStaffApiChecks() async {
     throw StateError('Unexpected staff endpoint: $path');
   }));
   api.token = 'staff-token';
-  final patients = await api.staffPatients();
+  final patients = await api.booking.staffPatients();
   verify(
       patients.single.email == 'camila@example.test' &&
           patients.single.initials == 'CP',
       'Directory must preserve email and initials');
-  verify((await api.staffPatient('patient-1')).id == 'patient-1',
+  verify((await api.booking.staffPatient('patient-1')).id == 'patient-1',
       'Patient lookup must use real id');
-  await api.registerPatientByStaff(
+  await api.booking.registerPatientByStaff(
       name: 'Camila Paz Morales',
       email: 'camila@example.test',
       phone: '987654321',
@@ -124,25 +124,25 @@ Future<void> runStaffApiChecks() async {
       birthDate: DateTime(1990, 5, 24));
   verify(api.token == 'staff-token',
       'Registering a patient must not replace the staff token');
-  final agenda = await api.storeAgenda('store-1', DateTime(2026, 11, 12));
-  verify(await api.patientsWithRecords() == 7,
+  final agenda = await api.booking.storeAgenda('store-1', DateTime(2026, 11, 12));
+  verify(await api.clinical.patientsWithRecords() == 7,
       'Clinical summary must use backend count');
-  final orders = await api.staffOrders();
+  final orders = await api.production.staffOrders();
   verify(
       orders.single.patientId == 'patient-1' &&
           orders.single.step == 1 &&
           orders.single.label == 'En taller',
       'Work-order summary must use Movile status order');
-  final record = (await api.clinicalRecords('patient-1')).single.toEntity();
+  final record = (await api.clinical.clinicalRecords('patient-1')).single.toEntity();
   verify(
       record.id == 'record-1' &&
           record.status == 'COMPLETED' &&
           record.prescription?.sphereOd == -1.75,
       'Record must preserve real prescription and identity');
-  verify((await api.appointments('patient-1')).single.id == 'appointment-1',
+  verify((await api.booking.appointments('patient-1')).single.id == 'appointment-1',
       'Patient record must read own appointment list');
   final appointment = agenda.single.toEntity();
-  verify((await api.book(patientId: 'patient-1', opticalStoreId: 'store-1', timeSlotId: 'slot-1')).id == 'appointment-1', 'Staff booking must return the real appointment');
+  verify((await api.booking.book(patientId: 'patient-1', opticalStoreId: 'store-1', timeSlotId: 'slot-1')).id == 'appointment-1', 'Staff booking must return the real appointment');
   final waiting = StaffViewMapper.agenda(appointment, 'Camila',
       now: DateTime.parse('2026-11-12T14:45:00Z'));
   verify(
@@ -177,9 +177,9 @@ Future<void> runStaffApiChecks() async {
               null,
       'Invalid and future births must be rejected');
   verify(
-      StaffDto.patient(staffPatientFixture, today: DateTime(2026, 5, 23)).age ==
+      StaffPatientDto.fromJson(staffPatientFixture, today: DateTime(2026, 5, 23)).age ==
               35 &&
-          StaffDto.patient(staffPatientFixture, today: DateTime(2026, 5, 24))
+          StaffPatientDto.fromJson(staffPatientFixture, today: DateTime(2026, 5, 24))
                   .age ==
               36,
       'Age must change on birthday, as in Movile');

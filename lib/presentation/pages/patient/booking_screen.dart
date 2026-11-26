@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../state/optiflow_controller.dart';
-import '../../widgets/chrome.dart';
-import 'booking/confirm_step.dart';
-import 'booking/date_step.dart';
-import 'booking/done_step.dart';
-import 'booking/store_step.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/pages/patient/booking/confirm_step.dart';
+import 'package:logix_optiflow/presentation/pages/patient/booking/date_step.dart';
+import 'package:logix_optiflow/presentation/pages/patient/booking/done_step.dart';
+import 'package:logix_optiflow/presentation/pages/patient/booking/store_step.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key, this.storeId, this.rescheduleId});

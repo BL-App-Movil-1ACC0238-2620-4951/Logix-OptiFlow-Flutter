@@ -3,14 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../../domain/entities/models.dart';
-import '../../state/optiflow_controller.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../widgets/chrome.dart';
-import 'home/featured_frames.dart';
-import 'home/quick_access_row.dart';
-import 'home/try_on_banner.dart';
-import 'home/wellness_card.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/pages/patient/home/featured_frames.dart';
+import 'package:logix_optiflow/presentation/pages/patient/home/quick_access_row.dart';
+import 'package:logix_optiflow/presentation/pages/patient/home/try_on_banner.dart';
+import 'package:logix_optiflow/presentation/pages/patient/home/wellness_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

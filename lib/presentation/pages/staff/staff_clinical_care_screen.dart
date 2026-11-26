@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/agenda_item.dart';
-import '../../../domain/entities/clinical_forms.dart';
-import '../../../domain/entities/store_time.dart';
-import '../../state/clinical_care_flow.dart';
-import '../../state/optiflow_controller.dart';
-import '../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
+import 'package:logix_optiflow/core/time/store_time.dart';
+import 'package:logix_optiflow/presentation/state/clinical_care_flow.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class ClinicalCareScreen extends StatefulWidget {
   const ClinicalCareScreen({super.key, this.patientId, this.appointmentId});

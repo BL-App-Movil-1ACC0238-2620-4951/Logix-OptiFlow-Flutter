@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/theme/app_colors.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class AuthField extends StatelessWidget {
   const AuthField({super.key, this.label, required this.controller, required this.hint, this.keyboard, this.obscure = false, this.trailing, this.fillColor = AppColors.mintWhite});

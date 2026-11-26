@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class FrameImage extends StatelessWidget {
   const FrameImage({super.key, this.path = '', this.height = 150});

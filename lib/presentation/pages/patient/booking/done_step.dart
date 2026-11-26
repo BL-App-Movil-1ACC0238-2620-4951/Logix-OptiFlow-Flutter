@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../domain/entities/appointment.dart';
-import '../../../state/optiflow_controller.dart';
-import '../../../widgets/chrome.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class BookingDoneStep extends StatelessWidget {
   const BookingDoneStep({super.key});

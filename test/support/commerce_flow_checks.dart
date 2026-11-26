@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/data/repositories/commerce_repository_impl.dart';
-import 'package:logix_optiflow/domain/entities/commerce.dart';
+import 'test_apis.dart';
+import 'package:logix_optiflow/features/clinical/infrastructure/commerce_repository_impl.dart';
+import 'package:logix_optiflow/features/clinical/domain/commerce.dart';
 import 'package:logix_optiflow/presentation/state/quote_flow.dart';
 import 'package:logix_optiflow/presentation/state/sale_flow.dart';
 
@@ -37,14 +37,18 @@ class CommerceServer {
     final path = request.url.path.replaceFirst('/api/v1/', '');
     if (request.method == 'GET') {
       if (path == 'patients/patient-1') return commerceResponse({'id': 'patient-1', 'name': 'Paciente real', 'phone': '999888777', 'email': 'patient@example.test'});
-      if (path == 'patients/patient-1/clinical-records') return commerceResponse([
+      if (path == 'patients/patient-1/clinical-records') {
+        return commerceResponse([
         {'id': 'record-old', 'patientId': 'patient-1', 'examinationDate': '2025-01-01T15:00:00Z', 'prescription': hasPrescription ? {'sphereOD': -1} : null},
         {'id': 'record-new', 'patientId': wrongRecordPatient ? 'another-patient' : 'patient-1', 'examinationDate': '2026-11-12T15:00:00Z', 'prescription': hasPrescription ? {'sphereOD': -2, 'treatment': 'Antirreflejo'} : null},
       ]);
-      if (path == 'inventory/frames') return catalogUnavailable ? commerceResponse({'message': 'Catálogo no disponible'}, 503) : commerceResponse([
+      }
+      if (path == 'inventory/frames') {
+        return catalogUnavailable ? commerceResponse({'message': 'Catálogo no disponible'}, 503) : commerceResponse([
         {'sku': 'FRAME-1', 'name': 'Montura del catálogo', 'price': 104.35, 'currency': 'PEN', 'material': 'Acetato'},
         {'sku': 'FRAME-0', 'name': 'Montura agotada', 'price': 80.50, 'currency': 'PEN'},
       ]);
+      }
       if (path == 'inventory/stock') {
         commerceCheck(request.url.queryParameters['opticalStoreId'] == 'store-1', 'Query must use assigned store');
         return stockUnavailable ? commerceResponse({'message': 'Stock no disponible'}, 503) : commerceResponse({'opticalStoreId': 'store-1', 'stocks': [
@@ -105,7 +109,10 @@ class CommerceServer {
     }
     throw StateError('Unexpected commerce HTTP request: ${request.method} $path');
   }
-  CommerceRepositoryImpl repository() => CommerceRepositoryImpl(OptiFlowApi(client: MockClient(respond))..token = 'staff-token');
+  CommerceRepositoryImpl repository() {
+    final api = TestApis(client: MockClient(respond))..token = 'staff-token';
+    return CommerceRepositoryImpl(api: api.commerce, clinicalApi: api.clinical, bookingApi: api.booking, inventoryApi: api.inventory);
+  }
   QuoteFlow quoteFlow({bool Function()? active, void Function()? onChanged}) => QuoteFlow(repository: repository(), patientId: 'patient-1', storeId: 'store-1', isActive: active, onChanged: onChanged);
   SaleFlow saleFlow({bool Function()? active, Future<void> Function()? onClosed}) => SaleFlow(repository: repository(), patientId: 'patient-1', saleId: 'sale-1', isActive: active, onClosed: onClosed);
 }

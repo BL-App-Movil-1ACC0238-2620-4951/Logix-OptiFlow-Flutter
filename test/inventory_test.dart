@@ -1,22 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'support/test_apis.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/core/di/dependencies.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/domain/entities/models.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/inventory_api_checks.dart';
 
-OptiFlowController controller(
+Future<OptiFlowController> controller(
     Future<http.Response> Function(http.Request) handler,
     {UserRole role = UserRole.admin,
-    String? storeId = 'store-1'}) {
-  final api = OptiFlowApi(client: MockClient(handler));
-  final app = OptiFlowController(dependencies: AppDependencies(api: api));
+    String? storeId = 'store-1'}) async {
+  final api = await setupTestDependencies(MockClient(handler));
+  final app = OptiFlowController();
   app.session = PatientSession(
       patientId: 'user-1',
       name: 'Usuario',
@@ -38,7 +38,7 @@ void main() {
 
   test('inventario combina catálogo real y stock de la óptica del asesor',
       () async {
-    final app = controller(
+    final app = await controller(
         (request) async => request.url.path.endsWith('/stock')
             ? jsonResponse(stockFixture)
             : jsonResponse([frameFixture]),
@@ -53,7 +53,7 @@ void main() {
 
   test('sin óptica asignada no consulta ni inventa stock', () async {
     var requests = 0;
-    final app = controller((_) async {
+    final app = await controller((_) async {
       requests++;
       return jsonResponse(stockFixture);
     }, storeId: null);
@@ -67,7 +67,7 @@ void main() {
       'asesor no puede registrar ingresos y las cantidades inválidas no hacen POST',
       () async {
     var requests = 0;
-    final advisor = controller((_) async {
+    final advisor = await controller((_) async {
       requests++;
       return jsonResponse(movementFixture);
     }, role: UserRole.salesAdvisor);
@@ -75,7 +75,7 @@ void main() {
         await advisor.replenishStock(
             sku: 'RX 42', supplierId: 'supplier-1', quantity: 4),
         isFalse);
-    final admin = controller((_) async {
+    final admin = await controller((_) async {
       requests++;
       return jsonResponse(movementFixture);
     });
@@ -91,7 +91,7 @@ void main() {
   test('ingreso guardado sigue siendo exitoso aunque falle recargar stock',
       () async {
     var posts = 0;
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'POST') {
         posts++;
         return jsonResponse(movementFixture, 201);
@@ -118,7 +118,7 @@ void main() {
       () async {
     final pending = Completer<http.Response>();
     var delayStock = false;
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'PATCH') {
         return jsonResponse({...frameFixture, 'price': 399.50});
       }
@@ -142,7 +142,7 @@ void main() {
       'logout descarta catálogo pendiente y borra modelos y stock de la cuenta',
       () async {
     final pending = Completer<http.Response>();
-    final app = controller((_) => pending.future, role: UserRole.patient);
+    final app = await controller((_) => pending.future, role: UserRole.patient);
     final loading = app.refreshCatalog();
     await app.logout();
     pending.complete(jsonResponse([frameFixture]));

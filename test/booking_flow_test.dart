@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'support/test_apis.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logix_optiflow/core/di/dependencies.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/domain/entities/models.dart';
+import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
 import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 
 http.Response response(Object value, [int status = 200]) => http.Response(
@@ -58,10 +58,10 @@ Map<String, Object> appointment(
       'status': status,
     };
 
-OptiFlowController controller(
-    Future<http.Response> Function(http.Request) handler) {
-  final api = OptiFlowApi(client: MockClient(handler));
-  final app = OptiFlowController(dependencies: AppDependencies(api: api));
+Future<OptiFlowController> controller(
+    Future<http.Response> Function(http.Request) handler) async {
+  final api = await setupTestDependencies(MockClient(handler));
+  final app = OptiFlowController();
   app.session = const PatientSession(
       patientId: 'patient-1',
       name: 'Paciente',
@@ -87,7 +87,7 @@ void main() {
   test('sin ópticas o con error no ofrece reservas de demostración', () async {
     for (final status in [200, 503]) {
       var posts = 0;
-      final app = controller((request) async {
+      final app = await controller((request) async {
         if (request.method == 'POST') posts++;
         return response(
             status == 200 ? [] : {'message': 'Servidor no disponible'}, status);
@@ -106,7 +106,7 @@ void main() {
       'solo ofrece horarios futuros disponibles de la óptica, incluso domingos',
       () async {
     final app =
-        controller((request) async => request.url.path.endsWith('/time-slots')
+        await controller((request) async => request.url.path.endsWith('/time-slots')
             ? response([
                 slot(),
                 slot(id: 'booked', status: 'BOOKED'),
@@ -124,7 +124,7 @@ void main() {
 
   test('error al cargar horarios conserva lista vacía sin inventar horarios',
       () async {
-    final app = controller((request) async =>
+    final app = await controller((request) async =>
         request.url.path.endsWith('/time-slots')
             ? response({'message': 'No se pudo consultar disponibilidad'}, 503)
             : response([store]));
@@ -140,7 +140,7 @@ void main() {
       () async {
     final pending = Completer<http.Response>();
     var posts = 0;
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'POST') {
         posts++;
         expect(request.headers['Authorization'], 'Bearer token');
@@ -168,7 +168,7 @@ void main() {
 
   test('un conflicto 409 pide otro horario y no muestra reserva exitosa',
       () async {
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'POST') {
         return response({'message': 'Slot unavailable'}, 409);
       }
@@ -187,7 +187,7 @@ void main() {
   test('cancelación PATCH solo cambia estado después de respuesta exitosa',
       () async {
     var allowCancel = false;
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'PATCH') {
         expect(request.url.path, '/api/v1/appointments/original/status');
         expect(jsonDecode(request.body), {'status': 'CANCELLED'});
@@ -213,7 +213,7 @@ void main() {
       () async {
     var posts = 0;
     var patches = 0;
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'POST') {
         posts++;
         return response(appointment(), 201);
@@ -249,7 +249,7 @@ void main() {
   test('búsquedas fuera de orden no reemplazan el resultado más reciente',
       () async {
     final older = Completer<http.Response>();
-    final app = controller(
+    final app = await controller(
         (request) async => request.url.queryParameters['name'] == 'anterior'
             ? older.future
             : response([
@@ -270,7 +270,7 @@ void main() {
   test('cerrar sesión mientras carga disponibilidad descarta la respuesta',
       () async {
     final pending = Completer<http.Response>();
-    final app = controller((request) async =>
+    final app = await controller((request) async =>
         request.url.path.endsWith('/time-slots')
             ? pending.future
             : response([store]));
@@ -287,7 +287,7 @@ void main() {
   test('respuesta antigua de listado no borra una reserva recién confirmada',
       () async {
     final pending = Completer<http.Response>();
-    final app = controller((request) async {
+    final app = await controller((request) async {
       if (request.method == 'POST') return response(appointment(), 201);
       if (request.url.path.endsWith('/appointments')) return pending.future;
       return request.url.path.endsWith('/time-slots')

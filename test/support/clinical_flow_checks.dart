@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:logix_optiflow/data/datasources/optiflow_api.dart';
-import 'package:logix_optiflow/data/repositories/clinical_repository_impl.dart';
-import 'package:logix_optiflow/domain/entities/clinical_forms.dart';
+import 'test_apis.dart';
+import 'package:logix_optiflow/features/clinical/infrastructure/clinical_repository_impl.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
 import 'package:logix_optiflow/presentation/state/clinical_care_flow.dart';
 
 void clinicalCheck(bool value, String message) {
@@ -135,9 +135,9 @@ class ClinicalServer {
 
   ClinicalCareFlow flow(
       {bool Function()? isActive, void Function()? onChanged}) {
-    final api = OptiFlowApi(client: MockClient(respond))..token = 'staff-token';
+    final api = TestApis(client: MockClient(respond))..token = 'staff-token';
     return ClinicalCareFlow(
-        repository: ClinicalRepositoryImpl(api),
+        repository: ClinicalRepositoryImpl(api: api.clinical, bookingApi: api.booking),
         patientId: 'patient-1',
         appointmentId: 'appointment-1',
         isActive: isActive,

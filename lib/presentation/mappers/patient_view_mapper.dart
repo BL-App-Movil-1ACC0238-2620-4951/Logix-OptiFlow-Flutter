@@ -1,10 +1,10 @@
 import 'package:intl/intl.dart';
 
-import '../../domain/entities/appointment.dart';
-import '../../domain/entities/clinical_record.dart';
-import '../../domain/entities/time_slot.dart';
-import '../../domain/entities/work_order.dart';
-import '../models/ui_models.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/time_slot.dart';
+import 'package:logix_optiflow/features/production/domain/work_order.dart';
+import 'package:logix_optiflow/presentation/models/ui_models.dart';
 
 abstract final class PatientViewMapper {
   static AppointmentUi appointment({

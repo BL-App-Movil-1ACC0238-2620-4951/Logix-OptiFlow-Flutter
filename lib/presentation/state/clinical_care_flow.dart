@@ -1,9 +1,9 @@
-import '../../core/errors/api_exception.dart';
-import '../../domain/entities/appointment.dart';
-import '../../domain/entities/clinical_forms.dart';
-import '../../domain/entities/clinical_record.dart';
-import '../../domain/entities/staff_patient.dart';
-import '../../domain/repositories/clinical_repository.dart';
+import 'package:logix_optiflow/core/errors/api_exception.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/appointment.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_record.dart';
+import 'package:logix_optiflow/features/searchbooking/domain/staff_patient.dart';
+import 'package:logix_optiflow/features/clinical/domain/clinical_repository.dart';
 
 /// Port of Movile's ClinicalCareViewModel. Kept independent of Flutter so the
 /// complete sequence and recovery cases can run without the widget test engine.

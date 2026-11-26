@@ -3,19 +3,19 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'presentation/pages/auth/auth_screen.dart';
-import 'presentation/pages/patient/appointments_screen.dart';
-import 'presentation/pages/patient/booking_screen.dart';
-import 'presentation/pages/patient/catalog_screen.dart';
-import 'presentation/pages/patient/extra_screens.dart';
-import 'presentation/pages/patient/home_screen.dart';
-import 'presentation/pages/patient/orders_screen.dart';
-import 'presentation/pages/patient/profile_screen.dart';
-import 'presentation/pages/patient/search_screen.dart';
-import 'presentation/pages/staff/staff_screens.dart';
-import 'presentation/state/optiflow_controller.dart';
-import 'presentation/navigation/route_access.dart';
-import 'core/theme/app_colors.dart';
+import 'package:logix_optiflow/presentation/pages/auth/auth_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/appointments_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/booking_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/catalog_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/extra_screens.dart';
+import 'package:logix_optiflow/presentation/pages/patient/home_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/orders_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
+import 'package:logix_optiflow/presentation/pages/staff/staff_screens.dart';
+import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/presentation/navigation/route_access.dart';
+import 'package:logix_optiflow/core/theme/app_colors.dart';
 
 class OptiFlowApp extends StatefulWidget {
   const OptiFlowApp({super.key});
