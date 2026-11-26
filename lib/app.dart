@@ -19,6 +19,7 @@ import 'package:logix_optiflow/presentation/pages/patient/store_map_screen.dart'
 import 'package:logix_optiflow/presentation/pages/staff/staff_screens.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
+import 'package:logix_optiflow/features/notification/presentation/push_notifications_view_model.dart';
 import 'package:logix_optiflow/presentation/navigation/route_access.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 
@@ -98,6 +99,13 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/s/admin/schedule', builder: (_, __) => const ScheduleScreen()),
     ],
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // Al tocar un aviso push se abre Notificaciones.
+    getIt<PushNotificationsViewModel>().start(() => _router.go('/p/notifications'));
+  }
 
   @override
   void dispose() {

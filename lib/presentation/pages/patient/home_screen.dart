@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/push/push_messaging.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (getIt<SessionViewModel>().session?.hasToken == true) getIt<PatientViewModel>().refreshPatient();
       getIt<CatalogViewModel>().refreshCatalog();
+      getIt<PushMessaging>().requestPermission();
     });
   }
 

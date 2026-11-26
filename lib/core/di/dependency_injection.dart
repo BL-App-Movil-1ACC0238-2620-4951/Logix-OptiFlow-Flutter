@@ -59,10 +59,13 @@ import 'package:logix_optiflow/features/inventory/infrastructure/inventory_repos
 import 'package:logix_optiflow/features/notification/application/answer_survey_use_case.dart';
 import 'package:logix_optiflow/features/notification/application/get_notifications_use_case.dart';
 import 'package:logix_optiflow/features/notification/application/mark_notification_read_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/register_device_use_case.dart';
 import 'package:logix_optiflow/features/notification/domain/notification_repository.dart';
 import 'package:logix_optiflow/features/notification/infrastructure/notification_api.dart';
 import 'package:logix_optiflow/features/notification/infrastructure/notification_repository_impl.dart';
 import 'package:logix_optiflow/features/notification/presentation/notifications_view_model.dart';
+import 'package:logix_optiflow/features/notification/presentation/push_notifications_view_model.dart';
+import 'package:logix_optiflow/core/push/push_messaging.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/application/assign_technician_use_case.dart';
@@ -142,6 +145,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   // Las pruebas usan su propio cliente HTTP y no guardan nada en el teléfono.
   getIt.registerLazySingleton(() => OfflineCache(getIt<AppDatabase>().cachedResponseDao));
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(client: client, baseUrl: baseUrl, offline: client == null ? getIt<OfflineCache>() : null));
+  getIt.registerLazySingleton(() => PushMessaging());
   getIt.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
   getIt.registerLazySingleton<TokenStorage>(
     () => tokenStorage ?? SecureTokenStorage(storage: getIt<FlutterSecureStorage>()),
@@ -176,6 +180,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => MarkNotificationReadUseCase(repository: getIt<NotificationRepository>()));
   getIt.registerLazySingleton(() => AnswerSurveyUseCase(repository: getIt<NotificationRepository>()));
   getIt.registerLazySingleton(() => GetLoyaltyPointsUseCase(repository: getIt<NotificationRepository>()));
+  getIt.registerLazySingleton(() => RegisterDeviceUseCase(repository: getIt<NotificationRepository>(), push: getIt()));
 
   // searchbooking
   getIt.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl(api: getIt<SearchBookingApi>()));
@@ -307,6 +312,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         markNotificationReadUseCase: getIt(),
         answerSurveyUseCase: getIt(),
       ));
+  getIt.registerLazySingleton(() => PushNotificationsViewModel(session: getIt(), push: getIt(), registerDeviceUseCase: getIt(), notifications: getIt()));
   getIt.registerLazySingleton(() => BookingViewModel(
         session: getIt(),
         patient: getIt(),

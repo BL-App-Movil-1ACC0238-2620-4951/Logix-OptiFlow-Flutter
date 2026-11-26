@@ -35,6 +35,11 @@ class NotificationApi {
     await _client.send('POST', 'notifications/$id/survey-response', {'rating': rating, 'comment': text.isEmpty ? null : text});
   }
 
+  /// Token de push de este celular, para que el backend le mande los avisos del paciente.
+  Future<void> registerDevice(String patientId, String token) async {
+    await _client.send('POST', 'patients/$patientId/device-tokens', {'token': token, 'platform': 'ANDROID'});
+  }
+
   static PatientNotification _fromJson(Map<String, dynamic> json) {
     DateTime? date(Object? value) => value is String ? DateTime.tryParse(value)?.toLocal() : null;
     String? text(Object? value) => value?.toString();
