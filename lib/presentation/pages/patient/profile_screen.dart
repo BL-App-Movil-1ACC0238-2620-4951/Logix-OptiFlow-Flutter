@@ -13,9 +13,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final patientVm = getIt<PatientViewModel>();
     final sessionVm = getIt<SessionViewModel>();
     return ListenableBuilder(
-      listenable: sessionVm,
+      listenable: Listenable.merge([patientVm, sessionVm]),
       builder: (context, _) {
         return PatientScaffold(
           tab: PatientTab.profile,
@@ -56,7 +57,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     _Menu(icon: Icons.favorite_border, title: 'Historial clínico', subtitle: 'Controles y antecedentes', onTap: () => context.push('/p/history')),
                     const Divider(height: 1, color: AppColors.lavender),
-                    _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: '1 receta disponible', onTap: () => context.push('/p/prescription')),
+                    _Menu(icon: Icons.description_outlined, title: 'Mis recetas', subtitle: patientVm.state.prescription == null ? 'Aún no tienes recetas' : 'Tu última receta', onTap: () => context.push('/p/prescription')),
                   ],
                 ),
               ),
@@ -84,8 +85,6 @@ class ProfileScreen extends StatelessWidget {
                   if (context.mounted) context.go('/auth');
                 },
               ),
-              const SizedBox(height: 12),
-              Text('Tus datos de demostración se guardan solo en este dispositivo.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11, color: AppColors.slate500)),
               const SizedBox(height: 16),
             ],
           ),
@@ -151,7 +150,7 @@ class HistoryScreen extends StatelessWidget {
       listenable: patientVm,
       builder: (context, _) {
         final history = patientVm.state.history;
-        final latest = history.isEmpty ? '12 de marzo de 2025' : _prettyDate(history.first.date);
+        final latest = history.isEmpty ? 'Sin controles registrados' : _prettyDate(history.first.date);
         return PatientScaffold(
           tab: PatientTab.profile,
           topBar: LightTopBar(title: 'Historial clínico', onBack: () => context.pop()),
@@ -171,7 +170,7 @@ class HistoryScreen extends StatelessWidget {
                         children: [
                           Text('Último control', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.75))),
                           Text(latest, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.white)),
-                          Text('Próximo control recomendado en 9 meses', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
+                          Text('Se recomienda un control al año', style: GoogleFonts.inter(fontSize: 12, color: AppColors.white.withValues(alpha: 0.8))),
                         ],
                       ),
                     ),
@@ -181,6 +180,8 @@ class HistoryScreen extends StatelessWidget {
               const SizedBox(height: 28),
               Text('Atenciones', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
               const SizedBox(height: 16),
+              if (history.isEmpty)
+                Text('Aún no tienes atenciones registradas.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
               for (var index = 0; index < history.length; index++)
                 InkWell(
                   onTap: () => context.push('/p/prescription'),

@@ -3,20 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
 
 class PatientUiState {
-  PatientUiState({
+  const PatientUiState({
     this.appointments = const [],
     this.appointmentsLoading = false,
     this.appointmentsError,
     this.appointmentActionLoading = false,
     this.appointmentActionError,
-    List<OrderUi>? orders,
-    List<HistoryEntry>? history,
-    PrescriptionUi? prescription,
+    this.orders = const [],
+    this.history = const [],
+    this.prescription,
     this.patientLoading = true,
     this.readNotificationIds = const {},
-  })  : orders = orders ?? PatientDemo.orders(),
-        history = history ?? List.of(PatientDemo.history),
-        prescription = prescription ?? PrescriptionUi.demo('Valentina Silva');
+  });
 
   final List<AppointmentUi> appointments;
   final bool appointmentsLoading;
@@ -25,7 +23,7 @@ class PatientUiState {
   final String? appointmentActionError;
   final List<OrderUi> orders;
   final List<HistoryEntry> history;
-  final PrescriptionUi prescription;
+  final PrescriptionUi? prescription;
   final bool patientLoading;
   final Set<String> readNotificationIds;
 
@@ -37,7 +35,7 @@ class PatientUiState {
     ValueGetter<String?>? appointmentActionError,
     List<OrderUi>? orders,
     List<HistoryEntry>? history,
-    PrescriptionUi? prescription,
+    ValueGetter<PrescriptionUi?>? prescription,
     bool? patientLoading,
     Set<String>? readNotificationIds,
   }) {
@@ -49,7 +47,7 @@ class PatientUiState {
       appointmentActionError: appointmentActionError != null ? appointmentActionError() : this.appointmentActionError,
       orders: orders ?? this.orders,
       history: history ?? this.history,
-      prescription: prescription ?? this.prescription,
+      prescription: prescription != null ? prescription() : this.prescription,
       patientLoading: patientLoading ?? this.patientLoading,
       readNotificationIds: readNotificationIds ?? this.readNotificationIds,
     );

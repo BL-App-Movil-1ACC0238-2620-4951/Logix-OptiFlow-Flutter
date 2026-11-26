@@ -1,8 +1,6 @@
 import 'package:logix_optiflow/features/inventory/domain/inventory.dart';
 import 'package:logix_optiflow/features/inventory/domain/inventory_repository.dart';
-import 'package:logix_optiflow/features/inventory/domain/product.dart';
 import 'package:logix_optiflow/features/inventory/infrastructure/inventory_api.dart';
-import 'package:logix_optiflow/features/inventory/infrastructure/inventory_local_data_source.dart';
 
 class InventoryRepositoryImpl implements InventoryRepository {
   const InventoryRepositoryImpl({required this.api});
@@ -20,7 +18,5 @@ class InventoryRepositoryImpl implements InventoryRepository {
   Future<StockMovement> replenish({required String opticalStoreId, required String sku, required String supplierId, required int quantity, int? minimumStock}) =>
       api.replenishStock(opticalStoreId: opticalStoreId, sku: sku, supplierId: supplierId, quantity: quantity, minimumStock: minimumStock);
   @override
-  List<ProductItem> products() => InventoryLocalDataSource.products;
-  @override
-  ProductItem product(String id) => InventoryLocalDataSource.product(id);
+  Future<List<LowStockAlert>> lowStockAlerts(String opticalStoreId) => api.lowStockAlerts(opticalStoreId);
 }

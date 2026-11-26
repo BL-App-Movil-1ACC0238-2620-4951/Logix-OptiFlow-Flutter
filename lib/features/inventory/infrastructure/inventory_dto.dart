@@ -40,6 +40,11 @@ abstract final class InventoryDto {
     id: json['id'] as String, name: json['name'] as String, contact: json['contact'] as String? ?? '',
   );
 
+  static LowStockAlert lowStockAlert(Map<String, dynamic> json) => LowStockAlert(
+    sku: json['sku'] as String, name: json['name'] as String? ?? json['sku'] as String,
+    quantity: (json['quantity'] as num).toInt(), minimumStock: (json['minimumStock'] as num).toInt(),
+  );
+
   static StockMovement movement(Map<String, dynamic> json) => StockMovement(
     id: json['id'] as String, sku: json['sku'] as String,
     name: json['frameModelName'] as String? ?? json['sku'] as String,

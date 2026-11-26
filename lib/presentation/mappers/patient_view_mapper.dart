@@ -90,9 +90,9 @@ abstract final class PatientViewMapper {
       dateLabel: DateFormat('d MMM', 'es').format(order.createdAt ?? DateTime.now()),
       step: step,
       estimate: order.estimatedDelivery ?? 'por confirmar',
-      product: 'Montura Nova N-24 · Azul',
-      productDetail: order.lensSpecification ?? 'Lentes monofocales con antirreflejo',
-      pickup: 'Óptica Visión Norte · Providencia',
+      product: 'Lentes ópticos',
+      productDetail: order.lensSpecification ?? 'Especificación por confirmar',
+      pickup: 'Tu óptica',
       history: const [],
       fromApi: true,
     );
@@ -104,7 +104,7 @@ abstract final class PatientViewMapper {
       date: when == null ? '—' : DateFormat('dd MMM yyyy', 'es').format(when).toUpperCase().replaceAll('.', ''),
       title: 'Evaluación visual',
       summary: record.observations ?? 'Sin observaciones',
-      professional: 'Dra. Fernanda Soto',
+      professional: 'Optometrista de la óptica',
     );
   }
 
@@ -128,7 +128,8 @@ abstract final class PatientViewMapper {
 
     final date = chosen?.examinationDate?.toLocal() ?? DateTime.now();
     final treatment = values.treatment?.trim() ?? '';
-    return PrescriptionUi.demo(name).copyWith(
+    final notes = chosen?.observations?.trim() ?? '';
+    return PrescriptionUi(
       patientName: name,
       date: DateFormat('dd/MM/yyyy').format(date),
       issuedLabel: 'Emitida el ${DateFormat('d MMM yyyy', 'es').format(date)}',
@@ -140,7 +141,7 @@ abstract final class PatientViewMapper {
       cylinderOi: fmt(values.cylinderOs),
       axisOi: values.axisOs == null ? '—' : '${values.axisOs}°',
       additionOi: fmt(values.addition, plus: true),
-      observations: treatment.isEmpty ? null : values.treatment,
+      observations: [if (treatment.isNotEmpty) treatment, if (notes.isNotEmpty) notes].join(' · '),
     );
   }
 

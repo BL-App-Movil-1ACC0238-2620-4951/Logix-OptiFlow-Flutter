@@ -59,9 +59,9 @@ class SessionViewModel extends ChangeNotifier {
   String get homeRoute => homePath(session);
   bool canOpen(String path) => canAccessPath(session, path);
 
-  String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Valentina Silva');
+  String get displayName => session?.name.trim().isNotEmpty == true ? session!.name.trim() : (session?.isPatient == false ? 'Personal' : 'Paciente');
   String get firstName => displayName.split(' ').first;
-  String get email => session?.email.trim().isNotEmpty == true ? session!.email.trim() : 'valentina.silva@email.com';
+  String get email => session?.email.trim().isNotEmpty == true ? session!.email.trim() : '';
   String get initials {
     final parts = displayName.split(' ').where((p) => p.isNotEmpty).take(2);
     return parts.map((p) => p[0].toUpperCase()).join();

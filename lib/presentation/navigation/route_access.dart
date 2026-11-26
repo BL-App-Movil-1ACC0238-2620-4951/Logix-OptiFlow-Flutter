@@ -14,7 +14,7 @@ bool canAccessPath(PatientSession? session, String path) {
   final feature = switch (path) {
     '/s/agenda' || '/s/appointments/new' => StaffFeature.agenda,
     '/s/patients' || '/s/patients/new' => StaffFeature.patients,
-    '/s/clinical' || '/s/evaluation' || '/s/work-order' => StaffFeature.clinical,
+    '/s/clinical' || '/s/evaluation' => StaffFeature.clinical,
     '/s/inventory' || '/s/scanner' => StaffFeature.stock,
     '/s/movement' => StaffFeature.inventory,
     '/s/production' => StaffFeature.production,

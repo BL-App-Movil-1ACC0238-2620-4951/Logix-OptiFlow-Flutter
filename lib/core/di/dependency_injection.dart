@@ -27,9 +27,8 @@ import 'package:logix_optiflow/features/clinical/infrastructure/clinical_reposit
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_api.dart';
 import 'package:logix_optiflow/features/clinical/infrastructure/commerce_repository_impl.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frame_use_case.dart';
+import 'package:logix_optiflow/features/inventory/application/get_low_stock_alerts_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_frames_use_case.dart';
-import 'package:logix_optiflow/features/inventory/application/get_product_use_case.dart';
-import 'package:logix_optiflow/features/inventory/application/get_products_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_stock_movements_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_store_stock_use_case.dart';
 import 'package:logix_optiflow/features/inventory/application/get_suppliers_use_case.dart';
@@ -46,14 +45,13 @@ import 'package:logix_optiflow/features/notification/domain/notification_reposit
 import 'package:logix_optiflow/features/notification/infrastructure/notification_local_data_source.dart';
 import 'package:logix_optiflow/features/notification/infrastructure/notification_repository_impl.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
-import 'package:logix_optiflow/features/production/application/get_production_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/production_repository.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_api.dart';
 import 'package:logix_optiflow/features/production/infrastructure/production_repository_impl.dart';
-import 'package:logix_optiflow/features/report/application/get_report_bars_use_case.dart';
-import 'package:logix_optiflow/features/report/application/get_staff_alerts_use_case.dart';
+import 'package:logix_optiflow/features/report/application/get_monthly_report_use_case.dart';
 import 'package:logix_optiflow/features/report/domain/report_repository.dart';
+import 'package:logix_optiflow/features/report/infrastructure/report_api.dart';
 import 'package:logix_optiflow/features/report/infrastructure/report_repository_impl.dart';
 import 'package:logix_optiflow/features/searchbooking/application/book_appointment_use_case.dart';
 import 'package:logix_optiflow/features/searchbooking/application/cancel_appointment_use_case.dart';
@@ -105,6 +103,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<CommerceApi>(() => CommerceApi(getIt<ApiClient>()));
   getIt.registerLazySingleton<ProductionApi>(() => ProductionApi(getIt<ApiClient>()));
   getIt.registerLazySingleton<InventoryApi>(() => InventoryApi(getIt<ApiClient>()));
+  getIt.registerLazySingleton<ReportApi>(() => ReportApi(getIt<ApiClient>()));
 
   // auth
   getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(api: getIt<AuthApi>()));
@@ -160,7 +159,6 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<ProductionRepository>(() => ProductionRepositoryImpl(api: getIt<ProductionApi>()));
   getIt.registerLazySingleton(() => GetPatientWorkOrdersUseCase(repository: getIt<ProductionRepository>()));
   getIt.registerLazySingleton(() => GetStaffOrdersUseCase(repository: getIt<ProductionRepository>()));
-  getIt.registerLazySingleton(() => GetProductionOrdersUseCase(repository: getIt<ProductionRepository>()));
 
   // inventory
   getIt.registerLazySingleton<CatalogRepository>(() => CatalogRepositoryImpl(api: getIt<InventoryApi>()));
@@ -172,13 +170,11 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => GetSuppliersUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => GetStockMovementsUseCase(repository: getIt<InventoryRepository>()));
   getIt.registerLazySingleton(() => ReplenishStockUseCase(repository: getIt<InventoryRepository>()));
-  getIt.registerLazySingleton(() => GetProductsUseCase(repository: getIt<InventoryRepository>()));
-  getIt.registerLazySingleton(() => GetProductUseCase(repository: getIt<InventoryRepository>()));
+  getIt.registerLazySingleton(() => GetLowStockAlertsUseCase(repository: getIt<InventoryRepository>()));
 
   // report
-  getIt.registerLazySingleton<ReportRepository>(() => const ReportRepositoryImpl());
-  getIt.registerLazySingleton(() => GetStaffAlertsUseCase(repository: getIt<ReportRepository>()));
-  getIt.registerLazySingleton(() => GetReportBarsUseCase(repository: getIt<ReportRepository>()));
+  getIt.registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(api: getIt<ReportApi>()));
+  getIt.registerLazySingleton(() => GetMonthlyReportUseCase(repository: getIt<ReportRepository>()));
 
   // ViewModels: uno por área, compartidos por las pantallas.
   getIt.registerLazySingleton(() => SessionViewModel(
@@ -232,7 +228,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getStaffOrdersUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => ProductionViewModel(
-        session: getIt(), getStaffOrdersUseCase: getIt(), getProductionOrdersUseCase: getIt()));
+        session: getIt(), patients: getIt(), getStaffOrdersUseCase: getIt(), getStaffPatientUseCase: getIt()));
   getIt.registerLazySingleton(() => AgendaViewModel(
         session: getIt(),
         patients: getIt(),
@@ -243,7 +239,8 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         getStoreAvailabilityUseCase: getIt(),
         bookAppointmentUseCase: getIt(),
       ));
-  getIt.registerLazySingleton(() => ReportViewModel(getStaffAlertsUseCase: getIt(), getReportBarsUseCase: getIt()));
+  getIt.registerLazySingleton(() => ReportViewModel(
+        session: getIt(), production: getIt(), getLowStockAlertsUseCase: getIt(), getMonthlyReportUseCase: getIt()));
   getIt.registerLazySingleton(() => ClinicalCareViewModel(
         session: getIt(), repository: getIt(), agenda: getIt(), patients: getIt()));
   getIt.registerLazySingleton(() => QuoteViewModel(session: getIt(), repository: getIt()));

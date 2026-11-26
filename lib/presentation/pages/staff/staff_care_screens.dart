@@ -168,12 +168,18 @@ class _ProductionScreenState extends State<ProductionScreen> {
   ProductionStage stage = ProductionStage.inWorkshop;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) getIt<ProductionViewModel>().refreshStaffOrders(); });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final productionVm = getIt<ProductionViewModel>();
     return ListenableBuilder(
       listenable: productionVm,
       builder: (context, _) {
-        final orders = productionVm.state.productionOrders;
+        final orders = productionVm.productionOrders;
         final visible = orders.where((order) => order.stage == stage).toList();
         return StaffScaffold(
           tab: StaffTab.more,
@@ -201,7 +207,14 @@ class _ProductionScreenState extends State<ProductionScreen> {
               const SizedBox(height: 26),
               Text('${stage.label} · ${visible.length}', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
               const SizedBox(height: 14),
-              if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+              if (productionVm.state.loading && orders.isEmpty)
+                const Center(child: CircularProgressIndicator())
+              else if (productionVm.state.error != null && orders.isEmpty)
+                Column(children: [
+                  Text(productionVm.state.error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
+                  TextButton(onPressed: productionVm.refreshStaffOrders, child: const Text('Reintentar')),
+                ])
+              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate400)),
               for (final order in visible) ...[
                 _OrderCard(order, stage.label),
                 const SizedBox(height: 10),
