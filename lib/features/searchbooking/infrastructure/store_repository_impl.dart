@@ -24,6 +24,15 @@ class StoreRepositoryImpl implements StoreRepository {
   }
 
   @override
+  Future<List<OpticalStore>> nearby(double latitude, double longitude, double radiusKm) async {
+    final stores = await api.nearbyStores(latitude, longitude, radiusKm);
+    return stores.map((store) => store.toEntity()).toList();
+  }
+
+  @override
+  Future<void> saveFavorite(String patientId, String opticalStoreId) => api.saveFavoriteStore(patientId, opticalStoreId);
+
+  @override
   Future<List<TimeSlot>> availability(String storeId) async {
     final slots = await api.availability(storeId);
     return slots

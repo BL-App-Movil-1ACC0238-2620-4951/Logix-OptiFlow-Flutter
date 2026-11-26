@@ -12,6 +12,7 @@ import 'package:logix_optiflow/presentation/pages/patient/notifications_screen.d
 import 'package:logix_optiflow/presentation/pages/patient/orders_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/profile_screen.dart';
 import 'package:logix_optiflow/presentation/pages/patient/search_screen.dart';
+import 'package:logix_optiflow/presentation/pages/patient/store_map_screen.dart';
 import 'package:logix_optiflow/presentation/pages/staff/staff_screens.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -39,6 +40,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
       GoRoute(path: '/auth', builder: (_, __) => const AuthScreen()),
       GoRoute(path: '/p/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/p/search', builder: (_, __) => const SearchScreen()),
+      GoRoute(path: '/p/search/map', builder: (_, __) => const StoreMapScreen()),
       GoRoute(path: '/p/appointments', builder: (_, __) => const AppointmentsScreen()),
       GoRoute(path: '/p/orders', builder: (_, __) => const OrdersScreen()),
       GoRoute(path: '/p/profile', builder: (_, __) => const ProfileScreen()),

@@ -34,6 +34,20 @@ class SearchBookingApi {
     );
   }
 
+  /// Ópticas a menos de [radiusKm] del punto (`lat`, `lng`, `radiusKm`).
+  Future<List<OpticalStoreDto>> nearbyStores(double latitude, double longitude, double radiusKm) async {
+    final json = await _client.get('optical-stores', {
+      'lat': latitude.toString(),
+      'lng': longitude.toString(),
+      'radiusKm': radiusKm.toString(),
+    });
+    return _stores(json);
+  }
+
+  Future<void> saveFavoriteStore(String patientId, String opticalStoreId) async {
+    await _client.send('POST', 'patients/$patientId/favorites', {'opticalStoreId': opticalStoreId});
+  }
+
   Future<List<TimeSlotDto>> availability(String storeId) async {
     final json = await _client.get('optical-stores/$storeId/time-slots');
     final list = json is Map ? (json['timeSlots'] as List?) ?? const [] : json as List? ?? const [];
