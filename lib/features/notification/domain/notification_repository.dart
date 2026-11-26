@@ -1,6 +1,9 @@
-/// Notificaciones que el paciente ya leyó en este dispositivo.
-abstract class NotificationRepository {
-  Future<Set<String>> readNotificationIds();
+import 'package:logix_optiflow/features/notification/domain/patient_notification.dart';
 
-  Future<void> saveNotificationIds(Set<String> ids);
+abstract class NotificationRepository {
+  Future<List<PatientNotification>> forPatient(String patientId);
+
+  Future<void> markRead(String id);
+
+  Future<void> answerSurvey(String id, int rating, String? comment);
 }

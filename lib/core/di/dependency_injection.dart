@@ -39,11 +39,13 @@ import 'package:logix_optiflow/features/inventory/domain/inventory_repository.da
 import 'package:logix_optiflow/features/inventory/infrastructure/catalog_repository_impl.dart';
 import 'package:logix_optiflow/features/inventory/infrastructure/inventory_api.dart';
 import 'package:logix_optiflow/features/inventory/infrastructure/inventory_repository_impl.dart';
-import 'package:logix_optiflow/features/notification/application/load_read_notifications_use_case.dart';
-import 'package:logix_optiflow/features/notification/application/save_read_notifications_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/answer_survey_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/get_notifications_use_case.dart';
+import 'package:logix_optiflow/features/notification/application/mark_notification_read_use_case.dart';
 import 'package:logix_optiflow/features/notification/domain/notification_repository.dart';
-import 'package:logix_optiflow/features/notification/infrastructure/notification_local_data_source.dart';
+import 'package:logix_optiflow/features/notification/infrastructure/notification_api.dart';
 import 'package:logix_optiflow/features/notification/infrastructure/notification_repository_impl.dart';
+import 'package:logix_optiflow/features/notification/presentation/notifications_view_model.dart';
 import 'package:logix_optiflow/features/production/application/get_patient_work_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/application/get_staff_orders_use_case.dart';
 import 'package:logix_optiflow/features/production/domain/production_repository.dart';
@@ -104,6 +106,7 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton<ProductionApi>(() => ProductionApi(getIt<ApiClient>()));
   getIt.registerLazySingleton<InventoryApi>(() => InventoryApi(getIt<ApiClient>()));
   getIt.registerLazySingleton<ReportApi>(() => ReportApi(getIt<ApiClient>()));
+  getIt.registerLazySingleton<NotificationApi>(() => NotificationApi(getIt<ApiClient>()));
 
   // auth
   getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(api: getIt<AuthApi>()));
@@ -119,11 +122,10 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
   getIt.registerLazySingleton(() => SaveAppSettingsUseCase(repository: getIt<SessionRepository>()));
 
   // notification
-  getIt.registerLazySingleton<NotificationRepository>(
-    () => NotificationRepositoryImpl(local: NotificationLocalDataSource()),
-  );
-  getIt.registerLazySingleton(() => LoadReadNotificationsUseCase(repository: getIt<NotificationRepository>()));
-  getIt.registerLazySingleton(() => SaveReadNotificationsUseCase(repository: getIt<NotificationRepository>()));
+  getIt.registerLazySingleton<NotificationRepository>(() => NotificationRepositoryImpl(api: getIt<NotificationApi>()));
+  getIt.registerLazySingleton(() => GetNotificationsUseCase(repository: getIt<NotificationRepository>()));
+  getIt.registerLazySingleton(() => MarkNotificationReadUseCase(repository: getIt<NotificationRepository>()));
+  getIt.registerLazySingleton(() => AnswerSurveyUseCase(repository: getIt<NotificationRepository>()));
 
   // searchbooking
   getIt.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl(api: getIt<SearchBookingApi>()));
@@ -196,8 +198,12 @@ Future<void> setupDependencies({http.Client? client, String? baseUrl, TokenStora
         cancelAppointmentUseCase: getIt(),
         getPatientWorkOrdersUseCase: getIt(),
         getPatientClinicalRecordsUseCase: getIt(),
-        loadReadNotificationsUseCase: getIt(),
-        saveReadNotificationsUseCase: getIt(),
+      ));
+  getIt.registerLazySingleton(() => NotificationsViewModel(
+        session: getIt(),
+        getNotificationsUseCase: getIt(),
+        markNotificationReadUseCase: getIt(),
+        answerSurveyUseCase: getIt(),
       ));
   getIt.registerLazySingleton(() => BookingViewModel(
         session: getIt(),
