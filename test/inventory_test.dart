@@ -6,18 +6,17 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/domain/user_role.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/inventory_api_checks.dart';
 
-Future<OptiFlowController> controller(
+Future<TestApp> controller(
     Future<http.Response> Function(http.Request) handler,
     {UserRole role = UserRole.admin,
     String? storeId = 'store-1'}) async {
   final api = await setupTestDependencies(MockClient(handler));
-  final app = OptiFlowController();
-  app.session = PatientSession(
+  final app = TestApp();
+  app.sessionVm.session = PatientSession(
       patientId: 'user-1',
       name: 'Usuario',
       email: 'test@optiflow.pe',
@@ -43,12 +42,12 @@ void main() {
             ? jsonResponse(stockFixture)
             : jsonResponse([frameFixture]),
         role: UserRole.salesAdvisor);
-    await app.refreshInventory();
-    expect(app.inventoryError, isNull);
-    expect(app.products.single.sku, 'RX 42');
-    expect(app.products.single.available, 3);
-    expect(app.products.single.minimumStock, 5);
-    expect(app.products.single.price, 'S/ 299.95');
+    await app.catalogVm.refreshInventory();
+    expect(app.catalogVm.state.inventoryError, isNull);
+    expect(app.catalogVm.state.products.single.sku, 'RX 42');
+    expect(app.catalogVm.state.products.single.available, 3);
+    expect(app.catalogVm.state.products.single.minimumStock, 5);
+    expect(app.catalogVm.state.products.single.price, 'S/ 299.95');
   });
 
   test('sin óptica asignada no consulta ni inventa stock', () async {
@@ -57,9 +56,9 @@ void main() {
       requests++;
       return jsonResponse(stockFixture);
     }, storeId: null);
-    await app.refreshInventory();
-    expect(app.inventoryError, contains('óptica asignada'));
-    expect(app.products, isEmpty);
+    await app.catalogVm.refreshInventory();
+    expect(app.catalogVm.state.inventoryError, contains('óptica asignada'));
+    expect(app.catalogVm.state.products, isEmpty);
     expect(requests, 0);
   });
 
@@ -72,7 +71,7 @@ void main() {
       return jsonResponse(movementFixture);
     }, role: UserRole.salesAdvisor);
     expect(
-        await advisor.replenishStock(
+        await advisor.catalogVm.replenishStock(
             sku: 'RX 42', supplierId: 'supplier-1', quantity: 4),
         isFalse);
     final admin = await controller((_) async {
@@ -81,7 +80,7 @@ void main() {
     });
     for (final quantity in [0, -2, 1001]) {
       expect(
-          await admin.replenishStock(
+          await admin.catalogVm.replenishStock(
               sku: 'RX 42', supplierId: 'supplier-1', quantity: quantity),
           isFalse);
     }
@@ -105,12 +104,12 @@ void main() {
       return jsonResponse({...frameFixture, 'quantity': 7, 'minimumStock': 5});
     });
     expect(
-        await app.replenishStock(
+        await app.catalogVm.replenishStock(
             sku: 'RX 42', supplierId: 'supplier-1', quantity: 4),
         isTrue);
     expect(posts, 1);
-    expect(app.inventoryError, 'Error de lectura');
-    expect(app.productById('RX 42')?.available, 7);
+    expect(app.catalogVm.state.inventoryError, 'Error de lectura');
+    expect(app.catalogVm.productById('RX 42')?.available, 7);
   });
 
   test(
@@ -127,15 +126,15 @@ void main() {
       }
       return jsonResponse([frameFixture]);
     });
-    await app.refreshInventory();
+    await app.catalogVm.refreshInventory();
     delayStock = true;
-    final old = app.refreshInventory();
-    expect(await app.updateFramePrice('RX 42', 399.50), isTrue);
+    final old = app.catalogVm.refreshInventory();
+    expect(await app.catalogVm.updateFramePrice('RX 42', 399.50), isTrue);
     pending.complete(jsonResponse(stockFixture));
     await old;
-    expect(app.productById('RX 42')?.price, 'S/ 399.50');
-    expect(app.productById('RX 42')?.available, 3);
-    expect(app.frameById('RX 42')?.price, 399.50);
+    expect(app.catalogVm.productById('RX 42')?.price, 'S/ 399.50');
+    expect(app.catalogVm.productById('RX 42')?.available, 3);
+    expect(app.catalogVm.frameById('RX 42')?.price, 399.50);
   });
 
   test(
@@ -143,12 +142,12 @@ void main() {
       () async {
     final pending = Completer<http.Response>();
     final app = await controller((_) => pending.future, role: UserRole.patient);
-    final loading = app.refreshCatalog();
-    await app.logout();
+    final loading = app.catalogVm.refreshCatalog();
+    await app.sessionVm.logout();
     pending.complete(jsonResponse([frameFixture]));
     await loading;
-    expect(app.frames, isEmpty);
-    expect(app.products, isEmpty);
-    expect(app.frameById('RX 42'), isNull);
+    expect(app.catalogVm.state.frames, isEmpty);
+    expect(app.catalogVm.state.products, isEmpty);
+    expect(app.catalogVm.frameById('RX 42'), isNull);
   });
 }

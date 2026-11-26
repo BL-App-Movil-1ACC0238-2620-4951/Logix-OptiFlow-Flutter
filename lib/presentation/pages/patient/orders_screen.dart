@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/models/ui_models.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -20,51 +20,57 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final orders = context.watch<OptiFlowController>().orders.where((order) => tab == 0 ? !order.delivered : order.delivered).toList();
-    return PatientScaffold(
-      tab: PatientTab.orders,
-      topBar: DarkTopBar(
-        title: 'Mis Pedidos',
-        onBack: () => context.canPop() ? context.pop() : context.go('/p/home'),
-        below: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
-          child: Row(
-            children: [
-              for (var i = 0; i < 2; i++) ...[
-                if (i > 0) const SizedBox(width: 22),
-                _Segment(['En curso', 'Entregados'][i], tab == i, () => setState(() => tab = i)),
-              ],
-            ],
-          ),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
-        children: [
-          if (orders.isNotEmpty) ...[
-            Text(tab == 0 ? 'Pedido activo' : 'Pedidos entregados', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-            const SizedBox(height: 12),
-            for (final order in orders) ...[
-              _OrderCard(order),
-              const SizedBox(height: 14),
-            ],
-          ],
-          const SizedBox(height: 48),
-          Column(
-            children: [
-              const IconTile(icon: Icons.inventory_2_outlined, background: AppColors.white, color: AppColors.navyBlue, size: 56, iconSize: 22),
-              const SizedBox(height: 14),
-              Text(
-                tab == 0 ? 'No tienes más pedidos activos' : 'No tienes más pedidos entregados',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
+    final patientVm = getIt<PatientViewModel>();
+    return ListenableBuilder(
+      listenable: patientVm,
+      builder: (context, _) {
+        final orders = patientVm.state.orders.where((order) => tab == 0 ? !order.delivered : order.delivered).toList();
+        return PatientScaffold(
+          tab: PatientTab.orders,
+          topBar: DarkTopBar(
+            title: 'Mis Pedidos',
+            onBack: () => context.canPop() ? context.pop() : context.go('/p/home'),
+            below: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+              child: Row(
+                children: [
+                  for (var i = 0; i < 2; i++) ...[
+                    if (i > 0) const SizedBox(width: 22),
+                    _Segment(['En curso', 'Entregados'][i], tab == i, () => setState(() => tab = i)),
+                  ],
+                ],
               ),
-              const SizedBox(height: 4),
-              Text('Aquí verás el avance de tus próximos lentes.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+            ),
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
+            children: [
+              if (orders.isNotEmpty) ...[
+                Text(tab == 0 ? 'Pedido activo' : 'Pedidos entregados', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                const SizedBox(height: 12),
+                for (final order in orders) ...[
+                  _OrderCard(order),
+                  const SizedBox(height: 14),
+                ],
+              ],
+              const SizedBox(height: 48),
+              Column(
+                children: [
+                  const IconTile(icon: Icons.inventory_2_outlined, background: AppColors.white, color: AppColors.navyBlue, size: 56, iconSize: 22),
+                  const SizedBox(height: 14),
+                  Text(
+                    tab == 0 ? 'No tienes más pedidos activos' : 'No tienes más pedidos entregados',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF111827)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Aquí verás el avance de tus próximos lentes.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.slate400)),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+        },
     );
   }
 }
@@ -177,90 +183,96 @@ class OrderTrackingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final order = context.watch<OptiFlowController>().orderById(id);
-    if (order == null) {
-      return const PatientScaffold(tab: PatientTab.orders, topBar: DarkTopBar(title: 'Pedido'), body: Center(child: Text('Pedido no encontrado.')));
-    }
-    final steps = [
-      ('Pedido recibido', order.history.isNotEmpty ? order.history[0] : '—', Icons.check),
-      ('Pago confirmado', order.history.length > 1 ? order.history[1] : (order.history.isNotEmpty ? order.history[0] : '—'), Icons.check),
-      ('En producción', 'Trabajando en tus lentes', Icons.remove_red_eye_outlined),
-      ('Listo para retirar', 'Próximamente', Icons.inventory_2_outlined),
-    ];
-    return PatientScaffold(
-      tab: PatientTab.orders,
-      topBar: DarkTopBar(title: 'Pedido #${order.code}', onBack: () => context.pop()),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-        children: [
-          AppCard(
-            radius: 24,
-            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
-            child: Column(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(14), boxShadow: const [BoxShadow(color: Color(0x1400135B), blurRadius: 6, offset: Offset(0, 2))]),
-                  child: const Icon(Icons.remove_red_eye_outlined, color: AppColors.navyBlue, size: 24),
+    final patientVm = getIt<PatientViewModel>();
+    return ListenableBuilder(
+      listenable: patientVm,
+      builder: (context, _) {
+        final order = patientVm.orderById(id);
+        if (order == null) {
+          return const PatientScaffold(tab: PatientTab.orders, topBar: DarkTopBar(title: 'Pedido'), body: Center(child: Text('Pedido no encontrado.')));
+        }
+        final steps = [
+          ('Pedido recibido', order.history.isNotEmpty ? order.history[0] : '—', Icons.check),
+          ('Pago confirmado', order.history.length > 1 ? order.history[1] : (order.history.isNotEmpty ? order.history[0] : '—'), Icons.check),
+          ('En producción', 'Trabajando en tus lentes', Icons.remove_red_eye_outlined),
+          ('Listo para retirar', 'Próximamente', Icons.inventory_2_outlined),
+        ];
+        return PatientScaffold(
+          tab: PatientTab.orders,
+          topBar: DarkTopBar(title: 'Pedido #${order.code}', onBack: () => context.pop()),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            children: [
+              AppCard(
+                radius: 24,
+                padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(14), boxShadow: const [BoxShadow(color: Color(0x1400135B), blurRadius: 6, offset: Offset(0, 2))]),
+                      child: const Icon(Icons.remove_red_eye_outlined, color: AppColors.navyBlue, size: 24),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.skyTint)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check, size: 14, color: AppColors.navyBlue),
+                          const SizedBox(width: 6),
+                          Text(order.delivered ? 'Entregado' : order.statusLabel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navyBlue)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(order.delivered ? 'Tus lentes fueron entregados' : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+                    const SizedBox(height: 6),
+                    Text('Entrega estimada entre el ${order.estimate}.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.skyTint)),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check, size: 14, color: AppColors.navyBlue),
-                      const SizedBox(width: 6),
-                      Text(order.delivered ? 'Entregado' : order.statusLabel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navyBlue)),
-                    ],
-                  ),
+              ),
+              const SizedBox(height: 22),
+              Text('Seguimiento', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
+              const SizedBox(height: 14),
+              for (var index = 0; index < steps.length; index++)
+                _TrackStep(
+                  title: steps[index].$1,
+                  subtitle: steps[index].$2,
+                  icon: steps[index].$3,
+                  reached: index < order.step || order.delivered,
+                  current: index == order.step && !order.delivered,
+                  last: index == steps.length - 1,
+                  lineOn: index < order.step,
                 ),
-                const SizedBox(height: 14),
-                Text(order.delivered ? 'Tus lentes fueron entregados' : 'Tus lentes están en proceso', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-                const SizedBox(height: 6),
-                Text('Entrega estimada entre el ${order.estimate}.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: AppColors.slate500)),
-              ],
-            ),
+              const SizedBox(height: 16),
+              AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  children: [
+                    _InfoLine(Icons.remove_red_eye_outlined, 'PRODUCTO', order.product, order.productDetail),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: AppColors.lavender),
+                    const SizedBox(height: 12),
+                    _InfoLine(Icons.place_outlined, 'RETIRO EN', order.pickup, null),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 22),
+              SolidButton(
+                label: '¿Necesitas ayuda?',
+                icon: Icons.help_outline,
+                background: AppColors.white,
+                foreground: AppColors.navyBlue,
+                border: AppColors.skyTint,
+                onPressed: () => context.push('/p/settings'),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          Text('Seguimiento', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.deepNavy)),
-          const SizedBox(height: 14),
-          for (var index = 0; index < steps.length; index++)
-            _TrackStep(
-              title: steps[index].$1,
-              subtitle: steps[index].$2,
-              icon: steps[index].$3,
-              reached: index < order.step || order.delivered,
-              current: index == order.step && !order.delivered,
-              last: index == steps.length - 1,
-              lineOn: index < order.step,
-            ),
-          const SizedBox(height: 16),
-          AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              children: [
-                _InfoLine(Icons.remove_red_eye_outlined, 'PRODUCTO', order.product, order.productDetail),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.lavender),
-                const SizedBox(height: 12),
-                _InfoLine(Icons.place_outlined, 'RETIRO EN', order.pickup, null),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          SolidButton(
-            label: '¿Necesitas ayuda?',
-            icon: Icons.help_outline,
-            background: AppColors.white,
-            foreground: AppColors.navyBlue,
-            border: AppColors.skyTint,
-            onPressed: () => context.push('/p/settings'),
-          ),
-        ],
-      ),
+        );
+        },
     );
   }
 }

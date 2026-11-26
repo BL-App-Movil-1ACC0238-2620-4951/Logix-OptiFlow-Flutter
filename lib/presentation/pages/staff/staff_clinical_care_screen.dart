@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
-import 'package:logix_optiflow/presentation/state/clinical_care_flow.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/features/clinical/presentation/clinical_care_flow.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
+import 'package:logix_optiflow/features/clinical/presentation/clinical_care_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class ClinicalCareScreen extends StatefulWidget {
@@ -43,11 +44,12 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
   }
 
   Future<void> _load() async {
-    final app = context.read<OptiFlowController>();
+    final agendaVm = getIt<AgendaViewModel>();
+    final careVm = getIt<ClinicalCareViewModel>();
     if (hasContext) {
-      await app.startClinicalCare(widget.patientId!, widget.appointmentId!);
+      await careVm.start(widget.patientId!, widget.appointmentId!);
     } else {
-      await app.refreshStaffAgenda(date: StoreTime.today());
+      await agendaVm.refreshStaffAgenda(date: StoreTime.today());
     }
   }
 
@@ -59,101 +61,107 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final current = app.clinicalCare;
-    final flow = hasContext &&
-            current?.patientId == widget.patientId &&
-            current?.appointmentId == widget.appointmentId
-        ? current
-        : null;
-    final editablePrescription =
-        flow?.step == CareStep.prescription && flow?.prescriptionSaved == false;
-    return PopScope(
-      canPop: flow?.saving != true && !editablePrescription,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && flow?.saving != true) flow?.back();
-      },
-      child: StaffScaffold(
-        tab: null,
-        showBottomBar: false,
-        topBar:
-            StaffTopBar(title: 'Atención clínica', onBack: () => _back(flow)),
-        body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              if (!hasContext)
-                ..._appointmentPicker(app)
-              else if (flow == null)
-                const Center(child: CircularProgressIndicator())
-              else ...[
-                _hero(flow),
-                const SizedBox(height: 18),
-                if (flow.loading)
-                  const Padding(
-                      padding: EdgeInsets.all(24),
-                      child:
-                          Center(child: Text('Cargando la ficha de la cita…')))
-                else if (flow.loadError != null) ...[
-                  Text(flow.loadError!,
-                      style: const TextStyle(color: AppColors.errorRed)),
-                  const SizedBox(height: 14),
-                  SolidButton(label: 'Reintentar', onPressed: flow.load),
-                ] else ...[
-                  if (flow.step != CareStep.done) ...[
-                    Row(children: [
-                      for (final entry
-                          in ['Examen', 'Antecedentes', 'Receta'].indexed)
-                        Expanded(
-                            child: Column(children: [
-                          CircleAvatar(
-                              radius: 15,
-                              backgroundColor: entry.$1 <= flow.step.index
-                                  ? AppColors.staffAccent
-                                  : AppColors.staffChip,
-                              child: Text(
-                                  entry.$1 < flow.step.index
-                                      ? '✓'
-                                      : '${entry.$1 + 1}',
-                                  style: const TextStyle(
-                                      color: AppColors.white, fontSize: 12))),
-                          const SizedBox(height: 6),
-                          Text(entry.$2,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: entry.$1 == flow.step.index
-                                      ? FontWeight.bold
-                                      : FontWeight.normal)),
-                        ])),
-                    ]),
-                    const SizedBox(height: 20),
+    final agendaVm = getIt<AgendaViewModel>();
+    final careVm = getIt<ClinicalCareViewModel>();
+    return ListenableBuilder(
+      listenable: Listenable.merge([agendaVm, careVm]),
+      builder: (context, _) {
+        final current = careVm.flow;
+        final flow = hasContext &&
+                current?.patientId == widget.patientId &&
+                current?.appointmentId == widget.appointmentId
+            ? current
+            : null;
+        final editablePrescription =
+            flow?.step == CareStep.prescription && flow?.prescriptionSaved == false;
+        return PopScope(
+          canPop: flow?.saving != true && !editablePrescription,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && flow?.saving != true) flow?.back();
+          },
+          child: StaffScaffold(
+            tab: null,
+            showBottomBar: false,
+            topBar:
+                StaffTopBar(title: 'Atención clínica', onBack: () => _back(flow)),
+            body: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  if (!hasContext)
+                    ..._appointmentPicker(agendaVm)
+                  else if (flow == null)
+                    const Center(child: CircularProgressIndicator())
+                  else ...[
+                    _hero(flow),
+                    const SizedBox(height: 18),
+                    if (flow.loading)
+                      const Padding(
+                          padding: EdgeInsets.all(24),
+                          child:
+                              Center(child: Text('Cargando la ficha de la cita…')))
+                    else if (flow.loadError != null) ...[
+                      Text(flow.loadError!,
+                          style: const TextStyle(color: AppColors.errorRed)),
+                      const SizedBox(height: 14),
+                      SolidButton(label: 'Reintentar', onPressed: flow.load),
+                    ] else ...[
+                      if (flow.step != CareStep.done) ...[
+                        Row(children: [
+                          for (final entry
+                              in ['Examen', 'Antecedentes', 'Receta'].indexed)
+                            Expanded(
+                                child: Column(children: [
+                              CircleAvatar(
+                                  radius: 15,
+                                  backgroundColor: entry.$1 <= flow.step.index
+                                      ? AppColors.staffAccent
+                                      : AppColors.staffChip,
+                                  child: Text(
+                                      entry.$1 < flow.step.index
+                                          ? '✓'
+                                          : '${entry.$1 + 1}',
+                                      style: const TextStyle(
+                                          color: AppColors.white, fontSize: 12))),
+                              const SizedBox(height: 6),
+                              Text(entry.$2,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: entry.$1 == flow.step.index
+                                          ? FontWeight.bold
+                                          : FontWeight.normal)),
+                            ])),
+                        ]),
+                        const SizedBox(height: 20),
+                      ],
+                      ...switch (flow.step) {
+                        CareStep.examination => _examination(flow),
+                        CareStep.history => _history(flow),
+                        CareStep.prescription => _prescription(flow),
+                        CareStep.done => _done(flow),
+                      },
+                      if (flow.error != null)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 14),
+                            child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                    color: AppColors.errorBg,
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: Text(flow.error!,
+                                    style: const TextStyle(
+                                        color: AppColors.errorRed)))),
+                    ],
                   ],
-                  ...switch (flow.step) {
-                    CareStep.examination => _examination(flow),
-                    CareStep.history => _history(flow),
-                    CareStep.prescription => _prescription(flow),
-                    CareStep.done => _done(flow),
-                  },
-                  if (flow.error != null)
-                    Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                                color: AppColors.errorBg,
-                                borderRadius: BorderRadius.circular(12)),
-                            child: Text(flow.error!,
-                                style: const TextStyle(
-                                    color: AppColors.errorRed)))),
-                ],
-              ],
-            ]),
-      ),
+                ]),
+          ),
+        );
+        },
     );
   }
 
-  List<Widget> _appointmentPicker(OptiFlowController app) {
+  List<Widget> _appointmentPicker(AgendaViewModel agendaVm) {
     final today = StoreTime.isoDay(StoreTime.today());
-    final candidates = app.agenda
+    final candidates = agendaVm.state.agenda
         .where((item) =>
             item.status != AgendaStatus.done &&
             item.endsAt?.isAfter(DateTime.now()) == true &&
@@ -164,12 +172,12 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
       const Text('Selecciona la cita que vas a atender.',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       const SizedBox(height: 16),
-      if (app.staffAgendaLoading) const LinearProgressIndicator(),
-      if (app.staffAgendaError != null)
-        Text(app.staffAgendaError!,
+      if (agendaVm.state.loading) const LinearProgressIndicator(),
+      if (agendaVm.state.error != null)
+        Text(agendaVm.state.error!,
             style: const TextStyle(color: AppColors.errorRed)),
-      if (!app.staffAgendaLoading &&
-          app.staffAgendaError == null &&
+      if (!agendaVm.state.loading &&
+          agendaVm.state.error == null &&
           candidates.isEmpty)
         const Text('No hay citas pendientes para atender hoy.'),
       for (final item in candidates)
@@ -189,7 +197,7 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
                   trailing: const Icon(Icons.chevron_right)),
             )),
       TextButton(
-          onPressed: app.staffAgendaLoading ? null : _load,
+          onPressed: agendaVm.state.loading ? null : _load,
           child: const Text('Actualizar citas')),
     ];
   }

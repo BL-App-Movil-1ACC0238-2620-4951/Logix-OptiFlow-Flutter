@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/pages/auth/auth_fields.dart';
@@ -36,8 +36,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _submit() async {
-    final app = context.read<OptiFlowController>();
-    if (app.busy) return;
+    final app = getIt<SessionViewModel>();
+    if (app.state.busy) return;
     final message = app.validateAuth(
       register: register,
       clinical: clinical,
@@ -57,8 +57,8 @@ class _AuthScreenState extends State<AuthScreen> {
       await app.login(email: email.text, password: password.text);
     }
     if (!mounted) return;
-    if (app.error != null) {
-      showAppMessage(context, app.error!);
+    if (app.state.error != null) {
+      showAppMessage(context, app.state.error!);
       return;
     }
     if (app.session?.isAuthenticated == true) context.go(app.homeRoute);
@@ -66,7 +66,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final busy = context.watch<OptiFlowController>().busy;
+    return ListenableBuilder(
+      listenable: getIt<SessionViewModel>(),
+      builder: (context, _) => _content(context, getIt<SessionViewModel>().state.busy),
+    );
+  }
+
+  Widget _content(BuildContext context, bool busy) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -125,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: [
                         Expanded(child: Text('Contraseña', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepNavy))),
                         Text(
-                          register ? 'Mín. ${OptiFlowController.minPassword} caracteres' : '¿Olvidaste tu contraseña?',
+                          register ? 'Mín. ${SessionViewModel.minPassword} caracteres' : '¿Olvidaste tu contraseña?',
                           style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: register ? FontWeight.w500 : FontWeight.w600, color: register ? AppColors.slate400 : AppColors.electric),
                         ),
                       ],
@@ -133,7 +139,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 6),
                     AuthField(
                       controller: password,
-                      hint: 'Mínimo ${OptiFlowController.minPassword} caracteres',
+                      hint: 'Mínimo ${SessionViewModel.minPassword} caracteres',
                       obscure: obscure,
                       trailing: IconButton(
                         onPressed: () => setState(() => obscure = !obscure),

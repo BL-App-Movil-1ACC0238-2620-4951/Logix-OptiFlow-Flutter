@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/searchbooking/presentation/booking_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 
 class BookingStoreStep extends StatelessWidget {
@@ -11,34 +11,39 @@ class BookingStoreStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: Text('Selecciona dónde quieres atenderte.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
-        ),
-        const SizedBox(height: 20),
-        if (app.bookingLoading && app.bookingStores.isEmpty)
-          const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: AppColors.electric))),
-        for (var i = 0; i < app.bookingStores.length; i++) ...[
-          _StoreChoice(index: i, selected: app.selectedStoreIndex == i),
-          const SizedBox(height: 12),
-        ],
-        if (app.bookingError != null) ...[
-          const SizedBox(height: 4),
-          Text(app.bookingError!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
-          if (app.bookingStores.isEmpty)
-            TextButton(onPressed: app.bookingLoading ? null : () => app.prepareBooking(null, rescheduleId: app.reschedulingId), child: const Text('Reintentar')),
-        ],
-        const SizedBox(height: 8),
-        SolidButton(
-          label: 'Continuar',
-          loading: app.bookingLoading,
-          onPressed: app.bookingStores.isEmpty ? null : app.continueFromStore,
-        ),
-      ],
+    final bookingVm = getIt<BookingViewModel>();
+    return ListenableBuilder(
+      listenable: bookingVm,
+      builder: (context, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Text('Selecciona dónde quieres atenderte.', style: GoogleFonts.inter(fontSize: 14, color: AppColors.slate500)),
+            ),
+            const SizedBox(height: 20),
+            if (bookingVm.state.loading && bookingVm.state.stores.isEmpty)
+              const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: AppColors.electric))),
+            for (var i = 0; i < bookingVm.state.stores.length; i++) ...[
+              _StoreChoice(index: i, selected: bookingVm.state.selectedStoreIndex == i),
+              const SizedBox(height: 12),
+            ],
+            if (bookingVm.state.error != null) ...[
+              const SizedBox(height: 4),
+              Text(bookingVm.state.error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.errorRed)),
+              if (bookingVm.state.stores.isEmpty)
+                TextButton(onPressed: bookingVm.state.loading ? null : () => bookingVm.prepareBooking(null, rescheduleId: bookingVm.state.reschedulingId), child: const Text('Reintentar')),
+            ],
+            const SizedBox(height: 8),
+            SolidButton(
+              label: 'Continuar',
+              loading: bookingVm.state.loading,
+              onPressed: bookingVm.state.stores.isEmpty ? null : bookingVm.continueFromStore,
+            ),
+          ],
+        );
+        },
     );
   }
 }
@@ -50,9 +55,9 @@ class _StoreChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.read<OptiFlowController>().bookingStores[index];
+    final store = getIt<BookingViewModel>().state.stores[index];
     return AppCard(
-      onTap: () => context.read<OptiFlowController>().selectStore(index),
+      onTap: () => getIt<BookingViewModel>().selectStore(index),
       color: selected ? const Color(0xFFF7F8FF) : AppColors.white,
       borderColor: selected ? AppColors.electric : AppColors.lavender,
       borderWidth: selected ? 2 : 1,

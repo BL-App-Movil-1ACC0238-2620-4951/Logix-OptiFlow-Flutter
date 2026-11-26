@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/inventory/domain/frame.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/features/inventory/presentation/catalog_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
 import 'package:logix_optiflow/presentation/widgets/frame_image.dart';
 
@@ -21,43 +21,48 @@ class _CatalogScreenState extends State<CatalogScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<OptiFlowController>().refreshCatalog();
+      if (mounted) getIt<CatalogViewModel>().refreshCatalog();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final q = query.trim().toLowerCase();
-    final frames = app.frames.where((frame) => '${frame.name} ${frame.sku} ${frame.description}'.toLowerCase().contains(q)).toList();
-    return PatientScaffold(
-      tab: PatientTab.search,
-      topBar: LightTopBar(title: 'Explorar monturas', onBack: () => context.canPop() ? context.pop() : context.go('/p/home')),
-      body: RefreshIndicator(
-        onRefresh: app.refreshCatalog,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(20),
-          children: [
-            TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Nombre, SKU, material o forma')),
-            const SizedBox(height: 16),
-            if (app.catalogLoading) const LinearProgressIndicator(),
-            if (app.catalogError != null) ...[
-              Text(app.catalogError!, style: const TextStyle(color: AppColors.errorRed)),
-              TextButton(onPressed: app.refreshCatalog, child: const Text('Reintentar')),
-            ],
-            if (!app.catalogLoading && app.catalogError == null && frames.isEmpty)
-              const Padding(padding: EdgeInsets.all(24), child: Text('No hay monturas con esos criterios.')),
-            for (var i = 0; i < frames.length; i += 2) ...[
-              const SizedBox(height: 16),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: CatalogFrameCard(frame: frames[i])),
-                const SizedBox(width: 12),
-                Expanded(child: i + 1 < frames.length ? CatalogFrameCard(frame: frames[i + 1]) : const SizedBox()),
-              ]),
-            ],
-          ],
-        ),
-      ),
+    final catalogVm = getIt<CatalogViewModel>();
+    return ListenableBuilder(
+      listenable: catalogVm,
+      builder: (context, _) {
+        final q = query.trim().toLowerCase();
+        final frames = catalogVm.state.frames.where((frame) => '${frame.name} ${frame.sku} ${frame.description}'.toLowerCase().contains(q)).toList();
+        return PatientScaffold(
+          tab: PatientTab.search,
+          topBar: LightTopBar(title: 'Explorar monturas', onBack: () => context.canPop() ? context.pop() : context.go('/p/home')),
+          body: RefreshIndicator(
+            onRefresh: catalogVm.refreshCatalog,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(20),
+              children: [
+                TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Nombre, SKU, material o forma')),
+                const SizedBox(height: 16),
+                if (catalogVm.state.catalogLoading) const LinearProgressIndicator(),
+                if (catalogVm.state.catalogError != null) ...[
+                  Text(catalogVm.state.catalogError!, style: const TextStyle(color: AppColors.errorRed)),
+                  TextButton(onPressed: catalogVm.refreshCatalog, child: const Text('Reintentar')),
+                ],
+                if (!catalogVm.state.catalogLoading && catalogVm.state.catalogError == null && frames.isEmpty)
+                  const Padding(padding: EdgeInsets.all(24), child: Text('No hay monturas con esos criterios.')),
+                for (var i = 0; i < frames.length; i += 2) ...[
+                  const SizedBox(height: 16),
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(child: CatalogFrameCard(frame: frames[i])),
+                    const SizedBox(width: 12),
+                    Expanded(child: i + 1 < frames.length ? CatalogFrameCard(frame: frames[i + 1]) : const SizedBox()),
+                  ]),
+                ],
+              ],
+            ),
+          ),
+        );
+        },
     );
   }
 }
@@ -93,40 +98,45 @@ class _FrameDetailScreenState extends State<FrameDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<OptiFlowController>().loadFrame(widget.id);
+      if (mounted) getIt<CatalogViewModel>().loadFrame(widget.id);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<OptiFlowController>();
-    final frame = app.frameById(widget.id);
-    return PatientScaffold(
-      tab: PatientTab.search,
-      topBar: LightTopBar(title: 'Detalles de montura', onBack: () => context.canPop() ? context.pop() : context.go('/p/catalog')),
-      body: ListView(padding: const EdgeInsets.all(20), children: [
-        if (app.frameLoading.contains(widget.id)) const LinearProgressIndicator(),
-        if (app.frameErrors[widget.id] != null) ...[
-          Text(app.frameErrors[widget.id]!, style: const TextStyle(color: AppColors.errorRed)),
-          TextButton(onPressed: () => app.loadFrame(widget.id), child: const Text('Reintentar')),
-        ],
-        if (frame != null) ...[
-          FrameImage(path: frame.image, height: 230),
-          const SizedBox(height: 20),
-          AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(frame.name, style: Theme.of(context).textTheme.headlineSmall),
-            Text('SKU: ${frame.sku}'),
-            const SizedBox(height: 12),
-            Text(frame.fromPrice, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Text(frame.description),
-            const SizedBox(height: 12),
-            const Text('Consulta la disponibilidad con la óptica antes de tu visita.'),
-          ])),
-          const SizedBox(height: 20),
-          SolidButton(label: 'Buscar una óptica', icon: Icons.place_outlined, onPressed: () => context.go('/p/search')),
-        ],
-      ]),
+    final catalogVm = getIt<CatalogViewModel>();
+    return ListenableBuilder(
+      listenable: catalogVm,
+      builder: (context, _) {
+        final frame = catalogVm.frameById(widget.id);
+        return PatientScaffold(
+          tab: PatientTab.search,
+          topBar: LightTopBar(title: 'Detalles de montura', onBack: () => context.canPop() ? context.pop() : context.go('/p/catalog')),
+          body: ListView(padding: const EdgeInsets.all(20), children: [
+            if (catalogVm.state.frameLoading.contains(widget.id)) const LinearProgressIndicator(),
+            if (catalogVm.state.frameErrors[widget.id] != null) ...[
+              Text(catalogVm.state.frameErrors[widget.id]!, style: const TextStyle(color: AppColors.errorRed)),
+              TextButton(onPressed: () => catalogVm.loadFrame(widget.id), child: const Text('Reintentar')),
+            ],
+            if (frame != null) ...[
+              FrameImage(path: frame.image, height: 230),
+              const SizedBox(height: 20),
+              AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(frame.name, style: Theme.of(context).textTheme.headlineSmall),
+                Text('SKU: ${frame.sku}'),
+                const SizedBox(height: 12),
+                Text(frame.fromPrice, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Text(frame.description),
+                const SizedBox(height: 12),
+                const Text('Consulta la disponibilidad con la óptica antes de tu visita.'),
+              ])),
+              const SizedBox(height: 20),
+              SolidButton(label: 'Buscar una óptica', icon: Icons.place_outlined, onPressed: () => context.go('/p/search')),
+            ],
+          ]),
+        );
+        },
     );
   }
 }

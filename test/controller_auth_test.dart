@@ -10,7 +10,8 @@ import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/core/network/api_client.dart';
 import 'package:logix_optiflow/features/auth/domain/user_role.dart';
 import 'package:logix_optiflow/features/searchbooking/infrastructure/search_booking_api.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
+
+import 'support/test_apis.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,26 +50,26 @@ void main() {
               headers: {'content-type': 'application/json; charset=utf-8'});
         });
     await setupDependencies(client: client);
-    final app = OptiFlowController();
-    await app.bootstrap();
-    await app.login(email: 'tech@optiflow.pe', password: 'password123');
-    expect(app.error, isNull);
-    expect(app.session?.role, UserRole.technician);
-    expect(app.homeRoute, '/s/home');
-    expect(app.canOpen('/s/production'), isTrue);
-    expect(app.canOpen('/s/inventory'), isFalse);
+    final app = TestApp();
+    await app.sessionVm.bootstrap();
+    await app.sessionVm.login(email: 'tech@optiflow.pe', password: 'password123');
+    expect(app.sessionVm.state.error, isNull);
+    expect(app.sessionVm.session?.role, UserRole.technician);
+    expect(app.sessionVm.homeRoute, '/s/home');
+    expect(app.sessionVm.canOpen('/s/production'), isTrue);
+    expect(app.sessionVm.canOpen('/s/inventory'), isFalse);
     expect(paths, ['/api/v1/auth/tokens', '/api/v1/staff-members/tech-1']);
 
     await setupDependencies(client: client);
-    final restored = OptiFlowController();
-    await restored.bootstrap();
-    expect(restored.session?.role, UserRole.technician);
+    final restored = TestApp();
+    await restored.sessionVm.bootstrap();
+    expect(restored.sessionVm.session?.role, UserRole.technician);
     expect(getIt<ApiClient>().token, 'token');
-    expect(restored.patientLoading, isFalse);
-    await restored.logout();
-    expect(restored.session, isNull);
+    expect(restored.patientVm.state.patientLoading, isFalse);
+    await restored.sessionVm.logout();
+    expect(restored.sessionVm.session, isNull);
     expect(getIt<ApiClient>().token, isNull);
-    expect(restored.homeRoute, '/auth');
+    expect(restored.sessionVm.homeRoute, '/auth');
     expect(
         (await SharedPreferences.getInstance()).containsKey('token'), isFalse);
     expect(await const FlutterSecureStorage().read(key: 'token'), isNull);
@@ -84,14 +85,14 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({'token': 'expired-token'});
     await setupDependencies(
         client: MockClient((_) async => http.Response('{}', 401)));
-    final app = OptiFlowController();
-    await app.bootstrap();
+    final app = TestApp();
+    await app.sessionVm.bootstrap();
     await expectLater(getIt<SearchBookingApi>().appointments('user-1'),
         throwsA(isA<ApiException>()));
     // Preferences calls in logout finish asynchronously after the HTTP callback.
     await pumpEventQueue();
-    expect(app.session, isNull);
-    expect(app.homeRoute, '/auth');
+    expect(app.sessionVm.session, isNull);
+    expect(app.sessionVm.homeRoute, '/auth');
     expect(await const FlutterSecureStorage().read(key: 'token'), isNull);
     app.dispose();
   });
@@ -99,9 +100,9 @@ void main() {
   test('registro de personal se rechaza antes de contactar el backend',
       () async {
     await setupDependencies();
-    final app = OptiFlowController();
+    final app = TestApp();
     expect(
-        app.validateAuth(
+        app.sessionVm.validateAuth(
             register: true,
             clinical: true,
             name: 'Staff',

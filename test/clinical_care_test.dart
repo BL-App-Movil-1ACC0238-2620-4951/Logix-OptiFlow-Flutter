@@ -3,7 +3,6 @@ import 'support/test_apis.dart';
 import 'package:http/testing.dart';
 import 'package:logix_optiflow/features/auth/domain/patient_session.dart';
 import 'package:logix_optiflow/features/auth/domain/user_role.dart';
-import 'package:logix_optiflow/presentation/state/optiflow_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'support/clinical_flow_checks.dart';
 
@@ -20,14 +19,14 @@ void main() {
       requests++;
       return clinicalResponse({});
     }));
-    app.session = const PatientSession(
+    app.sessionVm.session = const PatientSession(
         patientId: 'staff',
         name: 'Asesor',
         email: 'staff@example.test',
         token: 'token',
         role: UserRole.salesAdvisor);
-    await app.startClinicalCare('patient-1', 'appointment-1');
-    expect(app.clinicalCare, isNull);
+    await app.careVm.start('patient-1', 'appointment-1');
+    expect(app.careVm.flow, isNull);
     expect(requests, 0);
     app.dispose();
   });
@@ -36,17 +35,17 @@ void main() {
     final server = ClinicalServer();
     (await setupTestDependencies(MockClient(server.respond))).token =
         'staff-token';
-    final app = OptiFlowController();
-    app.session = const PatientSession(
+    final app = TestApp();
+    app.sessionVm.session = const PatientSession(
         patientId: 'staff',
         name: 'Optometrista',
         email: 'staff@example.test',
         token: 'staff-token',
         role: UserRole.optometrist);
-    await app.startClinicalCare('patient-1', 'appointment-1');
-    final previous = app.clinicalCare!;
-    await app.logout();
-    expect(app.clinicalCare, isNull);
+    await app.careVm.start('patient-1', 'appointment-1');
+    final previous = app.careVm.flow!;
+    await app.sessionVm.logout();
+    expect(app.careVm.flow, isNull);
     expect(previous.active, isFalse);
     expect(await previous.saveExamination(), isFalse);
     expect(server.examinations, 0);
