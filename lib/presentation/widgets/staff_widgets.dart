@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
@@ -174,6 +175,7 @@ class StaffInput extends StatelessWidget {
     this.enabled = true,
     this.onChanged,
     this.trailing,
+    this.inputFormatters,
   });
 
   final TextEditingController controller;
@@ -184,6 +186,7 @@ class StaffInput extends StatelessWidget {
   final bool enabled;
   final ValueChanged<String>? onChanged;
   final Widget? trailing;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +197,7 @@ class StaffInput extends StatelessWidget {
       enabled: enabled,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       onChanged: onChanged,
       cursorColor: AppColors.staffAccent,
       style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk),

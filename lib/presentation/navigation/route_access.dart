@@ -11,6 +11,8 @@ bool canAccessPath(PatientSession? session, String path) {
   if (session!.isPatient) return path.startsWith('/p/');
   if (!path.startsWith('/s/')) return false;
   if (const {'/s/home', '/s/more', '/s/settings'}.contains(path)) return true;
+  // La orden se abre desde el taller o, solo para leerla, desde la ficha del paciente.
+  if (path.startsWith('/s/work-order/')) return session.role.can(StaffFeature.production) || session.role.can(StaffFeature.patients);
   final feature = switch (path) {
     '/s/agenda' || '/s/appointments/new' => StaffFeature.agenda,
     '/s/patients' || '/s/patients/new' => StaffFeature.patients,
@@ -22,6 +24,7 @@ bool canAccessPath(PatientSession? session, String path) {
     '/s/sale' || '/s/sale/done' => StaffFeature.sales,
     '/s/alerts' => StaffFeature.alerts,
     '/s/reports' => StaffFeature.reports,
+    _ when path.startsWith('/s/production/') => StaffFeature.production,
     _ when path.startsWith('/s/patient/') => StaffFeature.patients,
     _ when path.startsWith('/s/product/') => StaffFeature.stock,
     _ when path.startsWith('/s/stock/') => StaffFeature.inventory,

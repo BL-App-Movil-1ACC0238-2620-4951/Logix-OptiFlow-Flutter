@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/features/production/domain/production_order.dart';
+import 'package:logix_optiflow/features/production/domain/work_order_detail.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/staff_patients_view_model.dart';
 import 'package:logix_optiflow/features/production/presentation/production_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/widgets/staff_widgets.dart';
 
 export 'package:logix_optiflow/presentation/pages/staff/staff_clinical_care_screen.dart';
 
@@ -37,49 +40,71 @@ class _NewPatientScreenState extends State<NewPatientScreen> {
       listenable: patientsVm,
       builder: (context, _) {
         final busy = patientsVm.state.saving;
+        void back() { if (!busy) { context.canPop() ? context.pop() : context.go('/s/patients'); } }
         return StaffScaffold(
           tab: null, showBottomBar: false,
-          topBar: StaffTopBar(title: 'Nuevo Cliente', onBack: () { if (!busy) { context.canPop() ? context.pop() : context.go('/s/patients'); } }),
-          body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
-            Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)), child: Row(children: [
-              const IconTile(icon: Icons.description_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36),
-              const SizedBox(width: 14),
-              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('FICHA DIGITAL', style: TextStyle(color: AppColors.skyTint, fontSize: 11)),
-                SizedBox(height: 6), Text('Registro rápido de paciente', style: TextStyle(color: AppColors.white, fontSize: 18)),
-                SizedBox(height: 6), Text('El paciente podrá entrar a la app con su correo y su DNI como contraseña temporal.', style: TextStyle(color: AppColors.white, fontSize: 11)),
-              ])),
-            ])),
+          topBar: StaffTopBar(title: 'Nuevo Cliente', onBack: back),
+          body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
+            StaffHero(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+              child: Row(children: [
+                const StaffIconTile(LucideIcons.fileText, size: 36, background: AppColors.white, radius: 10),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('FICHA DIGITAL', style: AppFonts.inter(fontSize: 9, color: _accentLight, letterSpacing: 1)),
+                  const SizedBox(height: 6),
+                  Text('Registro rápido de paciente', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
+                  const SizedBox(height: 6),
+                  Text('El paciente podrá entrar a la app con su correo y su DNI como contraseña.', style: AppFonts.inter(fontSize: 9, color: AppColors.white.withValues(alpha: 0.85))),
+                ])),
+              ]),
+            ),
             const SizedBox(height: 18),
-            const _Label('Nombre completo'), const SizedBox(height: 10),
-            TextField(controller: name, enabled: !busy, maxLength: 80, decoration: _field('Camila Paz Morales', Icons.person_outline)),
-            const SizedBox(height: 16),
-            const _Label('Correo electrónico'), const SizedBox(height: 10),
-            TextField(controller: email, enabled: !busy, keyboardType: TextInputType.emailAddress, decoration: _field('camila@correo.com', Icons.mail_outline)),
-            const SizedBox(height: 16),
-            const _Label('Teléfono móvil'), const SizedBox(height: 10),
-            TextField(controller: phone, enabled: !busy, maxLength: 20, keyboardType: TextInputType.phone, decoration: _field('987 654 321', Icons.phone_outlined)),
-            const SizedBox(height: 16),
-            const _Label('DNI', hint: 'Será su contraseña temporal'), const SizedBox(height: 10),
-            TextField(controller: dni, enabled: !busy, maxLength: 8, inputFormatters: [FilteringTextInputFormatter.digitsOnly], keyboardType: TextInputType.number, decoration: _field('45879632', Icons.credit_card_outlined)),
-            const SizedBox(height: 16),
-            const _Label('Fecha de nacimiento', hint: 'Opcional · dd/mm/aaaa'), const SizedBox(height: 10),
-            TextField(controller: birth, enabled: !busy, maxLength: 10, keyboardType: TextInputType.datetime, decoration: _field('24/05/1990', Icons.calendar_today_outlined)),
-            if (patientsVm.state.saveError != null) Text(patientsVm.state.saveError!, style: const TextStyle(color: AppColors.errorRed)),
-            const SizedBox(height: 24),
-            SolidButton(label: 'Guardar paciente', loading: busy, icon: Icons.check, onPressed: () async {
+            const StaffLabel('Nombre completo'),
+            const SizedBox(height: 10),
+            StaffInput(controller: name, enabled: !busy, placeholder: 'Camila Paz Morales', icon: LucideIcons.user, inputFormatters: [LengthLimitingTextInputFormatter(80)]),
+            const SizedBox(height: 20),
+            const StaffLabel('Correo electrónico'),
+            const SizedBox(height: 10),
+            StaffInput(controller: email, enabled: !busy, placeholder: 'camila@correo.com', icon: LucideIcons.mail, keyboardType: TextInputType.emailAddress, inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))]),
+            const SizedBox(height: 20),
+            const StaffLabel('Teléfono móvil'),
+            const SizedBox(height: 10),
+            StaffInput(controller: phone, enabled: !busy, placeholder: '987 654 321', icon: LucideIcons.phone, keyboardType: TextInputType.phone, inputFormatters: [LengthLimitingTextInputFormatter(20)]),
+            const SizedBox(height: 20),
+            const StaffLabel('DNI', trailing: 'Será su contraseña temporal'),
+            const SizedBox(height: 10),
+            StaffInput(controller: dni, enabled: !busy, placeholder: '45879632', icon: LucideIcons.creditCard, keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(8)]),
+            const SizedBox(height: 20),
+            const StaffLabel('Fecha de nacimiento', trailing: 'Opcional · dd/mm/aaaa'),
+            const SizedBox(height: 10),
+            StaffInput(controller: birth, enabled: !busy, placeholder: '24/05/1990', icon: LucideIcons.calendar, keyboardType: TextInputType.datetime, inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')), LengthLimitingTextInputFormatter(10)]),
+            if (patientsVm.state.saveError != null) ...[
+              const SizedBox(height: 16),
+              ErrorBanner(patientsVm.state.saveError),
+            ],
+            const SizedBox(height: 28),
+            StaffButton(label: busy ? 'Guardando...' : 'Guardar paciente', icon: LucideIcons.check, onPressed: busy ? null : () async {
               final id = await patientsVm.registerStaffPatient(name: name.text, email: email.text, phone: phone.text, dni: dni.text, birthDate: birth.text);
               if (!context.mounted || id == null) return;
               showAppMessage(context, 'Paciente registrado');
               context.replace('/s/patient/${Uri.encodeComponent(id)}');
             }),
-            TextButton(onPressed: busy ? null : () => context.canPop() ? context.pop() : context.go('/s/patients'), child: const Text('Cancelar')),
+            const SizedBox(height: 14),
+            Center(
+              child: GestureDetector(
+                onTap: back,
+                child: Text('Cancelar', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.staffAccent)),
+              ),
+            ),
           ]),
         );
-        },
+      },
     );
   }
 }
+
+const _accentLight = Color(0xFF60A5FA);
 
 class NewAppointmentScreen extends StatefulWidget {
   const NewAppointmentScreen({super.key, this.patientId});
@@ -110,42 +135,91 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
         return StaffScaffold(
           tab: null, showBottomBar: false,
           topBar: StaffTopBar(title: 'Nueva cita', onBack: () { if (!busy) { context.canPop() ? context.pop() : context.go('/s/agenda'); } }),
-          body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 28), children: [
-            Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: AppColors.staffHeader, borderRadius: BorderRadius.circular(20)), child: const Row(children: [
-              IconTile(icon: Icons.calendar_today_outlined, background: AppColors.white, color: AppColors.staffHeader, size: 36),
-              SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('AGENDAMIENTO · PASO ÚNICO', style: TextStyle(fontSize: 11, color: AppColors.skyTint)),
-                SizedBox(height: 4), Text('Datos de la cita', style: TextStyle(fontSize: 18, color: AppColors.white)),
-              ])),
-            ])),
-            const SizedBox(height: 18), const _Label('Paciente', hint: 'Registrado en OptiFlow'), const SizedBox(height: 8),
-            _SelectRow(patient?.fullName ?? 'Elegir paciente', leading: patient?.initials, icon: patient == null ? Icons.person_outline : null, onTap: () { if (!busy) setState(() => choosingPatient = !choosingPatient); }),
+          body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
+            StaffHero(
+              radius: 20,
+              padding: const EdgeInsets.all(18),
+              child: Row(children: [
+                const StaffIconTile(LucideIcons.calendar, size: 36, background: AppColors.white, radius: 10),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('AGENDAMIENTO · PASO ÚNICO', style: AppFonts.inter(fontSize: 9, color: _accentLight, letterSpacing: 1)),
+                  const SizedBox(height: 4),
+                  Text('Datos de la cita', style: AppFonts.inter(fontSize: 18, color: AppColors.white)),
+                ])),
+              ]),
+            ),
+            const SizedBox(height: 18),
+            const StaffLabel('Paciente', trailing: 'Registrado en OptiFlow'),
+            const SizedBox(height: 8),
+            StaffSelect(
+              text: patient?.fullName ?? 'Elegir paciente',
+              icon: patient == null ? LucideIcons.user : null,
+              leading: patient == null ? null : StaffInitials(patient.initials, size: 28, fontSize: 9),
+              onTap: () { if (!busy) setState(() => choosingPatient = !choosingPatient); },
+            ),
             if (choosingPatient) ...[
-              if (patientsVm.state.loading) const LinearProgressIndicator(),
-              if (patientsVm.state.error != null) TextButton(onPressed: patientsVm.refreshStaffPatients, child: Text(patientsVm.state.error!)),
-              if (!patientsVm.state.loading && patientsVm.state.patients.isEmpty) const Text('Todavía no hay pacientes registrados.'),
-              for (final option in patientsVm.state.patients) ListTile(title: Text(option.fullName), subtitle: Text(option.email), onTap: busy ? null : () {
-                agendaVm.selectStaffBooking(patientId: option.id); setState(() => choosingPatient = false);
-              }),
+              const SizedBox(height: 8),
+              if (patientsVm.state.error != null) ...[
+                ErrorBanner(patientsVm.state.error),
+                TextButton(onPressed: patientsVm.refreshStaffPatients, child: const Text('Reintentar')),
+              ] else if (patientsVm.state.loading && patientsVm.state.patients.isEmpty)
+                const _EmptyCard('Cargando pacientes...')
+              else if (patientsVm.state.patients.isEmpty)
+                const _EmptyCard('Todavía no hay pacientes registrados.')
+              else
+                AppCard(
+                  radius: 18,
+                  borderColor: AppColors.staffBorder,
+                  padding: EdgeInsets.zero,
+                  child: Column(children: [
+                    for (final option in patientsVm.state.patients)
+                      InkWell(
+                        onTap: busy ? null : () {
+                          agendaVm.selectStaffBooking(patientId: option.id);
+                          setState(() => choosingPatient = false);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Row(children: [
+                            StaffInitials(option.initials, size: 28, fontSize: 9),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(option.fullName, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk))),
+                          ]),
+                        ),
+                      ),
+                  ]),
+                ),
             ],
-            const SizedBox(height: 18), const _Label('Fecha', hint: 'Turnos libres de mi óptica'), const SizedBox(height: 12),
-            if (agendaVm.state.bookingLoading) const LinearProgressIndicator()
-            else if (days.isEmpty) const Text('No hay horarios libres. El administrador puede abrirlos en Más > Horarios de atención.')
+            const SizedBox(height: 22),
+            const StaffSectionTitle('Fecha', action: 'Turnos libres de tu óptica'),
+            const SizedBox(height: 12),
+            if (agendaVm.state.bookingLoading)
+              const _EmptyCard('Cargando horarios...')
+            else if (days.isEmpty)
+              const _EmptyCard('No hay turnos libres. El administrador puede abrirlos en Más > Horarios de atención.')
             else ...[
-              Wrap(spacing: 8, runSpacing: 8, children: [for (final day in days)
-                SizedBox(width: 105, child: _TimeChip(DateFormat('EEE d MMM', 'es').format(day), day == agendaVm.state.bookingDay, () { if (!busy) agendaVm.selectStaffBooking(day: day); })),
-              ]),
-              const SizedBox(height: 18), const _Label('Hora', hint: 'Selecciona horario'), const SizedBox(height: 12),
-              Wrap(spacing: 10, runSpacing: 10, children: [for (final slot in slots)
-                SizedBox(width: 96, child: _TimeChip(DateFormat('HH:mm').format(StoreTime.clock(slot.start)), slot.id == agendaVm.state.bookingSlotId, () { if (!busy) agendaVm.selectStaffBooking(slotId: slot.id); })),
-              ]),
+              _ChoiceGrid(
+                labels: [for (final day in days) DateFormat('EEE d MMM', 'es').format(day)],
+                selected: days.indexWhere((day) => day == agendaVm.state.bookingDay),
+                onSelect: (i) { if (!busy) agendaVm.selectStaffBooking(day: days[i]); },
+              ),
+              const SizedBox(height: 12),
+              const StaffSectionTitle('Hora', action: 'Selecciona horario'),
+              const SizedBox(height: 12),
+              _ChoiceGrid(
+                labels: [for (final slot in slots) DateFormat('HH:mm').format(StoreTime.clock(slot.start))],
+                selected: slots.indexWhere((slot) => slot.id == agendaVm.state.bookingSlotId),
+                onSelect: (i) { if (!busy) agendaVm.selectStaffBooking(slotId: slots[i].id); },
+              ),
             ],
             if (agendaVm.state.bookingError != null) ...[
-              const SizedBox(height: 12), Text(agendaVm.state.bookingError!, style: const TextStyle(color: AppColors.errorRed)),
+              const SizedBox(height: 8),
+              Text(agendaVm.state.bookingError!, style: AppFonts.inter(fontSize: 12, color: const Color(0xFFDC2626))),
               TextButton(onPressed: busy ? null : agendaVm.reloadStaffBookingSlots, child: const Text('Actualizar horarios')),
             ],
-            const SizedBox(height: 20),
-            SolidButton(label: 'Confirmar cita', loading: busy, icon: Icons.check, onPressed: agendaVm.state.bookingLoading ? null : () async {
+            const SizedBox(height: 14),
+            StaffButton(label: busy ? 'Agendando...' : 'Confirmar cita', icon: LucideIcons.check, onPressed: busy || agendaVm.state.bookingLoading ? null : () async {
               final booked = await agendaVm.confirmStaffBooking();
               if (!context.mounted || !booked) return;
               showAppMessage(context, 'Cita agendada.');
@@ -153,19 +227,77 @@ class _NewAppointmentScreenState extends State<NewAppointmentScreen> {
             }),
           ]),
         );
-        },
+      },
     );
   }
 }
+
+/// Opciones en filas de 3, como el selector de horas de Kotlin.
+class _ChoiceGrid extends StatelessWidget {
+  const _ChoiceGrid({required this.labels, required this.selected, required this.onSelect});
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      for (var row = 0; row < labels.length; row += 3)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(children: [
+            for (var i = row; i < row + 3; i++) ...[
+              if (i > row) const SizedBox(width: 10),
+              Expanded(
+                child: i >= labels.length
+                    ? const SizedBox.shrink()
+                    : GestureDetector(
+                        onTap: () => onSelect(i),
+                        child: Container(
+                          height: 46,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: i == selected ? AppColors.staffAccent : AppColors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: i == selected ? AppColors.staffAccent : AppColors.staffBorder),
+                          ),
+                          child: Text(labels[i], maxLines: 1, style: AppFonts.inter(fontSize: 13, color: i == selected ? AppColors.white : AppColors.staffInk)),
+                        ),
+                      ),
+              ),
+            ],
+          ]),
+        ),
+    ]);
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(radius: 18, borderColor: AppColors.staffBorder, child: Text(text, style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)));
+  }
+}
+
+/// Tablero del taller por etapas (`/s/production` y `/s/production/{ESTADO}`), igual a Kotlin.
 class ProductionScreen extends StatefulWidget {
-  const ProductionScreen({super.key});
+  const ProductionScreen({super.key, this.initialStage});
+
+  /// Estado del backend (PENDING, IN_WORKSHOP, …) de la pestaña con que se abre.
+  final String? initialStage;
 
   @override
   State<ProductionScreen> createState() => _ProductionScreenState();
 }
 
 class _ProductionScreenState extends State<ProductionScreen> {
-  ProductionStage stage = ProductionStage.inWorkshop;
+  late ProductionStage stage = switch (WorkOrderStatus.order.indexOf(widget.initialStage ?? '')) {
+    final index when index >= 0 => ProductionStage.values[index],
+    _ => ProductionStage.inWorkshop,
+  };
 
   @override
   void initState() {
@@ -182,8 +314,9 @@ class _ProductionScreenState extends State<ProductionScreen> {
         final orders = productionVm.productionOrders;
         final visible = orders.where((order) => order.stage == stage).toList();
         return StaffScaffold(
-          tab: StaffTab.more,
-          topBar: StaffTopBar(title: 'Producción', onBack: () => context.pop()),
+          tab: null,
+          showBottomBar: false,
+          topBar: StaffTopBar(title: 'Producción', onBack: () => context.canPop() ? context.pop() : context.go('/s/home')),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
             children: [
@@ -214,84 +347,22 @@ class _ProductionScreenState extends State<ProductionScreen> {
                   Text(productionVm.state.error!, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
                   TextButton(onPressed: productionVm.refreshStaffOrders, child: const Text('Reintentar')),
                 ])
-              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
+              else if (visible.isEmpty) Text('No hay órdenes en esta etapa.', style: AppFonts.inter(fontSize: 12, color: AppColors.slate400)),
               for (final order in visible) ...[
-                _OrderCard(order, stage.label),
+                _OrderCard(order, stage.label, onTap: () async {
+                  await context.push('/s/work-order/${order.id}');
+                  productionVm.refreshStaffOrders();
+                }),
                 const SizedBox(height: 10),
+              ],
+              if (orders.isNotEmpty || (!productionVm.state.loading && productionVm.state.error == null)) ...[
+                const SizedBox(height: 6),
+                Text('Órdenes sincronizadas con el backend.', style: AppFonts.inter(fontSize: 10, color: AppColors.slate400)),
               ],
             ],
           ),
         );
         },
-    );
-  }
-}
-
-class _SelectRow extends StatelessWidget {
-  const _SelectRow(this.label, {this.icon, this.leading, this.onTap});
-  final String label;
-  final IconData? icon;
-  final String? leading;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.lavender)),
-          child: Row(
-            children: [
-              if (leading != null)
-                Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: AppColors.lavender, borderRadius: BorderRadius.circular(8)),
-                  child: Text(leading!, style: AppFonts.inter(fontSize: 10, color: AppColors.electric)),
-                )
-              else if (icon != null)
-                Icon(icon, size: 18, color: AppColors.staffAccent),
-              const SizedBox(width: 10),
-              Expanded(child: Text(label, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk))),
-              const Icon(Icons.expand_more, color: AppColors.staffInk),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TimeChip extends StatelessWidget {
-  const _TimeChip(this.label, this.selected, this.onTap);
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.staffAccent : AppColors.white,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          height: 46,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: selected ? AppColors.staffAccent : AppColors.staffBorder),
-          ),
-          child: Text(label, style: AppFonts.inter(fontSize: 14, color: selected ? AppColors.white : AppColors.staffInk)),
-        ),
-      ),
     );
   }
 }
@@ -324,7 +395,7 @@ class _StageChip extends StatelessWidget {
           children: [
             Text('$count', style: AppFonts.inter(fontSize: 13, color: fg)),
             const SizedBox(height: 4),
-            Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 9, color: selected ? AppColors.white : AppColors.staffInk)),
+            Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 8, color: selected ? AppColors.white : AppColors.staffInk)),
           ],
         ),
       ),
@@ -333,78 +404,42 @@ class _StageChip extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard(this.order, this.stageLabel);
+  const _OrderCard(this.order, this.stageLabel, {required this.onTap});
   final ProductionOrder order;
   final String stageLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: onTap,
+      radius: 18,
+      borderColor: AppColors.staffBorder,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.staffChip, borderRadius: BorderRadius.circular(20)),
-                child: Row(
-                  children: [
-                    Icon(order.needsAttention ? Icons.notifications_none : Icons.schedule, size: 12, color: AppColors.staffAccent),
-                    const SizedBox(width: 4),
-                    Text(order.needsAttention ? 'Requiere atención' : stageLabel, style: AppFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
-                  ],
-                ),
-              ),
+              order.needsAttention ? const StaffPill('Requiere atención', icon: LucideIcons.bell) : StaffPill(stageLabel, icon: LucideIcons.clock),
               const Spacer(),
-              Text(order.code, style: AppFonts.inter(fontSize: 11, color: AppColors.staffInk)),
+              Text(order.code, style: AppFonts.inter(fontSize: 9, color: AppColors.staffInk)),
             ],
           ),
           const SizedBox(height: 12),
           Text(order.patient, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
           const SizedBox(height: 4),
-          Text(order.detail, style: AppFonts.inter(fontSize: 11, color: AppColors.staffMuted)),
+          Text(order.detail, style: AppFonts.inter(fontSize: 9, color: AppColors.staffMuted)),
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.staffAccent),
+              const Icon(LucideIcons.calendar, size: 14, color: AppColors.staffAccent),
               const SizedBox(width: 8),
-              Text(order.due, style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+              Text(order.due, style: AppFonts.inter(fontSize: 10, color: AppColors.staffAccent)),
             ],
           ),
         ],
       ),
     );
   }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text, {this.hint});
-  final String text;
-  final String? hint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(text, style: AppFonts.inter(fontSize: 13, color: AppColors.staffInk)),
-        if (hint != null) ...[
-          const Spacer(),
-          Text(hint!, style: AppFonts.inter(fontSize: 11, color: AppColors.staffAccent)),
-        ],
-      ],
-    );
-  }
-}
-
-InputDecoration _field(String hint, IconData icon) {
-  return InputDecoration(
-    hintText: hint,
-    prefixIcon: Icon(icon, size: 18, color: AppColors.staffInk),
-    filled: true,
-    fillColor: AppColors.staffField,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.lavender)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.lavender)),
-  );
 }

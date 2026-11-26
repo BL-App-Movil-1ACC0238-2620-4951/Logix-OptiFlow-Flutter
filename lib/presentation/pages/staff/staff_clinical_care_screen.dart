@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import 'package:logix_optiflow/core/theme/app_colors.dart';
+import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/features/searchbooking/domain/agenda_item.dart';
 import 'package:logix_optiflow/features/clinical/domain/clinical_forms.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
@@ -11,7 +14,11 @@ import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/agenda_view_model.dart';
 import 'package:logix_optiflow/features/clinical/presentation/clinical_care_view_model.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
+import 'package:logix_optiflow/presentation/widgets/staff_widgets.dart';
 
+const _staffSoft = Color(0xFFF1F5FF);
+
+/// Atención clínica de una cita, igual a Kotlin: examen, antecedentes y receta; al final la cita queda completada.
 class ClinicalCareScreen extends StatefulWidget {
   const ClinicalCareScreen({super.key, this.patientId, this.appointmentId});
   final String? patientId;
@@ -21,35 +28,27 @@ class ClinicalCareScreen extends StatefulWidget {
 }
 
 class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
-  bool get hasContext =>
-      widget.patientId?.isNotEmpty == true &&
-      widget.appointmentId?.isNotEmpty == true;
+  bool get hasContext => widget.patientId?.isNotEmpty == true && widget.appointmentId?.isNotEmpty == true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _load();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _load(); });
   }
 
   @override
   void didUpdateWidget(covariant ClinicalCareScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.patientId != oldWidget.patientId ||
-        widget.appointmentId != oldWidget.appointmentId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _load();
-      });
+    if (widget.patientId != oldWidget.patientId || widget.appointmentId != oldWidget.appointmentId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _load(); });
     }
   }
 
   Future<void> _load() async {
-    final agendaVm = getIt<AgendaViewModel>();
-    final careVm = getIt<ClinicalCareViewModel>();
     if (hasContext) {
-      await careVm.start(widget.patientId!, widget.appointmentId!);
+      await getIt<ClinicalCareViewModel>().start(widget.patientId!, widget.appointmentId!);
     } else {
-      await agendaVm.refreshStaffAgenda(date: StoreTime.today());
+      await getIt<AgendaViewModel>().refreshStaffAgenda(date: StoreTime.today());
     }
   }
 
@@ -67,98 +66,62 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
       listenable: Listenable.merge([agendaVm, careVm]),
       builder: (context, _) {
         final current = careVm.flow;
-        final flow = hasContext &&
-                current?.patientId == widget.patientId &&
-                current?.appointmentId == widget.appointmentId
-            ? current
-            : null;
-        final editablePrescription =
-            flow?.step == CareStep.prescription && flow?.prescriptionSaved == false;
+        final flow = hasContext && current?.patientId == widget.patientId && current?.appointmentId == widget.appointmentId ? current : null;
+        final editablePrescription = flow?.step == CareStep.prescription && flow?.prescriptionSaved == false;
         return PopScope(
           canPop: flow?.saving != true && !editablePrescription,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop && flow?.saving != true) flow?.back();
-          },
+          onPopInvokedWithResult: (didPop, _) { if (!didPop && flow?.saving != true) flow?.back(); },
           child: StaffScaffold(
             tab: null,
             showBottomBar: false,
-            topBar:
-                StaffTopBar(title: 'Atención clínica', onBack: () => _back(flow)),
+            topBar: StaffTopBar(title: 'Atención clínica', onBack: () => _back(flow)),
             body: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  if (!hasContext)
-                    ..._appointmentPicker(agendaVm)
-                  else if (flow == null)
-                    const Center(child: CircularProgressIndicator())
-                  else ...[
-                    _hero(flow),
-                    const SizedBox(height: 18),
-                    if (flow.loading)
-                      const Padding(
-                          padding: EdgeInsets.all(24),
-                          child:
-                              Center(child: Text('Cargando la ficha de la cita…')))
-                    else if (flow.loadError != null) ...[
-                      Text(flow.loadError!,
-                          style: const TextStyle(color: AppColors.errorRed)),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                if (!hasContext)
+                  ..._appointmentPicker(agendaVm)
+                else if (flow == null)
+                  const _CenteredNote('Cargando la ficha de la cita...')
+                else ...[
+                  _CareHero(flow),
+                  const SizedBox(height: 18),
+                  if (flow.loading)
+                    const _CenteredNote('Cargando la ficha de la cita...')
+                  else if (flow.loadError != null) ...[
+                    _CenteredNote(flow.loadError!),
+                    const SizedBox(height: 14),
+                    StaffButton(label: 'Reintentar', icon: LucideIcons.clock, onPressed: flow.load),
+                  ] else ...[
+                    if (flow.step != CareStep.done) ...[
+                      _StepIndicator(flow.step.index),
+                      const SizedBox(height: 20),
+                    ],
+                    ...switch (flow.step) {
+                      CareStep.examination => _examination(flow),
+                      CareStep.history => _history(flow),
+                      CareStep.prescription => _prescription(flow),
+                      CareStep.done => _done(flow),
+                    },
+                    if (flow.error != null) ...[
                       const SizedBox(height: 14),
-                      SolidButton(label: 'Reintentar', onPressed: flow.load),
-                    ] else ...[
-                      if (flow.step != CareStep.done) ...[
-                        Row(children: [
-                          for (final entry
-                              in ['Examen', 'Antecedentes', 'Receta'].indexed)
-                            Expanded(
-                                child: Column(children: [
-                              CircleAvatar(
-                                  radius: 15,
-                                  backgroundColor: entry.$1 <= flow.step.index
-                                      ? AppColors.staffAccent
-                                      : AppColors.staffChip,
-                                  child: Text(
-                                      entry.$1 < flow.step.index
-                                          ? '✓'
-                                          : '${entry.$1 + 1}',
-                                      style: const TextStyle(
-                                          color: AppColors.white, fontSize: 12))),
-                              const SizedBox(height: 6),
-                              Text(entry.$2,
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: entry.$1 == flow.step.index
-                                          ? FontWeight.bold
-                                          : FontWeight.normal)),
-                            ])),
-                        ]),
-                        const SizedBox(height: 20),
-                      ],
-                      ...switch (flow.step) {
-                        CareStep.examination => _examination(flow),
-                        CareStep.history => _history(flow),
-                        CareStep.prescription => _prescription(flow),
-                        CareStep.done => _done(flow),
-                      },
-                      if (flow.error != null)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 14),
-                            child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                    color: AppColors.errorBg,
-                                    borderRadius: BorderRadius.circular(12)),
-                                child: Text(flow.error!,
-                                    style: const TextStyle(
-                                        color: AppColors.errorRed)))),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: AppColors.errorBg, borderRadius: BorderRadius.circular(12)),
+                        child: Text(flow.error!, style: AppFonts.inter(fontSize: 12, color: AppColors.errorRed)),
+                      ),
                     ],
                   ],
-                ]),
+                ],
+              ],
+            ),
           ),
         );
-        },
+      },
     );
   }
 
+  /// Sin cita en la ruta (por ejemplo desde Más): se elige una cita de hoy.
   List<Widget> _appointmentPicker(AgendaViewModel agendaVm) {
     final today = StoreTime.isoDay(StoreTime.today());
     final candidates = agendaVm.state.agenda
@@ -169,285 +132,355 @@ class _ClinicalCareScreenState extends State<ClinicalCareScreen> {
             StoreTime.isoDay(StoreTime.day(item.startsAt!)) == today)
         .toList();
     return [
-      const Text('Selecciona la cita que vas a atender.',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 16),
-      if (agendaVm.state.loading) const LinearProgressIndicator(),
-      if (agendaVm.state.error != null)
-        Text(agendaVm.state.error!,
-            style: const TextStyle(color: AppColors.errorRed)),
-      if (!agendaVm.state.loading &&
-          agendaVm.state.error == null &&
-          candidates.isEmpty)
-        const Text('No hay citas pendientes para atender hoy.'),
+      const _StepTitle('Selecciona la cita', 'Elige la cita de hoy que vas a atender.'),
+      const SizedBox(height: 14),
+      if (agendaVm.state.loading) const _CenteredNote('Cargando la agenda...'),
+      if (agendaVm.state.error != null) ErrorBanner(agendaVm.state.error),
+      if (!agendaVm.state.loading && agendaVm.state.error == null && candidates.isEmpty) const _CenteredNote('No hay citas pendientes para atender hoy.'),
       for (final item in candidates)
         Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: AppCard(
-              onTap: () => context.push(Uri(
-                  path: '/s/clinical',
-                  queryParameters: {
-                    'patientId': item.patientId,
-                    'appointmentId': item.appointmentId!
-                  }).toString()),
-              child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(item.name),
-                  subtitle: Text('${item.time} · ${item.service}'),
-                  trailing: const Icon(Icons.chevron_right)),
-            )),
-      TextButton(
-          onPressed: agendaVm.state.loading ? null : _load,
-          child: const Text('Actualizar citas')),
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppCard(
+            radius: 18,
+            borderColor: AppColors.staffBorder,
+            padding: const EdgeInsets.all(14),
+            onTap: () => context.push(Uri(path: '/s/clinical', queryParameters: {'patientId': item.patientId, 'appointmentId': item.appointmentId!}).toString()),
+            child: Row(children: [
+              StaffInitials(_initialsOf(item.name)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(item.name, style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk)),
+                const SizedBox(height: 4),
+                Text('${item.time} · ${item.service}', style: AppFonts.inter(fontSize: 11, color: AppColors.slate400)),
+              ])),
+              const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.staffInk),
+            ]),
+          ),
+        ),
+      const SizedBox(height: 8),
+      StaffButton(
+        label: 'Actualizar citas',
+        icon: LucideIcons.refreshCw,
+        background: AppColors.white,
+        foreground: AppColors.staffInk,
+        border: AppColors.staffBorder,
+        onPressed: agendaVm.state.loading ? null : _load,
+      ),
     ];
   }
 
-  Widget _hero(ClinicalCareFlow flow) {
-    final name = flow.patient?.fullName ?? 'Paciente';
-    final date = flow.appointment == null
-        ? null
-        : StoreTime.clock(flow.appointment!.start);
-    final today = date != null &&
-        StoreTime.isoDay(date) == StoreTime.isoDay(StoreTime.today());
-    return Container(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-        decoration: BoxDecoration(
-            color: AppColors.staffHeader,
-            borderRadius: BorderRadius.circular(20)),
-        child: Column(children: [
-          Row(children: [
-            const Icon(Icons.schedule, color: AppColors.white, size: 14),
-            const SizedBox(width: 6),
-            Expanded(
-                child: Text(
-                    flow.step == CareStep.done
-                        ? 'Atención finalizada'
-                        : 'Atención en curso',
-                    style:
-                        const TextStyle(color: AppColors.white, fontSize: 10))),
-            if (date != null)
-              Text(
-                  '${today ? 'Hoy' : DateFormat('d MMM', 'es').format(date)} · ${DateFormat('HH:mm').format(date)}',
-                  style:
-                      const TextStyle(color: AppColors.slate300, fontSize: 10)),
-          ]),
-          const SizedBox(height: 16),
-          Row(children: [
-            CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.lavender,
-                child: Text(flow.patient?.initials ?? 'P',
-                    style: const TextStyle(
-                        color: AppColors.electric, fontSize: 12))),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(name,
-                      style: const TextStyle(
-                          fontSize: 14, color: AppColors.white)),
-                  const Text('Evaluación visual',
-                      style: TextStyle(fontSize: 10, color: AppColors.slate300))
-                ])),
-          ]),
-        ]));
-  }
-
-  Widget _title(String title, String subtitle) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Text(subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.staffAccent)),
-        const SizedBox(height: 14)
-      ]);
-
-  Widget _field(ClinicalCareFlow flow, String keyName, String label,
-          String value, ValueChanged<String> update,
-          {String? hint,
-          int? maxLength,
-          int lines = 1,
-          bool numeric = false,
-          bool axis = false,
-          bool readOnly = false}) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: TextFormField(
-          key: ValueKey('${flow.formRevision}-$keyName'),
-          initialValue: value,
-          enabled: !flow.saving && !readOnly,
-          maxLength: maxLength,
-          maxLines: lines,
-          keyboardType: numeric
-              ? TextInputType.numberWithOptions(decimal: !axis, signed: !axis)
-              : null,
-          inputFormatters:
-              axis ? [FilteringTextInputFormatter.digitsOnly] : null,
-          decoration: InputDecoration(
-              labelText: label,
-              hintText: hint,
-              filled: true,
-              fillColor: AppColors.white),
-          onChanged: (value) {
-            update(value);
-            flow.changed();
-          },
-        ),
-      );
-
   List<Widget> _examination(ClinicalCareFlow flow) => [
-        _title('Registrar examen',
-            'Abre la ficha clínica de esta cita con lo observado en la consulta.'),
-        _field(flow, 'observations', 'Observaciones', flow.observations,
-            (value) => flow.observations = value,
-            hint: 'Motivo de consulta, agudeza visual, hallazgos…',
-            maxLength: 500,
-            lines: 4),
-        SolidButton(
-            label: 'Registrar examen',
-            loading: flow.saving,
-            icon: Icons.check,
-            onPressed: () async {
-              await flow.saveExamination();
-            }),
+        const _StepTitle('Registrar examen', 'Abre la ficha clínica de esta cita con lo observado en la consulta.'),
+        const SizedBox(height: 14),
+        StaffLabel('Observaciones', trailing: '${flow.observations.length}/500'),
+        const SizedBox(height: 8),
+        _CareInput(flow, 'observations', flow.observations, (v) => flow.observations = v,
+            placeholder: 'Motivo de consulta, agudeza visual, hallazgos...', maxLength: 500, lines: 5),
+        const SizedBox(height: 20),
+        StaffButton(label: flow.saving ? 'Guardando...' : 'Registrar examen', icon: LucideIcons.check, onPressed: flow.saving ? null : flow.saveExamination),
       ];
 
   List<Widget> _history(ClinicalCareFlow flow) => [
-        _title('Antecedentes médicos',
-            'Sepáralos con comas. Puedes dejar vacío lo que no aplique.'),
-        if (flow.observations.isNotEmpty) ...[
-          AppCard(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                const Text('OBSERVACIONES DEL EXAMEN',
-                    style:
-                        TextStyle(fontSize: 10, color: AppColors.staffAccent)),
-                const SizedBox(height: 4),
-                Text(flow.observations)
-              ])),
-          const SizedBox(height: 16)
+        const _StepTitle('Antecedentes médicos', 'Sepáralos con comas. Puedes dejar vacío lo que no aplique.'),
+        if (flow.observations.trim().isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: _staffSoft, borderRadius: BorderRadius.circular(12)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('OBSERVACIONES DEL EXAMEN', style: AppFonts.inter(fontSize: 8, color: AppColors.staffAccent, letterSpacing: 1)),
+              const SizedBox(height: 4),
+              Text(flow.observations, style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk)),
+            ]),
+          ),
         ],
-        _field(flow, 'allergies', 'Alergias', flow.allergies,
-            (value) => flow.allergies = value,
-            hint: 'Penicilina, polen'),
-        _field(flow, 'conditions', 'Enfermedades previas',
-            flow.previousConditions, (value) => flow.previousConditions = value,
-            hint: 'Diabetes, hipertensión'),
-        _field(flow, 'family', 'Antecedentes oculares familiares',
-            flow.familyHistory, (value) => flow.familyHistory = value,
-            hint: 'Glaucoma en la madre, miopía alta en el padre…',
-            maxLength: 1000,
-            lines: 3),
-        SolidButton(
-            label: 'Guardar antecedentes',
-            loading: flow.saving,
-            icon: Icons.chevron_right,
-            onPressed: () async {
-              await flow.saveHistory();
-            }),
+        const SizedBox(height: 16),
+        const StaffLabel('Alergias'),
+        const SizedBox(height: 8),
+        _CareInput(flow, 'allergies', flow.allergies, (v) => flow.allergies = v, placeholder: 'Penicilina, polen'),
+        const SizedBox(height: 16),
+        const StaffLabel('Enfermedades previas'),
+        const SizedBox(height: 8),
+        _CareInput(flow, 'conditions', flow.previousConditions, (v) => flow.previousConditions = v, placeholder: 'Diabetes, hipertensión'),
+        const SizedBox(height: 16),
+        StaffLabel('Antecedentes oculares familiares', trailing: '${flow.familyHistory.length}/1000'),
+        const SizedBox(height: 8),
+        _CareInput(flow, 'family', flow.familyHistory, (v) => flow.familyHistory = v,
+            placeholder: 'Glaucoma en la madre, miopía alta en el padre...', maxLength: 1000, lines: 4),
+        const SizedBox(height: 20),
+        StaffButton(label: flow.saving ? 'Guardando...' : 'Guardar antecedentes', icon: LucideIcons.chevronRight, onPressed: flow.saving ? null : flow.saveHistory),
       ];
 
   List<Widget> _prescription(ClinicalCareFlow flow) {
     final form = flow.prescription;
     final locked = flow.prescriptionSaved;
-    Widget number(
-            String key, String label, String value, ValueChanged<String> update,
-            {bool axis = false}) =>
-        Expanded(
-            child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: _field(flow, key, label, value, update,
-                    numeric: true,
-                    axis: axis,
-                    maxLength: axis ? 3 : 6,
-                    readOnly: locked)));
+    Widget eyeRow(String eye, String key, String sphere, String cylinder, String axis,
+        ValueChanged<String> onSphere, ValueChanged<String> onCylinder, ValueChanged<String> onAxis) {
+      Widget cell(String k, String value, ValueChanged<String> update, {bool isAxis = false}) => Expanded(
+            child: _CareInput(flow, '$k$key', value, update,
+                placeholder: isAxis ? '0' : '0.00', numeric: true, axis: isAxis, maxLength: isAxis ? 3 : 6, readOnly: locked, compact: true),
+          );
+      return Row(children: [
+        SizedBox(width: 28, child: Text(eye, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.staffAccent))),
+        cell('sphere', sphere, onSphere),
+        const SizedBox(width: 6),
+        cell('cylinder', cylinder, onCylinder),
+        const SizedBox(width: 6),
+        cell('axis', axis, onAxis, isAxis: true),
+      ]);
+    }
+
     return [
-      _title('Receta óptica',
-          'Esfera y cilindro en dioptrías (ej. -1.75); eje en grados de 0 a 180.'),
-      if (locked)
-        const Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: Text(
-                'La receta ya está guardada. Reintenta para cerrar la cita.')),
+      const _StepTitle('Receta óptica', 'Esfera y cilindro en dioptrías (ej. -1.75); eje en grados de 0 a 180.'),
+      if (locked) ...[
+        const SizedBox(height: 12),
+        Text('La receta ya está guardada. Reintenta para cerrar la cita.', style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk)),
+      ],
+      const SizedBox(height: 14),
       AppCard(
-          child: Column(children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 16), child: Text('OD')),
-          number('sphereOD', 'Esfera', form.sphereOD, (v) => form.sphereOD = v),
-          number('cylinderOD', 'Cilindro', form.cylinderOD,
-              (v) => form.cylinderOD = v),
-          number('axisOD', 'Eje', form.axisOD, (v) => form.axisOD = v,
-              axis: true)
+        radius: 18,
+        borderColor: AppColors.staffBorder,
+        padding: const EdgeInsets.all(14),
+        child: Column(children: [
+          Row(children: [
+            const SizedBox(width: 34),
+            for (final label in ['Esfera', 'Cilindro', 'Eje'])
+              Expanded(child: Text(label, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 10, color: AppColors.slate400))),
+          ]),
+          const SizedBox(height: 8),
+          eyeRow('OD', 'OD', form.sphereOD, form.cylinderOD, form.axisOD, (v) => form.sphereOD = v, (v) => form.cylinderOD = v, (v) => form.axisOD = v),
+          const SizedBox(height: 8),
+          eyeRow('OI', 'OS', form.sphereOS, form.cylinderOS, form.axisOS, (v) => form.sphereOS = v, (v) => form.cylinderOS = v, (v) => form.axisOS = v),
         ]),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 16), child: Text('OI')),
-          number('sphereOS', 'Esfera', form.sphereOS, (v) => form.sphereOS = v),
-          number('cylinderOS', 'Cilindro', form.cylinderOS,
-              (v) => form.cylinderOS = v),
-          number('axisOS', 'Eje', form.axisOS, (v) => form.axisOS = v,
-              axis: true)
-        ]),
-      ])),
+      ),
       const SizedBox(height: 16),
-      _field(flow, 'addition', 'Adición (cerca) · opcional 0 a 4',
-          form.addition, (v) => form.addition = v,
-          numeric: true, maxLength: 6, readOnly: locked),
-      _field(flow, 'treatment', 'Tratamiento · opcional', form.treatment,
-          (v) => form.treatment = v,
-          hint: 'Antirreflejo, filtro de luz azul',
-          maxLength: 255,
-          readOnly: locked),
-      _field(flow, 'frame', 'Tipo de montura recomendada · opcional',
-          form.recommendedFrameType, (v) => form.recommendedFrameType = v,
-          hint: 'Completa de acetato', maxLength: 255, readOnly: locked),
-      SolidButton(
-          label: locked
-              ? 'Reintentar cierre de cita'
-              : 'Guardar receta y finalizar',
-          loading: flow.saving,
-          icon: Icons.check,
-          onPressed: () async {
-            await flow.savePrescriptionAndFinish();
-          }),
+      const StaffLabel('Adición (cerca)', trailing: 'Opcional · 0 a 4'),
+      const SizedBox(height: 8),
+      _CareInput(flow, 'addition', form.addition, (v) => form.addition = v, placeholder: '2.00', numeric: true, maxLength: 6, readOnly: locked),
+      const SizedBox(height: 16),
+      const StaffLabel('Tratamiento', trailing: 'Opcional'),
+      const SizedBox(height: 8),
+      _CareInput(flow, 'treatment', form.treatment, (v) => form.treatment = v, placeholder: 'Antirreflejo, filtro de luz azul', maxLength: 255, readOnly: locked),
+      const SizedBox(height: 16),
+      const StaffLabel('Tipo de montura recomendada', trailing: 'Opcional'),
+      const SizedBox(height: 8),
+      _CareInput(flow, 'frame', form.recommendedFrameType, (v) => form.recommendedFrameType = v, placeholder: 'Completa de acetato', maxLength: 255, readOnly: locked),
+      const SizedBox(height: 20),
+      StaffButton(
+        label: flow.saving ? 'Guardando...' : locked ? 'Reintentar cierre de cita' : 'Guardar receta y finalizar',
+        icon: LucideIcons.check,
+        onPressed: flow.saving ? null : flow.savePrescriptionAndFinish,
+      ),
       if (!locked) ...[
         const SizedBox(height: 10),
-        SolidButton(
-            label: 'Volver a antecedentes',
-            background: AppColors.white,
-            foreground: AppColors.staffInk,
-            border: AppColors.staffBorder,
-            onPressed: flow.saving ? null : flow.back)
+        StaffButton(
+          label: 'Volver a antecedentes',
+          background: AppColors.white,
+          foreground: AppColors.staffInk,
+          border: AppColors.staffBorder,
+          onPressed: flow.saving ? null : flow.back,
+        ),
       ],
     ];
   }
 
   List<Widget> _done(ClinicalCareFlow flow) => [
-        AppCard(
-            child: Column(children: [
-          const Icon(Icons.check_circle, color: AppColors.emerald600, size: 48),
-          const SizedBox(height: 12),
-          const Text('Atención finalizada',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          const Text(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(color: AppColors.emerald50, borderRadius: BorderRadius.circular(16)),
+          child: Column(children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(color: AppColors.emerald700, shape: BoxShape.circle),
+              child: const Icon(LucideIcons.check, size: 24, color: AppColors.white),
+            ),
+            const SizedBox(height: 12),
+            Text('Atención finalizada', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.emerald700)),
+            const SizedBox(height: 6),
+            Text(
               'La ficha clínica y la receta quedaron guardadas y la cita figura como completada.',
-              textAlign: TextAlign.center)
-        ])),
+              textAlign: TextAlign.center,
+              style: AppFonts.inter(fontSize: 12, color: AppColors.staffInk),
+            ),
+          ]),
+        ),
         const SizedBox(height: 18),
-        SolidButton(
-            label: 'Ver ficha del paciente',
-            icon: Icons.person_outline,
-            onPressed: () => context
-                .replace('/s/patient/${Uri.encodeComponent(flow.patientId)}')),
+        StaffButton(label: 'Ver ficha del paciente', icon: LucideIcons.user, onPressed: () => context.replace('/s/patient/${Uri.encodeComponent(flow.patientId)}')),
         const SizedBox(height: 10),
-        SolidButton(
-            label: 'Volver a la agenda',
-            background: AppColors.white,
-            foreground: AppColors.staffInk,
-            border: AppColors.staffBorder,
-            onPressed: () => context.go('/s/agenda')),
+        StaffButton(
+          label: 'Volver a la agenda',
+          icon: LucideIcons.calendar,
+          background: AppColors.white,
+          foreground: AppColors.staffInk,
+          border: AppColors.staffBorder,
+          onPressed: () => context.go('/s/agenda'),
+        ),
       ];
+}
+
+String _initialsOf(String name) => name.split(' ').where((p) => p.trim().isNotEmpty).take(2).map((p) => p[0].toUpperCase()).join();
+
+class _CareHero extends StatelessWidget {
+  const _CareHero(this.flow);
+  final ClinicalCareFlow flow;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = flow.patient?.fullName ?? 'Paciente';
+    final date = flow.appointment == null ? null : StoreTime.clock(flow.appointment!.start);
+    final today = date != null && StoreTime.isoDay(date) == StoreTime.isoDay(StoreTime.today());
+    return StaffHero(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      child: Column(children: [
+        Row(children: [
+          const Icon(LucideIcons.clock, size: 14, color: AppColors.white),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              flow.step == CareStep.done ? 'Atención finalizada' : 'Atención en curso',
+              style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.white),
+            ),
+          ),
+          if (date != null)
+            Text('${today ? 'Hoy' : DateFormat('d MMM', 'es').format(date)} · ${DateFormat('HH:mm').format(date)}', style: AppFonts.inter(fontSize: 9, color: AppColors.slate300)),
+        ]),
+        const SizedBox(height: 16),
+        Row(children: [
+          StaffInitials(flow.patient?.initials ?? _initialsOf(name), size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: AppFonts.inter(fontSize: 14, color: AppColors.white)),
+              Text('Evaluación visual', style: AppFonts.inter(fontSize: 9, color: AppColors.slate300)),
+            ]),
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _StepIndicator extends StatelessWidget {
+  const _StepIndicator(this.current);
+  final int current;
+  static const _labels = ['Examen', 'Antecedentes', 'Receta'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      for (var i = 0; i < _labels.length; i++)
+        Expanded(
+          child: Column(children: [
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: i <= current ? AppColors.staffAccent : _staffSoft, shape: BoxShape.circle),
+              child: i < current
+                  ? const Icon(LucideIcons.check, size: 14, color: AppColors.white)
+                  : Text('${i + 1}', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: i == current ? AppColors.white : AppColors.staffAccent)),
+            ),
+            const SizedBox(height: 6),
+            Text(_labels[i], style: AppFonts.inter(fontSize: 10, fontWeight: i == current ? FontWeight.w700 : FontWeight.w400, color: AppColors.staffInk)),
+          ]),
+        ),
+    ]);
+  }
+}
+
+class _StepTitle extends StatelessWidget {
+  const _StepTitle(this.title, this.subtitle);
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.staffInk)),
+      const SizedBox(height: 6),
+      Text(subtitle, style: AppFonts.inter(fontSize: 12, color: AppColors.staffAccent)),
+    ]);
+  }
+}
+
+class _CenteredNote extends StatelessWidget {
+  const _CenteredNote(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 30),
+      child: Text(text, textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 13, color: AppColors.slate400)),
+    );
+  }
+}
+
+/// Campo con el estilo de `StaffInput` que guarda en el flujo. Se reconstruye con `formRevision`.
+class _CareInput extends StatelessWidget {
+  const _CareInput(
+    this.flow,
+    this.keyName,
+    this.value,
+    this.update, {
+    required this.placeholder,
+    this.maxLength,
+    this.lines = 1,
+    this.numeric = false,
+    this.axis = false,
+    this.readOnly = false,
+    this.compact = false,
+  });
+
+  final ClinicalCareFlow flow;
+  final String keyName;
+  final String value;
+  final ValueChanged<String> update;
+  final String placeholder;
+  final int? maxLength;
+  final int lines;
+  final bool numeric;
+  final bool axis;
+  final bool readOnly;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.slate200));
+    return TextFormField(
+      key: ValueKey('${flow.formRevision}-$keyName'),
+      initialValue: value,
+      enabled: !flow.saving && !readOnly,
+      minLines: lines,
+      maxLines: lines,
+      textAlign: compact ? TextAlign.center : TextAlign.start,
+      keyboardType: numeric ? TextInputType.numberWithOptions(decimal: !axis, signed: !axis) : null,
+      inputFormatters: [
+        if (axis) FilteringTextInputFormatter.digitsOnly,
+        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+      ],
+      cursorColor: AppColors.staffAccent,
+      style: AppFonts.inter(fontSize: 14, color: AppColors.staffInk),
+      decoration: InputDecoration(
+        isDense: true,
+        filled: true,
+        fillColor: AppColors.staffField,
+        hintText: placeholder,
+        hintStyle: AppFonts.inter(fontSize: lines == 1 ? 14 : 12, color: AppColors.slate400),
+        contentPadding: EdgeInsets.symmetric(horizontal: compact ? 6 : 14, vertical: compact ? 13 : (lines == 1 ? 15 : 12)),
+        border: border,
+        enabledBorder: border,
+        disabledBorder: border,
+        focusedBorder: border.copyWith(borderSide: const BorderSide(color: AppColors.staffAccent)),
+      ),
+      onChanged: (v) {
+        update(v);
+        flow.changed();
+      },
+    );
+  }
 }
