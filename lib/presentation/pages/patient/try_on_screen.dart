@@ -29,6 +29,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
   final _eyes = ValueNotifier<EyePositions?>(null);
   bool _hasCamera = true;
   bool _noCamera = false;
+  bool _detectorFailed = false;
   int _cameraKey = 0;
 
   @override
@@ -50,6 +51,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
   /// Vuelve a abrir la cámara, que pide el permiso otra vez si hace falta.
   void _retryCamera() => setState(() {
         _hasCamera = true;
+        _detectorFailed = false;
         _cameraKey++;
       });
 
@@ -92,6 +94,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                               key: ValueKey(_cameraKey),
                               // Se suaviza el movimiento para que la montura no tiemble.
                               onEyes: (found) => _eyes.value = found == null ? null : (_eyes.value?.towards(found) ?? found),
+                              onDetectorError: (_) => setState(() => _detectorFailed = true),
                               onUnavailable: (noCamera) => setState(() {
                                 _hasCamera = false;
                                 _noCamera = noCamera;
@@ -155,7 +158,11 @@ class _TryOnScreenState extends State<TryOnScreen> {
                                         ),
                                         const SizedBox(width: 7),
                                         Text(
-                                          eyes != null ? 'Rostro detectado' : 'Buscando tu rostro…',
+                                          eyes != null
+                                              ? 'Rostro detectado'
+                                              : _detectorFailed
+                                                  ? 'No se pudo activar la detección de rostro'
+                                                  : 'Buscando tu rostro…',
                                           style: AppFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.white),
                                         ),
                                       ],
