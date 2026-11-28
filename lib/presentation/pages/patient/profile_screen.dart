@@ -6,6 +6,7 @@ import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_view_model.dart';
 import 'package:logix_optiflow/features/searchbooking/presentation/patient_account_view_model.dart';
+import 'package:logix_optiflow/presentation/pages/patient/account_screens.dart' show appVersion;
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/presentation/widgets/chrome.dart';
@@ -402,7 +403,7 @@ class SettingsScreen extends StatelessWidget {
                 MenuRow(icon: LucideIcons.fileText, title: 'Términos y privacidad', onTap: () => context.push('/p/info/terms')),
               ]),
               const SizedBox(height: 36),
-              Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate300)),
+              Text('OptiFlow · Versión $appVersion', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate300)),
             ],
           ),
         );

@@ -72,6 +72,7 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
         builder: (_, state) => SettingsScreen(staff: state.uri.queryParameters['staff'] == 'true'),
       ),
       GoRoute(path: '/s/home', builder: (_, __) => const StaffDashboardScreen()),
+      GoRoute(path: '/s/info/:topic', builder: (_, state) => InfoScreen(topic: InfoTopic.from(state.pathParameters['topic']), staff: true)),
       GoRoute(path: '/s/settings', builder: (_, __) => const SettingsScreen(staff: true)),
       GoRoute(path: '/s/agenda', builder: (_, __) => const StaffAgendaScreen()),
       GoRoute(path: '/s/patients', builder: (_, __) => const StaffPatientsScreen()),
@@ -130,9 +131,39 @@ class _OptiFlowAppState extends State<OptiFlowApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.electric, primary: AppColors.electric, surface: AppColors.screenBg),
         textTheme: text,
         inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
+        // Fundido entre pantallas en todas las plataformas, como el NavHost de Kotlin (en iPhone
+        // Flutter deslizaría cada pantalla desde la derecha, incluso al cambiar de pestaña).
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: _FadePageTransitionsBuilder(),
+            TargetPlatform.iOS: _FadePageTransitionsBuilder(),
+            TargetPlatform.macOS: _FadePageTransitionsBuilder(),
+            TargetPlatform.windows: _FadePageTransitionsBuilder(),
+            TargetPlatform.linux: _FadePageTransitionsBuilder(),
+            TargetPlatform.fuchsia: _FadePageTransitionsBuilder(),
+          },
+        ),
       ),
       routerConfig: _router,
     );
+  }
+}
+
+/// La pantalla nueva aparece con un fundido suave sobre la anterior.
+class _FadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    // Solo se anima la pantalla que entra: si la anterior también se desvaneciera, a mitad del
+    // fundido se vería el fondo del Navigator entre las dos.
+    return FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut), child: child);
   }
 }
 

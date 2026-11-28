@@ -62,10 +62,33 @@ class AgendaViewModel extends ChangeNotifier {
   Set<String> get waitingPatientIds =>
       _state.agenda.where((a) => a.status == AgendaStatus.waiting).map((a) => a.patientId).toSet();
 
+  /// Semanas que se pueden recorrer en la agenda, contando desde la semana actual.
+  static const pastWeeks = 4;
+  static const futureWeeks = 8;
+
+  static DateTime _mondayOf(DateTime date) => DateTime(date.year, date.month, date.day - (date.weekday - DateTime.monday));
+
   List<DateTime> get agendaWeek {
-    final monday = _state.date.subtract(Duration(days: _state.date.weekday - DateTime.monday));
-    return List.generate(6, (i) => monday.add(Duration(days: i)));
+    final monday = _mondayOf(_state.date);
+    return List.generate(6, (i) => DateTime(monday.year, monday.month, monday.day + i));
   }
+
+  /// Semanas de diferencia entre la semana mostrada y la actual (negativo si es pasada).
+  int get weekOffset => (_mondayOf(_state.date).difference(_mondayOf(StoreTime.today())).inHours / (24 * 7)).round();
+
+  bool get canShowPreviousWeek => weekOffset > -pastWeeks;
+  bool get canShowNextWeek => weekOffset < futureWeeks;
+
+  /// Pasa a la semana anterior (-1) o siguiente (1) en el mismo día de la semana.
+  Future<void> shiftAgendaWeek(int delta) async {
+    final target = weekOffset + delta;
+    if (target < -pastWeeks || target > futureWeeks) return;
+    final date = _state.date;
+    await refreshStaffAgenda(date: DateTime(date.year, date.month, date.day + 7 * delta));
+  }
+
+  /// Vuelve al día de hoy.
+  Future<void> showTodayAgenda() => refreshStaffAgenda(date: StoreTime.today());
 
   /// Carga lo que muestra el inicio del personal según su rol.
   Future<void> refreshStaffOverview() async {

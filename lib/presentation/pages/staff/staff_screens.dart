@@ -318,6 +318,68 @@ class _AlertsCard extends StatelessWidget {
   }
 }
 
+/// Rango de la semana mostrada con flechas para ir a la anterior o a la siguiente.
+class _WeekNavigator extends StatelessWidget {
+  const _WeekNavigator({
+    required this.days,
+    required this.canGoBack,
+    required this.canGoForward,
+    required this.showToday,
+    required this.onBack,
+    required this.onForward,
+    required this.onToday,
+  });
+
+  final List<DateTime> days;
+  final bool canGoBack;
+  final bool canGoForward;
+  final bool showToday;
+  final VoidCallback onBack;
+  final VoidCallback onForward;
+  final VoidCallback onToday;
+
+  String _label() {
+    final first = days.first;
+    final last = days.last;
+    String month(DateTime d) => DateFormat('MMM', 'es').format(d).replaceAll('.', '');
+    if (first.month == last.month) return '${first.day} – ${last.day} ${month(last)} ${last.year}';
+    return '${first.day} ${month(first)} – ${last.day} ${month(last)} ${last.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget arrow(IconData icon, bool enabled, VoidCallback onTap, String tooltip) => IconButton(
+          tooltip: tooltip,
+          onPressed: enabled ? onTap : null,
+          icon: Icon(icon, size: 20),
+          color: AppColors.staffAccent,
+          disabledColor: AppColors.slate300,
+          visualDensity: VisualDensity.compact,
+        );
+    return Row(
+      children: [
+        arrow(LucideIcons.chevronLeft, canGoBack, onBack, 'Semana anterior'),
+        Expanded(
+          child: Column(
+            children: [
+              Text(_label(), textAlign: TextAlign.center, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.staffInk)),
+              if (showToday)
+                GestureDetector(
+                  onTap: onToday,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('Volver a hoy', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.staffAccent)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        arrow(LucideIcons.chevronRight, canGoForward, onForward, 'Semana siguiente'),
+      ],
+    );
+  }
+}
+
 class StaffAgendaScreen extends StatefulWidget {
   const StaffAgendaScreen({super.key});
 
@@ -400,6 +462,16 @@ class _StaffAgendaScreenState extends State<StaffAgendaScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  _WeekNavigator(
+                    days: days,
+                    canGoBack: agendaVm.canShowPreviousWeek && !agendaVm.state.loading,
+                    canGoForward: agendaVm.canShowNextWeek && !agendaVm.state.loading,
+                    showToday: agendaVm.weekOffset != 0,
+                    onBack: () => agendaVm.shiftAgendaWeek(-1),
+                    onForward: () => agendaVm.shiftAgendaWeek(1),
+                    onToday: agendaVm.showTodayAgenda,
+                  ),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       for (var i = 0; i < days.length; i++) ...[
@@ -987,7 +1059,7 @@ class StaffMoreScreen extends StatelessWidget {
                     if (sessionVm.canOpen('/s/admin/suppliers')) _Tool(Icons.inventory_2_outlined, 'Proveedores', null, () => context.push('/s/admin/suppliers')),
                     if (sessionVm.canOpen('/s/admin/schedule')) _Tool(Icons.calendar_today_outlined, 'Horarios de atención', 'Abrir turnos para reservar', () => context.push('/s/admin/schedule')),
                     _Tool(Icons.settings_outlined, 'Configuración y permisos', sessionVm.session?.role.label, () => context.push('/s/settings')),
-                    _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => showAppMessage(context, 'Documentación en el README del proyecto.')),
+                    _Tool(Icons.help_outline, 'Ayuda y documentación', null, () => context.push('/s/info/help')),
                     _Tool(Icons.logout, 'Cerrar sesión', sessionVm.session?.email, () async { await sessionVm.logout(); }),
                   ],
                 ),

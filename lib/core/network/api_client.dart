@@ -144,14 +144,12 @@ class ApiClient {
     if (error is ApiException) return error;
     final raw = error.toString();
     if (raw.contains('Failed host lookup') || raw.contains('Connection refused') || raw.contains('timed out') || raw.contains('SocketException')) {
-      return ApiException(
-        'No se pudo conectar al servidor. El backend en Render puede estar dormido: espera un minuto y vuelve a intentar, o abre Swagger para despertarlo.',
-        connection: true,
-      );
+      return ApiException(ApiException.connectionMessage, connection: true);
     }
-    return ApiException(
-      raw.isEmpty ? 'Error inesperado. Intenta de nuevo.' : raw,
-      connection: error is TimeoutException || error is http.ClientException,
-    );
+    // Tiempo agotado o fallo de red: el mensaje técnico puede incluir la dirección del servidor.
+    if (error is TimeoutException || error is http.ClientException) {
+      return ApiException(ApiException.connectionMessage, connection: true);
+    }
+    return ApiException(raw.isEmpty ? 'Error inesperado. Intenta de nuevo.' : raw);
   }
 }

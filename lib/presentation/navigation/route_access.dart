@@ -10,7 +10,7 @@ bool canAccessPath(PatientSession? session, String path) {
   if (session?.isAuthenticated != true) return false;
   if (session!.isPatient) return path.startsWith('/p/');
   if (!path.startsWith('/s/')) return false;
-  if (const {'/s/home', '/s/more', '/s/settings'}.contains(path)) return true;
+  if (const {'/s/home', '/s/more', '/s/settings'}.contains(path) || path.startsWith('/s/info/')) return true;
   // La orden se abre desde el taller o, solo para leerla, desde la ficha del paciente.
   if (path.startsWith('/s/work-order/')) return session.role.can(StaffFeature.production) || session.role.can(StaffFeature.patients);
   final feature = switch (path) {

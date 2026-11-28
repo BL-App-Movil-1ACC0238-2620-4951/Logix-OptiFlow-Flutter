@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:logix_optiflow/core/theme/app_fonts.dart';
 import 'package:logix_optiflow/core/theme/app_colors.dart';
 import 'package:logix_optiflow/core/di/dependency_injection.dart';
+import 'package:logix_optiflow/core/errors/api_exception.dart';
 import 'package:logix_optiflow/core/network/offline_cache.dart';
 import 'package:logix_optiflow/core/time/store_time.dart';
 import 'package:logix_optiflow/features/auth/presentation/session_view_model.dart';
@@ -862,7 +863,8 @@ class SegmentChip extends StatelessWidget {
   }
 }
 
-/// Aviso de error en rojo suave; no muestra nada si [message] está vacío.
+/// Aviso de error en rojo suave; no muestra nada si [message] está vacío. Si el error es solo falta de
+/// conexión y ya se ve la franja «Sin conexión» con datos guardados, tampoco se muestra.
 class ErrorBanner extends StatelessWidget {
   const ErrorBanner(this.message, {super.key});
   final String? message;
@@ -871,6 +873,17 @@ class ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = message?.trim() ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
+    if (text == ApiException.connectionMessage && getIt.isRegistered<OfflineCache>()) {
+      final cache = getIt<OfflineCache>();
+      return ListenableBuilder(
+        listenable: cache,
+        builder: (context, _) => cache.savedDataFrom != null ? const SizedBox.shrink() : _box(text),
+      );
+    }
+    return _box(text);
+  }
+
+  Widget _box(String text) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

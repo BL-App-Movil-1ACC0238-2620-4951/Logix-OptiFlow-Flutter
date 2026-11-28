@@ -154,20 +154,20 @@ enum InfoTopic {
 }
 
 class InfoScreen extends StatelessWidget {
-  const InfoScreen({super.key, required this.topic});
+  const InfoScreen({super.key, required this.topic, this.staff = false});
   final InfoTopic topic;
+  /// El personal ve su propia ayuda y la pantalla sin la barra de pestañas del paciente, como en Kotlin.
+  final bool staff;
 
   @override
   Widget build(BuildContext context) {
     final sections = switch (topic) {
       InfoTopic.privacy => _privacy,
-      InfoTopic.help => _patientHelp,
+      InfoTopic.help => staff ? _staffHelp : _patientHelp,
       InfoTopic.terms => _terms,
     };
-    return PatientScaffold(
-      tab: PatientTab.profile,
-      topBar: LightTopBar(title: topic.title, onBack: () => context.pop()),
-      body: ListView(
+    final topBar = LightTopBar(title: topic.title, onBack: () => context.pop());
+    final body = ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
           for (final (title, lines) in sections)
@@ -188,12 +188,16 @@ class InfoScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 12),
-          Text('OptiFlow · Versión 1.0.0', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate300)),
+          Text('OptiFlow · Versión $appVersion', textAlign: TextAlign.center, style: AppFonts.plusJakartaSans(fontSize: 12, color: AppColors.slate300)),
         ],
-      ),
     );
+    if (staff) return StaffScaffold(tab: null, showBottomBar: false, topBar: topBar, body: body);
+    return PatientScaffold(tab: PatientTab.profile, topBar: topBar, body: body);
   }
 }
+
+/// Versión que se muestra en Configuración y en las pantallas de información.
+const appVersion = '1.1.0';
 
 const _privacy = [
   (
@@ -220,6 +224,21 @@ const _privacy = [
     ],
   ),
   ('Pagos', ['Los pagos con tarjeta o Yape se hacen en la página de Mercado Pago. OptiFlow no ve ni guarda los datos de tu tarjeta.']),
+];
+
+const _staffHelp = [
+  (
+    'Agenda',
+    [
+      'En Citas ves las citas de tu óptica por día. Toca un día de la semana para cambiar de fecha y usa las flechas para pasar a otras semanas.',
+      'Con Nueva cita eliges al paciente y un turno libre. La agenda pasa al día de la cita agendada.',
+    ],
+  ),
+  ('Pacientes', ['En Pacientes buscas a un paciente y abres su ficha. Con Nuevo paciente lo registras en la óptica.']),
+  ('Cotizaciones y ventas', ['En Más → Cotizaciones preparas la cotización del paciente. En Ventas y pagos registras la venta y su pago.']),
+  ('Inventario', ['En Inventario ves el catálogo y el stock de tu óptica. Con Escanear buscas una montura por su código.']),
+  ('Horarios de atención', ['El administrador abre los turnos en Más → Horarios de atención. Sin turnos abiertos no se pueden reservar citas.']),
+  ('Tu acceso', ['Lo que ves en el menú depende de tu rol. Si te falta una opción, pídesela al administrador de tu óptica.']),
 ];
 
 const _patientHelp = [
